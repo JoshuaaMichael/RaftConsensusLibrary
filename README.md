@@ -8,8 +8,11 @@ Although a working project of this would benefit more practical services, an eas
 # Members
 
 Joshua
+
 Sean
 
 # Links
+
 https://raft.github.io
+
 https://raft.github.io/raft.pdf
