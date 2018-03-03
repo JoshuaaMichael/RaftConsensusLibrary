@@ -4,10 +4,10 @@
 >Although a working project of this would benefit more practical services, an easy demonstration of a working final product would be a simple console program. There would be multiple instances of the console program running, talking together, and it will demonstrate maintaining an activate replicated log against multiple node failures.  
 
 # Members
->[Joshua](https://bitbucket.org/JoshuaMichael/)
->[Sean](https://bitbucket.org/s_matkovich/)
+>[Joshua](https://bitbucket.org/JoshuaMichael/)  
+>[Sean](https://bitbucket.org/s_matkovich/)  
 
 # Links
->[Team Charter](https://bitbucket.org/teamdecided/raftconsensuslibrary/raw/adc231c71dcb026c4084793e834f48c14ecab223/Documentation/Team%20Charter.pdf)
->[Meeting Minutes](https://bitbucket.org/teamdecided/raftconsensuslibrary/raw/0daf200617ea78585cc604433e693e8afea8ae50/Documentation/Meeting%20Minutes.pdf)
->[Project Propsal](https://bitbucket.org/teamdecided/raftconsensuslibrary/raw/0daf200617ea78585cc604433e693e8afea8ae50/Documentation/Project%20Proposal.pdf)
+>[Team Charter](https://bitbucket.org/teamdecided/raftconsensuslibrary/raw/adc231c71dcb026c4084793e834f48c14ecab223/Documentation/Team%20Charter.pdf)  
+>[Meeting Minutes](https://bitbucket.org/teamdecided/raftconsensuslibrary/raw/0daf200617ea78585cc604433e693e8afea8ae50/Documentation/Meeting%20Minutes.pdf)  
+>[Project Propsal](https://bitbucket.org/teamdecided/raftconsensuslibrary/raw/0daf200617ea78585cc604433e693e8afea8ae50/Documentation/Project%20Proposal.pdf)  
