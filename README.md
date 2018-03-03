@@ -12,7 +12,7 @@
 
 # Links
 >[Team Charter](https://bitbucket.org/teamdecided/raftconsensuslibrary/raw/adc231c71dcb026c4084793e834f48c14ecab223/Documentation/Team%20Charter.pdf)
->[Meeting Minutes]()
->[Project Propsal]()
+>[Meeting Minutes](https://bitbucket.org/teamdecided/raftconsensuslibrary/raw/0daf200617ea78585cc604433e693e8afea8ae50/Documentation/Meeting%20Minutes.pdf)
+>[Project Propsal](https://bitbucket.org/teamdecided/raftconsensuslibrary/raw/0daf200617ea78585cc604433e693e8afea8ae50/Documentation/Project%20Proposal.pdf)
 
 
