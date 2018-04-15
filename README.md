@@ -8,8 +8,8 @@
 >[Sean](https://bitbucket.org/s_matkovich/)  
 
 # Links  
->[Team Charter](https://bitbucket.org/teamdecided/raftconsensuslibrary/raw/master/Documentation/Team%20Charter.pdf)  
+>[Team Charter](https://bitbucket.org/teamdecided/raftconsensuslibrary/raw/master/Documentation/Project%20Initiation/Team%20Charter.pdf)  
 >[Meeting Minutes](https://bitbucket.org/teamdecided/raftconsensuslibrary/raw/master/Documentation/Meeting%20Minutes.pdf)  
->[Project Propsal](https://bitbucket.org/teamdecided/raftconsensuslibrary/raw/master/Documentation/Project%20Proposal.pdf)  
+>[Project Propsal](https://bitbucket.org/teamdecided/raftconsensuslibrary/raw/master/Documentation/Project%20Initiation/Project%20Proposal.pdf)  
 >[Iteration Plans](https://bitbucket.org/teamdecided/raftconsensuslibrary/src/20e63a3e3d78/Documentation/Iteration%20Plans/?at=master)  
 >[LCOM](https://bitbucket.org/teamdecided/raftconsensuslibrary/src/master/Documentation/LCOM/)
