@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace TeamDecided.RaftNetworking
+namespace TeamDecided.RaftNetworking.Messages
 {
-    class Class1
+    class ByteMessage : BaseMessage
     {
     }
 }
