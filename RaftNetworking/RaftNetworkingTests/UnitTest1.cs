@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace TeamDecided.RaftConsensus.Tests
+namespace TeamDecided.RaftNetworking.Tests
 {
     [TestClass]
     public class UnitTest1
