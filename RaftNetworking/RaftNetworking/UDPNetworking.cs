@@ -153,8 +153,68 @@ namespace TeamDecided.RaftNetworking
 
         private void ListeningThread()
         {
-            //When listening, mark the class as RUNNING
-            throw new NotImplementedException();
+            lock(statusLockObject)
+            {
+                status = EUDPNetworkingStatus.RUNNING;
+            }
+
+            while (true)
+            {
+                BaseMessage message = null;
+                byte[] messageBytes;
+                IPEndPoint endPoint = null;
+
+                try
+                {
+                    Task<UdpReceiveResult> result = udpClient.ReceiveAsync();
+                    result.Wait();
+                    messageBytes = result.Result.Buffer;
+                    endPoint = result.Result.RemoteEndPoint;
+                }
+                catch (ObjectDisposedException e)
+                {
+                    //There isn't a way to abort the thread, so it's done by disposing of the socket
+                    lock (statusLockObject)
+                    {
+                        if(status != EUDPNetworkingStatus.STOPPING)
+                        {
+                            throw e;
+                        }
+                    }
+                    return;
+                }
+                
+                try
+                {
+                    message = DeserialiseMessage(messageBytes);
+                }
+                catch (Exception e)
+                {
+                    lock(newMessageReceiveFailuresLockObject)
+                    {
+                        newMessageReceiveFailures.Enqueue(new UDPNetworkingReceiveFailureException("Failed deserialising byte array", e));
+                        onMessageReceiveFailure.Set();
+                    }
+                }
+
+                if(message == null)
+                {
+                    continue;
+                }
+
+                lock (peersLockObject)
+                {
+                    if (!peers.ContainsKey(message.From))
+                    {
+                        peers.Add(message.From, endPoint);
+                    }
+                }
+                lock (newMessagesReceivedLockObject)
+                {
+                    newMessagesReceived.Enqueue(message);
+                    onMessageReceive.Set();
+                }
+            }
         }
 
         private void SendingThread()

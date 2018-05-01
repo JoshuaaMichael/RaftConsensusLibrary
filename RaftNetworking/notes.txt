@@ -21,6 +21,8 @@ UDPNetworking
 	- Used EUDPNetworkingStatus.Stopped for starting off, bad practice?
 	- Not using protected anywhere
 	- No one starts/stops a networking library, let's put in dispose?
+	- Don't think we can detect faulty receives, currently I'm just triggering on a bad deserialise.
+	- Not sure how we'd detect faulty sends, it's more timeout based
 	
 I think we should merge everything into the same visual studios project
 Only reason to separate is for deploy later, and we have to fix stuff anyway because of Documentation folder
