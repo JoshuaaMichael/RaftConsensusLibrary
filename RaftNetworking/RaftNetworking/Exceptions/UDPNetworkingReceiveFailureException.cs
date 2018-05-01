@@ -1,10 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace TeamDecided.RaftNetworking.Exceptions
 {
-    class UDPNetworkingReceiveFailureException : UDPNetworkingException
+    public class UDPNetworkingReceiveFailureException : UDPNetworkingException
     {
+        public UDPNetworkingReceiveFailureException(string errorMessage)
+            : base(errorMessage) { }
+
+        public UDPNetworkingReceiveFailureException(string errorMessage, Exception innerException)
+            : base(errorMessage, innerException) { }
     }
 }

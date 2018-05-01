@@ -2,7 +2,7 @@
 
 namespace TeamDecided.RaftNetworking.Exceptions
 {
-    class UDPNetworkingException : Exception
+    public class UDPNetworkingException : Exception
     {
         public UDPNetworkingException(string errorMessage)
             : base(errorMessage) { }
