@@ -24,6 +24,5 @@ namespace TeamDecided.RaftNetworking.Interfaces
         bool HasPeer(string peerName);
         void RemovePeer(string peerName);
         int CountPeers();
-
     }
 }
