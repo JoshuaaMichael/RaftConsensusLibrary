@@ -15,7 +15,26 @@ IUDPNetworking
 	
 Logging
 	Thinking we make a separate DLL with the class declared, for both projects
+
+UDPNetworking
+	- Update the diagram to remove duplicates from the interface
+	- Used EUDPNetworkingStatus.Stopped for starting off, bad practice?
+	- Not using protected anywhere
+	- No one starts/stops a networking library, let's put in dispose?
 	
 I think we should merge everything into the same visual studios project
 Only reason to separate is for deploy later, and we have to fix stuff anyway because of Documentation folder
 May as well keep it simple for ourselves
+
+Compression is not on the diagram
+I don't think we'll mark our methods are virtual, because we may need to design it better
+https://stackoverflow.com/questions/14451325/should-i-mark-all-methods-virtual
+
+We can look over the idea of using locks on the objects themselves instead of using lockobjects? Bad practice?
+
+
+We need a dream list
+
+Things to think about:
+	Is it thread safe?
+	Can I call any function any number of times and keep working?
