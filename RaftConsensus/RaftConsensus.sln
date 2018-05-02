@@ -3,9 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27428.2037
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RaftConsensus", "RaftConsensus\RaftConsensus.csproj", "{F38A3F88-0EE7-4987-AF7C-C9161DE2585C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RaftConsensus", "RaftConsensus\RaftConsensus.csproj", "{F38A3F88-0EE7-4987-AF7C-C9161DE2585C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RaftConsensusTests", "RaftConsensusTests\RaftConsensusTests.csproj", "{B779A06B-7291-4F80-9BB0-90AA2A534125}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RaftNetworking", "RaftNetworking\RaftNetworking.csproj", "{94B2CB16-E397-40C4-939F-D57BA54A6895}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RaftNetworkingTests", "RaftNetworkingTests\RaftNetworkingTests.csproj", "{45AE505B-244A-43CF-9E2B-AACAE882563B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RaftLogging", "RaftLogging\RaftLogging.csproj", "{A0B73139-F08A-4ECF-B222-01383B151F9A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +27,18 @@ Global
 		{B779A06B-7291-4F80-9BB0-90AA2A534125}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B779A06B-7291-4F80-9BB0-90AA2A534125}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B779A06B-7291-4F80-9BB0-90AA2A534125}.Release|Any CPU.Build.0 = Release|Any CPU
+		{94B2CB16-E397-40C4-939F-D57BA54A6895}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{94B2CB16-E397-40C4-939F-D57BA54A6895}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{94B2CB16-E397-40C4-939F-D57BA54A6895}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{94B2CB16-E397-40C4-939F-D57BA54A6895}.Release|Any CPU.Build.0 = Release|Any CPU
+		{45AE505B-244A-43CF-9E2B-AACAE882563B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{45AE505B-244A-43CF-9E2B-AACAE882563B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{45AE505B-244A-43CF-9E2B-AACAE882563B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{45AE505B-244A-43CF-9E2B-AACAE882563B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0B73139-F08A-4ECF-B222-01383B151F9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0B73139-F08A-4ECF-B222-01383B151F9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0B73139-F08A-4ECF-B222-01383B151F9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0B73139-F08A-4ECF-B222-01383B151F9A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

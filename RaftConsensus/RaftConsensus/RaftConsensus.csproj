@@ -5,4 +5,9 @@
     <RootNamespace>TeamDecided.RaftConsensus</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\RaftLogging\RaftLogging.csproj" />
+    <ProjectReference Include="..\RaftNetworking\RaftNetworking.csproj" />
+  </ItemGroup>
+
 </Project>
