@@ -208,6 +208,12 @@ namespace TeamDecided.RaftNetworking
                     if (!peers.ContainsKey(message.From))
                     {
                         peers.Add(message.From, endPoint);
+
+                        lock(newConnectedPeersLockObject)
+                        {
+                            newConnectedPeers.Enqueue(message.From);
+                            onNewConnectedPeer.Set();
+                        }
                     }
                 }
                 lock (newMessagesReceivedLockObject)
@@ -276,11 +282,12 @@ namespace TeamDecided.RaftNetworking
 
         private void ProcessingThread()
         {
-            ManualResetEvent[] resetEvents = new ManualResetEvent[2];
+            ManualResetEvent[] resetEvents = new ManualResetEvent[5];
             resetEvents[0] = onNetworkingStop;
             resetEvents[1] = onMessageReceive;
             resetEvents[2] = onMessageReceiveFailure;
             resetEvents[3] = onMessageSendFailure;
+            resetEvents[4] = onNewConnectedPeer;
 
             int index;
             while ((index = WaitHandle.WaitAny(resetEvents)) != -1)
@@ -300,6 +307,10 @@ namespace TeamDecided.RaftNetworking
                 else if (index == 3)
                 {
                     HandleMessageProcessing(newMessageSendFailures, newMessageSendFailuresLockObject, onMessageSendFailure, OnMessageSendFailure);
+                }
+                else if(index == 4)
+                {
+                    HandleMessageProcessing(newConnectedPeers, newConnectedPeersLockObject, onNewConnectedPeer, OnNewConnectedPeer);
                 }
             }
         }
