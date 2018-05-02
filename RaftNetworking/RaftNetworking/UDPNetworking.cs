@@ -195,9 +195,10 @@ namespace TeamDecided.RaftNetworking
                         newMessageReceiveFailures.Enqueue(new UDPNetworkingReceiveFailureException("Failed deserialising byte array", e));
                         onMessageReceiveFailure.Set();
                     }
+                    continue;
                 }
 
-                if(message == null)
+                if (message == null)
                 {
                     continue;
                 }
@@ -219,7 +220,62 @@ namespace TeamDecided.RaftNetworking
 
         private void SendingThread()
         {
-            throw new NotImplementedException();
+            ManualResetEvent[] resetEvents = new ManualResetEvent[2];
+            resetEvents[0] = onNetworkingStop;
+            resetEvents[1] = onMessageToSend;
+
+            int index;
+            while ((index = WaitHandle.WaitAny(resetEvents)) != -1)
+            {
+                if (index == 0) //Stopping thread
+                {
+                    break;
+                }
+
+                BaseMessage message;
+                lock (newMessagesToSendLockObject)
+                {
+                    message = newMessagesToSend.Dequeue();
+                }
+                byte[] messageToSend = SerialiseMessage(message);
+
+                if (messageToSend.Length > 65507) //Max size of a packet supported
+                {
+                    lock(newMessageSendFailuresLockObject)
+                    {
+                        newMessageSendFailures.Enqueue(new UDPNetworkingSendFailureException("Message is too large to send", message));
+                        onMessageSendFailure.Set();
+                    }
+                    continue;
+                }
+
+                IPEndPoint recipient;
+                lock (peersLockObject)
+                {
+                    recipient = peers[message.To];
+                }
+
+                Task<int> sendMessageTask = udpClient.SendAsync(messageToSend, messageToSend.Length, recipient);
+                sendMessageTask.Wait();
+
+                if (sendMessageTask.Result <= 0)
+                {
+                    lock (newMessageSendFailuresLockObject)
+                    {
+                        newMessageSendFailures.Enqueue(new UDPNetworkingSendFailureException("Failed to send message", message));
+                        onMessageSendFailure.Set();
+                    }
+                    continue;
+                } //else { sent succesfully }
+
+                lock (newMessagesToSendLockObject)
+                {
+                    if (newMessagesToSend.Count == 0)
+                    {
+                        onMessageToSend.Reset();
+                    }
+                }
+            }
         }
 
         private void ProcessingThread()
