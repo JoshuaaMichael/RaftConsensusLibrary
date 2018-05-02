@@ -14,7 +14,7 @@ using TeamDecided.RaftNetworking.Messages;
 
 namespace TeamDecided.RaftNetworking
 {
-    class UDPNetworking : IUDPNetworking
+    class UDPNetworking : IUDPNetworking, IDisposable
     {
         public event EventHandler<BaseMessage> OnMessageReceived;
         private Queue<BaseMessage> newMessagesReceived;
@@ -53,6 +53,8 @@ namespace TeamDecided.RaftNetworking
         private Task sendingThread;
         private Task processingThread;
 
+        private bool disposedValue = false; // To detect redundant calls
+
         public UDPNetworking()
         {
             newMessagesReceived = new Queue<BaseMessage>();
@@ -79,7 +81,7 @@ namespace TeamDecided.RaftNetworking
 
             onNetworkingStop = new ManualResetEvent(false);
 
-            status = EUDPNetworkingStatus.STOPPED;
+            status = EUDPNetworkingStatus.INITIALIZED;
             statusLockObject = new object();
 
             listeningThread = new Task(ListeningThread, TaskCreationOptions.LongRunning);
@@ -91,7 +93,7 @@ namespace TeamDecided.RaftNetworking
         {
             lock (statusLockObject)
             {
-                if (status != EUDPNetworkingStatus.STOPPED)
+                if (status != EUDPNetworkingStatus.INITIALIZED)
                 {
                     throw new InvalidOperationException("Library is currently not in a state it may start in");
                 }
@@ -105,7 +107,7 @@ namespace TeamDecided.RaftNetworking
         {
             lock(statusLockObject)
             {
-                if (status != EUDPNetworkingStatus.STOPPED)
+                if (status != EUDPNetworkingStatus.INITIALIZED)
                 {
                     throw new InvalidOperationException("Library is currently not in a state it may start in");
                 }
@@ -115,40 +117,11 @@ namespace TeamDecided.RaftNetworking
             StartThreads();
         }
 
-        public void Stop()
-        {
-            //TODO: I don't think we should support stopping, let's add IDisposable. This function's code is incomplete/not thought through.
-            lock (statusLockObject)
-            {
-                if(status != EUDPNetworkingStatus.RUNNING)
-                {
-                    throw new InvalidOperationException("Library is currently not in a state it may stop from");
-                }
-                status = EUDPNetworkingStatus.STOPPING;
-            }
-
-            StopThreads();
-
-            newMessagesReceived.Clear();
-            newMessagesToSend.Clear();
-        }
-
         private void StartThreads()
         {
             listeningThread.Start();
             sendingThread.Start();
             processingThread.Start();
-        }
-
-        private void StopThreads()
-        {
-            onNetworkingStop.Set();
-            udpClient.Dispose();
-            udpClient = null;
-
-            listeningThread.Wait();
-            sendingThread.Wait();
-            processingThread.Wait();
         }
 
         private void ListeningThread()
@@ -195,11 +168,6 @@ namespace TeamDecided.RaftNetworking
                         newMessageReceiveFailures.Enqueue(new UDPNetworkingReceiveFailureException("Failed deserialising byte array", e));
                         onMessageReceiveFailure.Set();
                     }
-                    continue;
-                }
-
-                if (message == null)
-                {
                     continue;
                 }
 
@@ -283,32 +251,32 @@ namespace TeamDecided.RaftNetworking
         private void ProcessingThread()
         {
             ManualResetEvent[] resetEvents = new ManualResetEvent[5];
-            resetEvents[0] = onNetworkingStop;
-            resetEvents[1] = onMessageReceive;
-            resetEvents[2] = onMessageReceiveFailure;
-            resetEvents[3] = onMessageSendFailure;
-            resetEvents[4] = onNewConnectedPeer;
+            resetEvents[(int)EProcessingThreadArrayIndex.ON_NETWORKING_STOP] = onNetworkingStop;
+            resetEvents[(int)EProcessingThreadArrayIndex.ON_MESSAGE_RECEIVE] = onMessageReceive;
+            resetEvents[(int)EProcessingThreadArrayIndex.ON_MESSAGE_RECEIVE_FAILURE] = onMessageReceiveFailure;
+            resetEvents[(int)EProcessingThreadArrayIndex.ON_MESSAGE_SEND_FAILURE] = onMessageSendFailure;
+            resetEvents[(int)EProcessingThreadArrayIndex.ON_NEW_CONNECTED_PEER] = onNewConnectedPeer;
 
             int index;
             while ((index = WaitHandle.WaitAny(resetEvents)) != -1)
             {
-                if (index == 0) //Stopping thread
+                if (index == (int)EProcessingThreadArrayIndex.ON_NETWORKING_STOP) //Stopping thread
                 {
                     break;
                 }
-                else if(index == 1)
+                else if(index == (int)EProcessingThreadArrayIndex.ON_MESSAGE_RECEIVE)
                 {
                     HandleMessageProcessing(newMessagesReceived, newMessagesReceivedLockObject, onMessageReceive, OnMessageReceived);
                 }
-                else if(index == 2)
+                else if(index == (int)EProcessingThreadArrayIndex.ON_MESSAGE_RECEIVE_FAILURE)
                 {
                     HandleMessageProcessing(newMessageReceiveFailures, newMessageReceiveFailuresLockObject, onMessageReceiveFailure, OnMessageReceivedFailure);
                 }
-                else if (index == 3)
+                else if (index == (int)EProcessingThreadArrayIndex.ON_MESSAGE_SEND_FAILURE)
                 {
                     HandleMessageProcessing(newMessageSendFailures, newMessageSendFailuresLockObject, onMessageSendFailure, OnMessageSendFailure);
                 }
-                else if(index == 4)
+                else if(index == (int)EProcessingThreadArrayIndex.ON_NEW_CONNECTED_PEER)
                 {
                     HandleMessageProcessing(newConnectedPeers, newConnectedPeersLockObject, onNewConnectedPeer, OnNewConnectedPeer);
                 }
@@ -430,5 +398,31 @@ namespace TeamDecided.RaftNetworking
                 }
             }
         }
+
+        #region IDisposable Support
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    onNetworkingStop.Set();
+                    udpClient.Dispose();
+                    udpClient = null;
+
+                    listeningThread.Wait();
+                    sendingThread.Wait();
+                    processingThread.Wait();
+                }
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+        #endregion
     }
 }

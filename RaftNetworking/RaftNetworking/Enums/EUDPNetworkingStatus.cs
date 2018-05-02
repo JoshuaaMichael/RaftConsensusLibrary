@@ -2,9 +2,10 @@
 {
     enum EUDPNetworkingStatus
     {
-        STARTING = 0,
-        RUNNING = 1,
-        STOPPING = 2,
-        STOPPED = 3
+        INITIALIZED = 0,
+        STARTING = 1,
+        RUNNING = 2,
+        STOPPING = 3,
+        STOPPED = 4
     }
 }
