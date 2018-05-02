@@ -236,6 +236,10 @@ namespace TeamDecided.RaftNetworking
                 lock (newMessagesToSendLockObject)
                 {
                     message = newMessagesToSend.Dequeue();
+                    if (newMessagesToSend.Count == 0)
+                    {
+                        onMessageToSend.Reset();
+                    }
                 }
                 byte[] messageToSend = SerialiseMessage(message);
 
@@ -267,20 +271,51 @@ namespace TeamDecided.RaftNetworking
                     }
                     continue;
                 } //else { sent succesfully }
-
-                lock (newMessagesToSendLockObject)
-                {
-                    if (newMessagesToSend.Count == 0)
-                    {
-                        onMessageToSend.Reset();
-                    }
-                }
             }
         }
 
         private void ProcessingThread()
         {
-            throw new NotImplementedException();
+            ManualResetEvent[] resetEvents = new ManualResetEvent[2];
+            resetEvents[0] = onNetworkingStop;
+            resetEvents[1] = onMessageReceive;
+            resetEvents[2] = onMessageReceiveFailure;
+            resetEvents[3] = onMessageSendFailure;
+
+            int index;
+            while ((index = WaitHandle.WaitAny(resetEvents)) != -1)
+            {
+                if (index == 0) //Stopping thread
+                {
+                    break;
+                }
+                else if(index == 1)
+                {
+                    HandleMessageProcessing(newMessagesReceived, newMessagesReceivedLockObject, onMessageReceive, OnMessageReceived);
+                }
+                else if(index == 2)
+                {
+                    HandleMessageProcessing(newMessageReceiveFailures, newMessageReceiveFailuresLockObject, onMessageReceiveFailure, OnMessageReceivedFailure);
+                }
+                else if (index == 3)
+                {
+                    HandleMessageProcessing(newMessageSendFailures, newMessageSendFailuresLockObject, onMessageSendFailure, OnMessageSendFailure);
+                }
+            }
+        }
+
+        private void HandleMessageProcessing<T>(Queue<T> queue, object lockObject, ManualResetEvent manualResetEvent, EventHandler<T> eventHandler)
+        {
+            T messageToProcess;
+            lock (lockObject)
+            {
+                messageToProcess = queue.Dequeue();
+                if (queue.Count == 0)
+                {
+                    manualResetEvent.Reset();
+                }
+            }
+            eventHandler(this, messageToProcess);
         }
 
         public void SendMessage(BaseMessage message)
