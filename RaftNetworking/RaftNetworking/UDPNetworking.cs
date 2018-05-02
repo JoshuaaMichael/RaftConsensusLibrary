@@ -14,7 +14,7 @@ using TeamDecided.RaftNetworking.Messages;
 
 namespace TeamDecided.RaftNetworking
 {
-    class UDPNetworking : IUDPNetworking, IDisposable
+    class UDPNetworking : IUDPNetworking
     {
         public event EventHandler<BaseMessage> OnMessageReceived;
         private Queue<BaseMessage> newMessagesReceived;
