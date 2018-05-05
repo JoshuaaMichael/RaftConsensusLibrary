@@ -20,9 +20,8 @@ namespace TeamDecided.RaftNetworking.Tests.Messages
         {
             to = new Guid().ToString();
             from = new Guid().ToString();
-            byte[] dataArray = new byte[256];
-            rand.NextBytes(dataArray);
-            data = dataArray;
+            data = new byte[256];
+            rand.NextBytes(data);
 
             sut = new ByteMessage(to, from, data);
         }
