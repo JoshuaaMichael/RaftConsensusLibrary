@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RaftNetworking", "RaftNetwo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RaftNetworkingTests", "RaftNetworkingTests\RaftNetworkingTests.csproj", "{45AE505B-244A-43CF-9E2B-AACAE882563B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RaftLogging", "RaftLogging\RaftLogging.csproj", "{A0B73139-F08A-4ECF-B222-01383B151F9A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RaftCommon", "RaftCommon\RaftCommon.csproj", "{74AAC36F-886F-45B0-A549-E6504E0E7D14}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,10 +35,10 @@ Global
 		{45AE505B-244A-43CF-9E2B-AACAE882563B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{45AE505B-244A-43CF-9E2B-AACAE882563B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{45AE505B-244A-43CF-9E2B-AACAE882563B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A0B73139-F08A-4ECF-B222-01383B151F9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A0B73139-F08A-4ECF-B222-01383B151F9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A0B73139-F08A-4ECF-B222-01383B151F9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A0B73139-F08A-4ECF-B222-01383B151F9A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{74AAC36F-886F-45B0-A549-E6504E0E7D14}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{74AAC36F-886F-45B0-A549-E6504E0E7D14}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{74AAC36F-886F-45B0-A549-E6504E0E7D14}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{74AAC36F-886F-45B0-A549-E6504E0E7D14}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
