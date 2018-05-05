@@ -1,6 +1,6 @@
 ﻿namespace TeamDecided.RaftNetworking.Enums
 {
-    enum EUDPNetworkingStatus
+    public enum EUDPNetworkingStatus
     {
         INITIALIZED = 0,
         STARTING = 1,
