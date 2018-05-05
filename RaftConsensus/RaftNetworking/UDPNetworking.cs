@@ -356,14 +356,14 @@ namespace TeamDecided.RaftNetworking
 
         protected byte[] SerialiseMessage(BaseMessage message)
         {
-            byte[] messageBytes = message.Serialise();
+            byte[] messageBytes = message.Serialize();
             return CompressMessage(messageBytes);
         }
 
         protected BaseMessage DeserialiseMessage(byte[] message)
         {
             byte[] messageToDeserialise = DecompressMessage(message);
-            return BaseMessage.Deserialise<BaseMessage>(messageToDeserialise);
+            return BaseMessage.Deserialize<BaseMessage>(messageToDeserialise);
         }
 
         protected byte[] CompressMessage(byte[] message)

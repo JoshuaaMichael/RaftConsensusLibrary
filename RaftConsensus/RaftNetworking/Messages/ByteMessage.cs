@@ -1,6 +1,6 @@
 ﻿namespace TeamDecided.RaftNetworking.Messages
 {
-    class ByteMessage : BaseMessage
+    public class ByteMessage : BaseMessage
     {
         public byte[] Data { get; private set; }
 

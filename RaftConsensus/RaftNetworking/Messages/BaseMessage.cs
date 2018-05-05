@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace TeamDecided.RaftNetworking.Messages
 {
-    public class BaseMessage
+    public abstract class BaseMessage
     {
         public string To { get; private set; }
         public string From { get; private set; }
@@ -17,14 +17,14 @@ namespace TeamDecided.RaftNetworking.Messages
             MessageType = GetType();
         }
 
-        public byte[] Serialise()
+        public byte[] Serialize()
         {
             JsonSerializerSettings settings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All };
             string json = JsonConvert.SerializeObject(this, settings);
             return Encoding.UTF8.GetBytes(json);
         }
 
-        public static T Deserialise<T>(byte[] data)
+        public static T Deserialize<T>(byte[] data)
         {
             string json = Encoding.UTF8.GetString(data);
             JsonSerializerSettings settings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All };

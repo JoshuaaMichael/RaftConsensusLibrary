@@ -1,6 +1,6 @@
 ﻿namespace TeamDecided.RaftNetworking.Messages
 {
-    class StringMessage : BaseMessage
+    public class StringMessage : BaseMessage
     {
         public string Data { get; private set; }
         public StringMessage(string to, string from, string data)
