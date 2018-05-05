@@ -98,9 +98,10 @@ namespace TeamDecided.RaftNetworking
                     throw new InvalidOperationException("Library is currently not in a state it may start in");
                 }
                 status = EUDPNetworkingStatus.STARTING;
+
+                udpClient = new UdpClient(port);
+                StartThreads();
             }
-            udpClient = new UdpClient(port);
-            StartThreads();
         }
 
         public void Start(IPEndPoint endPoint)
@@ -112,9 +113,10 @@ namespace TeamDecided.RaftNetworking
                     throw new InvalidOperationException("Library is currently not in a state it may start in");
                 }
                 status = EUDPNetworkingStatus.STARTING;
+
+                udpClient = new UdpClient(endPoint);
+                StartThreads();
             }
-            udpClient = new UdpClient(endPoint);
-            StartThreads();
         }
 
         private void StartThreads()
@@ -139,55 +141,90 @@ namespace TeamDecided.RaftNetworking
 
                 try
                 {
-                    Task<UdpReceiveResult> result = udpClient.ReceiveAsync();
+                    Task<UdpReceiveResult> result;
+                    lock (statusLockObject)
+                    {
+                        if(status != EUDPNetworkingStatus.RUNNING)
+                        {
+                            return;
+                        }
+                        result = udpClient.ReceiveAsync();
+                    }
                     result.Wait();
                     messageBytes = result.Result.Buffer;
                     endPoint = result.Result.RemoteEndPoint;
                 }
-                catch (ObjectDisposedException e)
+                catch(NullReferenceException e)
                 {
-                    //There isn't a way to abort the thread, so it's done by disposing of the socket
                     lock (statusLockObject)
                     {
-                        if(status != EUDPNetworkingStatus.STOPPING)
+                        if (status != EUDPNetworkingStatus.STOPPED)
                         {
                             throw e;
                         }
                     }
                     return;
                 }
-                
-                try
+                catch (AggregateException e)
                 {
-                    message = DeserialiseMessage(messageBytes);
-                }
-                catch (Exception e)
-                {
-                    lock(newMessageReceiveFailuresLockObject)
+                    if(e.InnerException.GetType() == typeof(ObjectDisposedException))
                     {
-                        newMessageReceiveFailures.Enqueue(new UDPNetworkingReceiveFailureException("Failed deserialising byte array", e));
-                        onMessageReceiveFailure.Set();
-                    }
-                    continue;
-                }
-
-                lock (peersLockObject)
-                {
-                    if (!peers.ContainsKey(message.From))
-                    {
-                        peers.Add(message.From, endPoint);
-
-                        lock(newConnectedPeersLockObject)
+                        lock (statusLockObject)
                         {
-                            newConnectedPeers.Enqueue(message.From);
-                            onNewConnectedPeer.Set();
+                            if (status != EUDPNetworkingStatus.STOPPED)
+                            {
+                                throw e;
+                            }
+                        }
+                        return;
+                    }
+                    throw e;
+                }
+                catch (ObjectDisposedException e)
+                {
+                    //There isn't a way to abort the thread, so it's done by disposing of the socket
+                    return;
+                }
+
+                lock (statusLockObject)
+                {
+                    if(status != EUDPNetworkingStatus.RUNNING)
+                    {
+                        return;
+                    }
+
+                    try
+                    {
+                        message = DeserialiseMessage(messageBytes);
+                    }
+                    catch (Exception e)
+                    {
+                        lock (newMessageReceiveFailuresLockObject)
+                        {
+                            newMessageReceiveFailures.Enqueue(new UDPNetworkingReceiveFailureException("Failed deserialising byte array", e));
+                            onMessageReceiveFailure.Set();
+                        }
+                        continue;
+                    }
+
+                    lock (peersLockObject)
+                    {
+                        if (!peers.ContainsKey(message.From))
+                        {
+                            peers.Add(message.From, endPoint);
+
+                            lock (newConnectedPeersLockObject)
+                            {
+                                newConnectedPeers.Enqueue(message.From);
+                                onNewConnectedPeer.Set();
+                            }
                         }
                     }
-                }
-                lock (newMessagesReceivedLockObject)
-                {
-                    newMessagesReceived.Enqueue(message);
-                    onMessageReceive.Set();
+                    lock (newMessagesReceivedLockObject)
+                    {
+                        newMessagesReceived.Enqueue(message);
+                        onMessageReceive.Set();
+                    }
                 }
             }
         }
@@ -206,45 +243,53 @@ namespace TeamDecided.RaftNetworking
                     break;
                 }
 
-                BaseMessage message;
-                lock (newMessagesToSendLockObject)
+                lock (statusLockObject)
                 {
-                    message = newMessagesToSend.Dequeue();
-                    if (newMessagesToSend.Count == 0)
+                    if(status != EUDPNetworkingStatus.RUNNING)
                     {
-                        onMessageToSend.Reset();
+                        return; //The object is being disposed
                     }
-                }
-                byte[] messageToSend = SerialiseMessage(message);
 
-                if (messageToSend.Length > 65507) //Max size of a packet supported
-                {
-                    lock(newMessageSendFailuresLockObject)
+                    BaseMessage message;
+                    lock (newMessagesToSendLockObject)
                     {
-                        newMessageSendFailures.Enqueue(new UDPNetworkingSendFailureException("Message is too large to send", message));
-                        onMessageSendFailure.Set();
+                        message = newMessagesToSend.Dequeue();
+                        if (newMessagesToSend.Count == 0)
+                        {
+                            onMessageToSend.Reset();
+                        }
                     }
-                    continue;
-                }
+                    byte[] messageToSend = SerialiseMessage(message);
 
-                IPEndPoint recipient;
-                lock (peersLockObject)
-                {
-                    recipient = peers[message.To];
-                }
-
-                Task<int> sendMessageTask = udpClient.SendAsync(messageToSend, messageToSend.Length, recipient);
-                sendMessageTask.Wait();
-
-                if (sendMessageTask.Result <= 0)
-                {
-                    lock (newMessageSendFailuresLockObject)
+                    if (messageToSend.Length > 65507) //Max size of a packet supported
                     {
-                        newMessageSendFailures.Enqueue(new UDPNetworkingSendFailureException("Failed to send message", message));
-                        onMessageSendFailure.Set();
+                        lock (newMessageSendFailuresLockObject)
+                        {
+                            newMessageSendFailures.Enqueue(new UDPNetworkingSendFailureException("Message is too large to send", message));
+                            onMessageSendFailure.Set();
+                        }
+                        continue;
                     }
-                    continue;
-                } //else { sent succesfully }
+
+                    IPEndPoint recipient;
+                    lock (peersLockObject)
+                    {
+                        recipient = peers[message.To];
+                    }
+
+                    Task<int> sendMessageTask = udpClient.SendAsync(messageToSend, messageToSend.Length, recipient);
+                    sendMessageTask.Wait();
+
+                    if (sendMessageTask.Result <= 0)
+                    {
+                        lock (newMessageSendFailuresLockObject)
+                        {
+                            newMessageSendFailures.Enqueue(new UDPNetworkingSendFailureException("Failed to send message", message));
+                            onMessageSendFailure.Set();
+                        }
+                        continue;
+                    } //else { sent succesfully }
+                }
             }
         }
 
@@ -264,21 +309,30 @@ namespace TeamDecided.RaftNetworking
                 {
                     break;
                 }
-                else if(index == (int)EProcessingThreadArrayIndex.ON_MESSAGE_RECEIVE)
+
+                lock (statusLockObject)
                 {
-                    HandleMessageProcessing(newMessagesReceived, newMessagesReceivedLockObject, onMessageReceive, OnMessageReceived);
-                }
-                else if(index == (int)EProcessingThreadArrayIndex.ON_MESSAGE_RECEIVE_FAILURE)
-                {
-                    HandleMessageProcessing(newMessageReceiveFailures, newMessageReceiveFailuresLockObject, onMessageReceiveFailure, OnMessageReceivedFailure);
-                }
-                else if (index == (int)EProcessingThreadArrayIndex.ON_MESSAGE_SEND_FAILURE)
-                {
-                    HandleMessageProcessing(newMessageSendFailures, newMessageSendFailuresLockObject, onMessageSendFailure, OnMessageSendFailure);
-                }
-                else if(index == (int)EProcessingThreadArrayIndex.ON_NEW_CONNECTED_PEER)
-                {
-                    HandleMessageProcessing(newConnectedPeers, newConnectedPeersLockObject, onNewConnectedPeer, OnNewConnectedPeer);
+                    if (status != EUDPNetworkingStatus.RUNNING)
+                    {
+                        return;
+                    }
+
+                    if (index == (int)EProcessingThreadArrayIndex.ON_MESSAGE_RECEIVE)
+                    {
+                        HandleMessageProcessing(newMessagesReceived, newMessagesReceivedLockObject, onMessageReceive, OnMessageReceived);
+                    }
+                    else if (index == (int)EProcessingThreadArrayIndex.ON_MESSAGE_RECEIVE_FAILURE)
+                    {
+                        HandleMessageProcessing(newMessageReceiveFailures, newMessageReceiveFailuresLockObject, onMessageReceiveFailure, OnMessageReceivedFailure);
+                    }
+                    else if (index == (int)EProcessingThreadArrayIndex.ON_MESSAGE_SEND_FAILURE)
+                    {
+                        HandleMessageProcessing(newMessageSendFailures, newMessageSendFailuresLockObject, onMessageSendFailure, OnMessageSendFailure);
+                    }
+                    else if (index == (int)EProcessingThreadArrayIndex.ON_NEW_CONNECTED_PEER)
+                    {
+                        HandleMessageProcessing(newConnectedPeers, newConnectedPeersLockObject, onNewConnectedPeer, OnNewConnectedPeer);
+                    }
                 }
             }
         }
@@ -294,15 +348,22 @@ namespace TeamDecided.RaftNetworking
                     manualResetEvent.Reset();
                 }
             }
-            eventHandler(this, messageToProcess);
+            eventHandler?.Invoke(this, messageToProcess);
         }
 
         public void SendMessage(BaseMessage message)
         {
-            lock (newMessagesToSendLockObject)
+            lock(statusLockObject)
             {
-                newMessagesToSend.Enqueue(message);
-                onMessageToSend.Set();
+                if(status == EUDPNetworkingStatus.STOPPED)
+                {
+                    throw new InvalidOperationException("Library is currently not in a state it may start in"); ;
+                }
+                lock (newMessagesToSendLockObject)
+                {
+                    newMessagesToSend.Enqueue(message);
+                    onMessageToSend.Set();
+                }
             }
         }
 
@@ -316,41 +377,76 @@ namespace TeamDecided.RaftNetworking
 
         public string[] GetPeers()
         {
-            lock (peersLockObject)
+            lock (statusLockObject)
             {
-                return peers.Keys.ToArray();
+                if (status == EUDPNetworkingStatus.STOPPED)
+                {
+                    throw new InvalidOperationException("Library is currently not in a state it may start in"); ;
+                }
+                lock (peersLockObject)
+                {
+                    return peers.Keys.ToArray();
+                }
             }
         }
 
         public int CountPeers()
         {
-            lock (peersLockObject)
+            lock (statusLockObject)
             {
-                return peers.Count;
+                if (status == EUDPNetworkingStatus.STOPPED)
+                {
+                    throw new InvalidOperationException("Library is currently not in a state it may start in"); ;
+                }
+                lock (peersLockObject)
+                {
+                    return peers.Count;
+                }
             }
         }
 
         public bool HasPeer(string peerName)
         {
-            lock (peersLockObject)
+            lock (statusLockObject)
             {
-                return peers.ContainsKey(peerName);
+                if (status == EUDPNetworkingStatus.STOPPED)
+                {
+                    throw new InvalidOperationException("Library is currently not in a state it may start in"); ;
+                }
+                lock (peersLockObject)
+                {
+                    return peers.ContainsKey(peerName);
+                }
             }
         }
 
         public void ManualAddPeer(string peerName, IPEndPoint endPoint)
         {
-            lock (peersLockObject)
+            lock (statusLockObject)
             {
-                peers.Add(peerName, endPoint);
+                if (status == EUDPNetworkingStatus.STOPPED)
+                {
+                    throw new InvalidOperationException("Library is currently not in a state it may start in"); ;
+                }
+                lock (peersLockObject)
+                {
+                    peers.Add(peerName, endPoint);
+                }
             }
         }
 
         public void RemovePeer(string peerName)
         {
-            lock (peersLockObject)
+            lock (statusLockObject)
             {
-                peers.Remove(peerName);
+                if (status == EUDPNetworkingStatus.STOPPED)
+                {
+                    throw new InvalidOperationException("Library is currently not in a state it may start in"); ;
+                }
+                lock (peersLockObject)
+                {
+                    peers.Remove(peerName);
+                }
             }
         }
 
@@ -407,20 +503,16 @@ namespace TeamDecided.RaftNetworking
             {
                 if (disposing)
                 {
-                    onNetworkingStop.Set();
-                    udpClient.Dispose();
-                    udpClient = null;
+                    lock (statusLockObject)
+                    {
+                        status = EUDPNetworkingStatus.STOPPED;
 
+                        onNetworkingStop.Set();
+                        udpClient.Dispose();
+                    }
                     listeningThread.Wait();
                     sendingThread.Wait();
                     processingThread.Wait();
-
-                    newMessagesReceived.Clear();
-                    newMessageReceiveFailures.Clear();
-                    newMessageSendFailures.Clear();
-                    newConnectedPeers.Clear();
-                    newMessagesToSend.Clear();
-                    peers.Clear();
                 }
                 disposedValue = true;
             }
@@ -433,22 +525,15 @@ namespace TeamDecided.RaftNetworking
 
         public bool IsDisposed()
         {
-            if(!onNetworkingStop.WaitOne())
+            lock (statusLockObject)
             {
-                return false;
+                if(status != EUDPNetworkingStatus.STOPPED)
+                {
+                    return false;
+                }
             }
 
-            if(udpClient != null)
-            {
-                return false;
-            }
-
-            if(newMessagesReceived.Count != 0
-                || newMessageReceiveFailures.Count != 0
-                || newMessageSendFailures.Count != 0
-                || newConnectedPeers.Count != 0
-                || newMessagesToSend.Count != 0
-                || peers.Count != 0)
+            if (!onNetworkingStop.WaitOne())
             {
                 return false;
             }
