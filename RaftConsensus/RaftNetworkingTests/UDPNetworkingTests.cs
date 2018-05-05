@@ -34,6 +34,7 @@ namespace TeamDecided.RaftNetworking.Tests
             from = Guid.NewGuid().ToString();
             stringData = Guid.NewGuid().ToString();
             byteData = new byte[256];
+            rand.NextBytes(byteData);
 
             stringMessage = new StringMessage(to, from, stringData);
             byteMessage = new ByteMessage(to, from, byteData);
@@ -42,18 +43,21 @@ namespace TeamDecided.RaftNetworking.Tests
         [Test]
         public void IT_StartSendReceiveDispose_()
         {
-            IUDPNetworking sut = new UDPNetworking();
-            sut.ManualAddPeer(to, new IPEndPoint(IPAddress.Parse(IP_TO_BIND), SUT_PORT));
-            sut.OnMessageReceived += Sut_OnMessageReceived;
+            for (int i = 0; i < 500; i++)
+            {
+                IUDPNetworking sut;
+                using (sut = new UDPNetworking())
+                {
+                    sut.ManualAddPeer(to, new IPEndPoint(IPAddress.Parse(IP_TO_BIND), SUT_PORT));
+                    sut.OnMessageReceived += Sut_OnMessageReceived;
 
-            Assert.DoesNotThrow(() => { sut.Start(SUT_PORT); });
-            Assert.DoesNotThrow(() => { sut.SendMessage(stringMessage); });
+                    Assert.DoesNotThrow(() => { sut.Start(SUT_PORT); });
+                    Assert.DoesNotThrow(() => { sut.SendMessage(stringMessage); });
 
-            //onRecieveMessage.WaitOne();
-            //You've got a message, deal with it and check it's the same
-
-            sut.Dispose();
-            Assert.True(sut.IsDisposed());
+                    //onRecieveMessage.WaitOne();
+                    //You've got a message, deal with it and check it's the same
+                }
+            }
         }
 
         private void Sut_OnMessageReceived(object sender, BaseMessage e)
