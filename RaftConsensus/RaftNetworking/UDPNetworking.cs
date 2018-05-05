@@ -7,14 +7,14 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using TeamDecided.RaftCommon.Disposable;
 using TeamDecided.RaftNetworking.Enums;
 using TeamDecided.RaftNetworking.Exceptions;
-using TeamDecided.RaftNetworking.Interfaces;
 using TeamDecided.RaftNetworking.Messages;
 
 namespace TeamDecided.RaftNetworking
 {
-    public class UDPNetworking : IUDPNetworking
+    public class UDPNetworking : IRaftDisposable
     {
         public event EventHandler<BaseMessage> OnMessageReceived;
         private Queue<BaseMessage> newMessagesReceived;
@@ -414,6 +414,13 @@ namespace TeamDecided.RaftNetworking
                     listeningThread.Wait();
                     sendingThread.Wait();
                     processingThread.Wait();
+
+                    newMessagesReceived.Clear();
+                    newMessageReceiveFailures.Clear();
+                    newMessageSendFailures.Clear();
+                    newConnectedPeers.Clear();
+                    newMessagesToSend.Clear();
+                    peers.Clear();
                 }
                 disposedValue = true;
             }
@@ -422,6 +429,31 @@ namespace TeamDecided.RaftNetworking
         public void Dispose()
         {
             Dispose(true);
+        }
+
+        public bool IsDisposed()
+        {
+            if(!onNetworkingStop.WaitOne())
+            {
+                return false;
+            }
+
+            if(udpClient != null)
+            {
+                return false;
+            }
+
+            if(newMessagesReceived.Count != 0
+                || newMessageReceiveFailures.Count != 0
+                || newMessageSendFailures.Count != 0
+                || newConnectedPeers.Count != 0
+                || newMessagesToSend.Count != 0
+                || peers.Count != 0)
+            {
+                return false;
+            }
+
+            return true;
         }
         #endregion
     }

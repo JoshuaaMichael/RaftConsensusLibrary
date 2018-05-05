@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard1.6</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>TeamDecided.RaftConsensus</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RaftLogging\RaftLogging.csproj" />
     <ProjectReference Include="..\RaftNetworking\RaftNetworking.csproj" />
   </ItemGroup>
 

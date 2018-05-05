@@ -1,4 +1,4 @@
-﻿namespace TeamDecided.RaftLogging
+﻿namespace TeamDecided.RaftCommon.Logging
 {
     public interface IRaftLogging
     {
