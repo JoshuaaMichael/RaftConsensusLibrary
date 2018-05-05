@@ -522,24 +522,6 @@ namespace TeamDecided.RaftNetworking
         {
             Dispose(true);
         }
-
-        public bool IsDisposed()
-        {
-            lock (statusLockObject)
-            {
-                if(status != EUDPNetworkingStatus.STOPPED)
-                {
-                    return false;
-                }
-            }
-
-            if (!onNetworkingStop.WaitOne())
-            {
-                return false;
-            }
-
-            return true;
-        }
         #endregion
     }
 }
