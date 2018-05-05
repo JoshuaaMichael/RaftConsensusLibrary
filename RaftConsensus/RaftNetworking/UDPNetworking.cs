@@ -52,6 +52,7 @@ namespace TeamDecided.RaftNetworking
         private Task listeningThread;
         private Task sendingThread;
         private Task processingThread;
+        private CountdownEvent onThreadsStarted;
 
         private bool disposedValue = false; // To detect redundant calls
 
@@ -87,6 +88,8 @@ namespace TeamDecided.RaftNetworking
             listeningThread = new Task(ListeningThread, TaskCreationOptions.LongRunning);
             sendingThread = new Task(SendingThread, TaskCreationOptions.LongRunning);
             processingThread = new Task(ProcessingThread, TaskCreationOptions.LongRunning);
+
+            onThreadsStarted = new CountdownEvent(3);
         }
 
         public void Start(int port)
@@ -124,6 +127,11 @@ namespace TeamDecided.RaftNetworking
             listeningThread.Start();
             sendingThread.Start();
             processingThread.Start();
+
+            Thread.Sleep(1000);
+
+            onThreadsStarted.Wait();
+            Console.WriteLine("Hello?");
         }
 
         private void ListeningThread()
@@ -133,6 +141,7 @@ namespace TeamDecided.RaftNetworking
                 status = EUDPNetworkingStatus.RUNNING;
             }
 
+            onThreadsStarted.Signal();
             while (true)
             {
                 BaseMessage message = null;
@@ -235,6 +244,7 @@ namespace TeamDecided.RaftNetworking
             resetEvents[0] = onNetworkingStop;
             resetEvents[1] = onMessageToSend;
 
+            onThreadsStarted.Signal();
             int index;
             while ((index = WaitHandle.WaitAny(resetEvents)) != -1)
             {
@@ -302,6 +312,7 @@ namespace TeamDecided.RaftNetworking
             resetEvents[(int)EProcessingThreadArrayIndex.ON_MESSAGE_SEND_FAILURE] = onMessageSendFailure;
             resetEvents[(int)EProcessingThreadArrayIndex.ON_NEW_CONNECTED_PEER] = onNewConnectedPeer;
 
+            onThreadsStarted.Signal();
             int index;
             while ((index = WaitHandle.WaitAny(resetEvents)) != -1)
             {
