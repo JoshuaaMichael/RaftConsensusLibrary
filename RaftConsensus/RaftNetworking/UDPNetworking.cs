@@ -7,14 +7,14 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using TeamDecided.RaftCommon.Disposable;
 using TeamDecided.RaftNetworking.Enums;
 using TeamDecided.RaftNetworking.Exceptions;
+using TeamDecided.RaftNetworking.Interfaces;
 using TeamDecided.RaftNetworking.Messages;
 
 namespace TeamDecided.RaftNetworking
 {
-    public class UDPNetworking : IRaftDisposable
+    public class UDPNetworking : IUDPNetworking
     {
         public event EventHandler<BaseMessage> OnMessageReceived;
         private Queue<BaseMessage> newMessagesReceived;
