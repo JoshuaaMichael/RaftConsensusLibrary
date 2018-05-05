@@ -321,3 +321,4 @@ ASALocalRun/
 
 #Visual Paradigm backups
 *.vpp.bak_*
+*.vpp.lck
