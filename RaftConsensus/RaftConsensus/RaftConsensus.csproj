@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\RaftCommon\RaftCommon.csproj" />
     <ProjectReference Include="..\RaftNetworking\RaftNetworking.csproj" />
   </ItemGroup>
 

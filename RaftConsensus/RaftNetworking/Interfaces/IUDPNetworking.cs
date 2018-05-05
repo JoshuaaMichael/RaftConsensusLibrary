@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Net;
+using TeamDecided.RaftCommon.Disposable;
 using TeamDecided.RaftNetworking.Enums;
 using TeamDecided.RaftNetworking.Exceptions;
 using TeamDecided.RaftNetworking.Messages;
 
 namespace TeamDecided.RaftNetworking.Interfaces
 {
-    public interface IUDPNetworking : IDisposable
+    public interface IUDPNetworking : IRaftDisposable
     {
         void Start(int port);
         void Start(IPEndPoint endPoint);
