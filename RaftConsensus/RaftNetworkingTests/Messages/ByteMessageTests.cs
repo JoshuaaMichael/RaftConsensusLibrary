@@ -18,8 +18,8 @@ namespace TeamDecided.RaftNetworking.Tests.Messages
         [SetUp]
         public void BeforeTest()
         {
-            to = new Guid().ToString();
-            from = new Guid().ToString();
+            to = Guid.NewGuid().ToString();
+            from = Guid.NewGuid().ToString();
             data = new byte[256];
             rand.NextBytes(data);
 
