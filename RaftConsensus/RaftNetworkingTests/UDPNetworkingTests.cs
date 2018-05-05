@@ -43,23 +43,21 @@ namespace TeamDecided.RaftNetworking.Tests
         [Test]
         public void IT_StartSendReceiveDispose_()
         {
-            for (int i = 0; i < 5000; i++)
+            IUDPNetworking sut;
+            using (sut = new UDPNetworking())
             {
-                IUDPNetworking sut;
-                using (sut = new UDPNetworking())
-                {
-                    sut.ManualAddPeer(to, new IPEndPoint(IPAddress.Parse(IP_TO_BIND), SUT_PORT));
-                    sut.OnMessageReceived += Sut_OnMessageReceived;
+                sut.ManualAddPeer(to, new IPEndPoint(IPAddress.Parse(IP_TO_BIND), SUT_PORT));
+                sut.OnMessageReceived += Sut_OnMessageReceived;
 
-                    Assert.DoesNotThrow(() => { sut.Start(SUT_PORT); });
-                    Assert.DoesNotThrow(() => { sut.SendMessage(stringMessage); });
+                Assert.DoesNotThrow(() => { sut.Start(SUT_PORT); });
+                Assert.DoesNotThrow(() => { sut.SendMessage(stringMessage); });
 
-                    onRecieveMessage.WaitOne();
+                onRecieveMessage.WaitOne();
 
-                    string fromm = recievedMessage.From;
-                    //You've got a message, deal with it and check it's the same
-                }
+                string fromm = recievedMessage.From;
+                //You've got a message, deal with it and check it's the same
             }
+
         }
 
         private void Sut_OnMessageReceived(object sender, BaseMessage e)
