@@ -17,7 +17,7 @@ namespace TeamDecided.RaftNetworking
     public class UDPNetworking : IUDPNetworking
     {
         public event EventHandler<BaseMessage> OnMessageReceived;
-        private Queue<BaseMessage> newMessagesReceived;
+        private Queue<Tuple<byte[], IPEndPoint>> newMessagesReceived;
         private object newMessagesReceivedLockObject;
         private ManualResetEvent onMessageReceive;
 
@@ -58,7 +58,7 @@ namespace TeamDecided.RaftNetworking
 
         public UDPNetworking()
         {
-            newMessagesReceived = new Queue<BaseMessage>();
+            newMessagesReceived = new Queue<Tuple<byte[], IPEndPoint>>();
             newMessagesReceivedLockObject = new object();
             onMessageReceive = new ManualResetEvent(false);
 
@@ -144,7 +144,6 @@ namespace TeamDecided.RaftNetworking
             onThreadsStarted.Signal();
             while (true)
             {
-                BaseMessage message = null;
                 byte[] messageBytes;
                 IPEndPoint endPoint = null;
 
@@ -176,36 +175,9 @@ namespace TeamDecided.RaftNetworking
                     messageBytes = result.Result.Buffer;
                     endPoint = result.Result.RemoteEndPoint;
 
-                    try
-                    {
-                        message = DeserialiseMessage(messageBytes);
-                    }
-                    catch (Exception e)
-                    {
-                        lock (newMessageReceiveFailuresLockObject)
-                        {
-                            newMessageReceiveFailures.Enqueue(new UDPNetworkingReceiveFailureException("Failed deserialising byte array", e));
-                            onMessageReceiveFailure.Set();
-                        }
-                        continue;
-                    }
-
-                    lock (peersLockObject)
-                    {
-                        if (!peers.ContainsKey(message.From))
-                        {
-                            peers.Add(message.From, endPoint);
-
-                            lock (newConnectedPeersLockObject)
-                            {
-                                newConnectedPeers.Enqueue(message.From);
-                                onNewConnectedPeer.Set();
-                            }
-                        }
-                    }
                     lock (newMessagesReceivedLockObject)
                     {
-                        newMessagesReceived.Enqueue(message);
+                        newMessagesReceived.Enqueue(new Tuple<byte[], IPEndPoint>(messageBytes, endPoint));
                         onMessageReceive.Set();
                     }
                 }
@@ -256,9 +228,17 @@ namespace TeamDecided.RaftNetworking
                     }
 
                     IPEndPoint recipient;
-                    lock (peersLockObject)
+                    if(message.To == null)
                     {
-                        recipient = peers[message.To];
+                        if (message.IPEndPoint == null)
+                        {
+                            GenerateSendFailureException("Failed to convert recipient to IPAddress", message);
+                        }
+                        recipient = message.IPEndPoint;
+                    }
+                    else
+                    {
+                        recipient = GetPeerIPEndPoint(message.To);
                     }
 
                     Task<int> sendMessageTask = udpClient.SendAsync(messageToSend, messageToSend.Length, recipient);
@@ -266,11 +246,7 @@ namespace TeamDecided.RaftNetworking
 
                     if (sendMessageTask.Result <= 0)
                     {
-                        lock (newMessageSendFailuresLockObject)
-                        {
-                            newMessageSendFailures.Enqueue(new UDPNetworkingSendFailureException("Failed to send message", message));
-                            onMessageSendFailure.Set();
-                        }
+                        GenerateSendFailureException("Failed to send message", message);
                         continue;
                     } //else { sent succesfully }
                 }
@@ -304,7 +280,52 @@ namespace TeamDecided.RaftNetworking
 
                     if (index == (int)EProcessingThreadArrayIndex.ON_MESSAGE_RECEIVE)
                     {
-                        HandleMessageProcessing(newMessagesReceived, newMessagesReceivedLockObject, onMessageReceive, OnMessageReceived);
+                        Tuple<byte[], IPEndPoint> messageToProcess;
+                        lock (newMessagesReceivedLockObject)
+                        {
+                            messageToProcess = newMessagesReceived.Dequeue();
+
+                            if (newMessagesReceived.Count == 0)
+                            {
+                                onMessageReceive.Reset();
+                            }
+                        }
+
+                        byte[] newMessageByteArray = messageToProcess.Item1;
+                        IPEndPoint newMessageIPEndPoint = messageToProcess.Item2;
+
+                        BaseMessage message;
+                        try
+                        {
+                            message = DeserialiseMessage(newMessageByteArray);
+                            message = DerivedMessageProcessing(message); //This is for derived classes to do encryption, if it returns null it was consumed
+                        }
+                        catch (Exception e)
+                        {
+                            GenerateReceiveFailureException("Failed deserialising byte array", e);
+                            continue;
+                        }
+
+                        if (message == null)
+                        {
+                            continue;
+                        }
+
+                        lock (peersLockObject)
+                        {
+                            if (!peers.ContainsKey(message.From))
+                            {
+                                peers.Add(message.From, newMessageIPEndPoint);
+
+                                lock (newConnectedPeersLockObject)
+                                {
+                                    newConnectedPeers.Enqueue(message.From);
+                                    onNewConnectedPeer.Set();
+                                }
+                            }
+                        }
+
+                        OnMessageReceived?.Invoke(this, message);
                     }
                     else if (index == (int)EProcessingThreadArrayIndex.ON_MESSAGE_RECEIVE_FAILURE)
                     {
@@ -322,6 +343,32 @@ namespace TeamDecided.RaftNetworking
             }
         }
 
+        protected IPEndPoint GetPeerIPEndPoint(string name)
+        {
+            lock (peersLockObject)
+            {
+                return peers[name];
+            }
+        }
+
+        protected void GenerateReceiveFailureException(string message, Exception innerException)
+        {
+            lock (newMessageReceiveFailuresLockObject)
+            {
+                newMessageReceiveFailures.Enqueue(new UDPNetworkingReceiveFailureException(message, innerException));
+                onMessageReceiveFailure.Set();
+            }
+        }
+
+        protected void GenerateSendFailureException(string stringMessage, BaseMessage message)
+        {
+            lock (newMessageSendFailuresLockObject)
+            {
+                newMessageSendFailures.Enqueue(new UDPNetworkingSendFailureException(stringMessage, message));
+                onMessageSendFailure.Set();
+            }
+        }
+
         private void HandleMessageProcessing<T>(Queue<T> queue, object lockObject, ManualResetEvent manualResetEvent, EventHandler<T> eventHandler)
         {
             T messageToProcess;
@@ -333,10 +380,25 @@ namespace TeamDecided.RaftNetworking
                     manualResetEvent.Reset();
                 }
             }
+
+            if(DerivedHandleMessageProcessing(messageToProcess)) //If message was consumed by derived class
+            {
+                return;
+            }
             eventHandler?.Invoke(this, messageToProcess);
         }
 
-        public void SendMessage(BaseMessage message)
+        protected virtual bool DerivedHandleMessageProcessing(object messageToProcess)
+        {
+            return false;
+        }
+
+        protected virtual BaseMessage DerivedMessageProcessing(BaseMessage message)
+        {
+            return message;
+        }
+
+        public virtual void SendMessage(BaseMessage message)
         {
             lock (statusLockObject)
             {

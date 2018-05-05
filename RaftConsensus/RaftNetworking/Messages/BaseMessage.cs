@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Text;
 using Newtonsoft.Json;
 
@@ -9,6 +10,12 @@ namespace TeamDecided.RaftNetworking.Messages
         public string To { get; private set; }
         public string From { get; private set; }
         public Type MessageType { get; private set; }
+        internal IPEndPoint IPEndPoint;
+
+        internal BaseMessage()
+        {
+            MessageType = GetType();
+        }
 
         public BaseMessage(string to, string from)
         {
