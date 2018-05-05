@@ -65,6 +65,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\RaftCommon\RaftCommon.csproj">
+      <Project>{74aac36f-886f-45b0-a549-e6504e0e7d14}</Project>
+      <Name>RaftCommon</Name>
+    </ProjectReference>
     <ProjectReference Include="..\RaftNetworking\RaftNetworking.csproj">
       <Project>{f63ed9d1-7c37-43c6-bd45-80a876698e1a}</Project>
       <Name>RaftNetworking</Name>
