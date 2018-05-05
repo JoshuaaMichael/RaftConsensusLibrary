@@ -340,7 +340,7 @@ namespace TeamDecided.RaftNetworking
         {
             lock (statusLockObject)
             {
-                if (status == EUDPNetworkingStatus.STOPPED)
+                if (status != EUDPNetworkingStatus.RUNNING)
                 {
                     throw new InvalidOperationException("Library is currently not in a state it may start in"); ;
                 }
@@ -488,16 +488,24 @@ namespace TeamDecided.RaftNetworking
             {
                 if (disposing)
                 {
+                    EUDPNetworkingStatus previousStatus;
                     lock (statusLockObject)
                     {
+                        previousStatus = status;
                         status = EUDPNetworkingStatus.STOPPED;
 
                         onNetworkingStop.Set();
-                        udpClient.Dispose();
+                        if (udpClient != null)
+                        {
+                            udpClient.Dispose();
+                        }
                     }
-                    listeningThread.Wait();
-                    sendingThread.Wait();
-                    processingThread.Wait();
+                    if(previousStatus == EUDPNetworkingStatus.RUNNING)
+                    {
+                        listeningThread.Wait();
+                        sendingThread.Wait();
+                        processingThread.Wait();
+                    }
                 }
                 disposedValue = true;
             }
