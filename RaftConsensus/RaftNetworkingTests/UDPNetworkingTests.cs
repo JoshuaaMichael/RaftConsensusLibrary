@@ -43,7 +43,7 @@ namespace TeamDecided.RaftNetworking.Tests
         [Test]
         public void IT_StartSendReceiveDispose_()
         {
-            for (int i = 0; i < 1; i++)
+            for (int i = 0; i < 5000; i++)
             {
                 IUDPNetworking sut;
                 using (sut = new UDPNetworking())
@@ -54,7 +54,7 @@ namespace TeamDecided.RaftNetworking.Tests
                     Assert.DoesNotThrow(() => { sut.Start(SUT_PORT); });
                     Assert.DoesNotThrow(() => { sut.SendMessage(stringMessage); });
 
-                    onRecieveMessage.WaitOne(1000);
+                    onRecieveMessage.WaitOne();
 
                     string fromm = recievedMessage.From;
                     //You've got a message, deal with it and check it's the same

@@ -101,25 +101,23 @@ namespace TeamDecided.RaftNetworking
                     throw new InvalidOperationException("Library is currently not in a state it may start in");
                 }
                 status = EUDPNetworkingStatus.STARTING;
-
-                udpClient = new UdpClient(port);
-                StartThreads();
             }
+            udpClient = new UdpClient(port);
+            StartThreads();
         }
 
         public void Start(IPEndPoint endPoint)
         {
-            lock(statusLockObject)
+            lock (statusLockObject)
             {
                 if (status != EUDPNetworkingStatus.INITIALIZED)
                 {
                     throw new InvalidOperationException("Library is currently not in a state it may start in");
                 }
                 status = EUDPNetworkingStatus.STARTING;
-
-                udpClient = new UdpClient(endPoint);
-                StartThreads();
             }
+            udpClient = new UdpClient(endPoint);
+            StartThreads();
         }
 
         private void StartThreads()
@@ -128,18 +126,20 @@ namespace TeamDecided.RaftNetworking
             sendingThread.Start();
             processingThread.Start();
 
-            Thread.Sleep(1000);
-
             onThreadsStarted.Wait();
-            Console.WriteLine("Hello?");
         }
 
         private void ListeningThread()
         {
-            lock(statusLockObject)
+            lock (statusLockObject)
             {
                 status = EUDPNetworkingStatus.RUNNING;
             }
+
+            Task taskCheckingDispose = Task.Run(() =>
+            {
+                onNetworkingStop.WaitOne();
+            });
 
             onThreadsStarted.Signal();
             while (true)
@@ -148,59 +148,33 @@ namespace TeamDecided.RaftNetworking
                 byte[] messageBytes;
                 IPEndPoint endPoint = null;
 
-                try
+                Task<UdpReceiveResult> result;
+                lock (statusLockObject)
                 {
-                    Task<UdpReceiveResult> result;
-                    lock (statusLockObject)
+                    if (status != EUDPNetworkingStatus.RUNNING)
                     {
-                        if(status != EUDPNetworkingStatus.RUNNING)
-                        {
-                            return;
-                        }
-                        result = udpClient.ReceiveAsync();
-                    }
-                    result.Wait();
-                    messageBytes = result.Result.Buffer;
-                    endPoint = result.Result.RemoteEndPoint;
-                }
-                catch(NullReferenceException e)
-                {
-                    lock (statusLockObject)
-                    {
-                        if (status != EUDPNetworkingStatus.STOPPED)
-                        {
-                            throw e;
-                        }
-                    }
-                    return;
-                }
-                catch (AggregateException e)
-                {
-                    if(e.InnerException.GetType() == typeof(ObjectDisposedException))
-                    {
-                        lock (statusLockObject)
-                        {
-                            if (status != EUDPNetworkingStatus.STOPPED)
-                            {
-                                throw e;
-                            }
-                        }
                         return;
                     }
-                    throw e;
+                    result = udpClient.ReceiveAsync();
                 }
-                catch (ObjectDisposedException e)
+
+                int index;
+                index = Task.WaitAny(taskCheckingDispose, result);
+
+                if (index == 0)
                 {
-                    //There isn't a way to abort the thread, so it's done by disposing of the socket
                     return;
                 }
 
                 lock (statusLockObject)
                 {
-                    if(status != EUDPNetworkingStatus.RUNNING)
+                    if (status != EUDPNetworkingStatus.RUNNING)
                     {
                         return;
                     }
+
+                    messageBytes = result.Result.Buffer;
+                    endPoint = result.Result.RemoteEndPoint;
 
                     try
                     {
@@ -255,7 +229,7 @@ namespace TeamDecided.RaftNetworking
 
                 lock (statusLockObject)
                 {
-                    if(status != EUDPNetworkingStatus.RUNNING)
+                    if (status != EUDPNetworkingStatus.RUNNING)
                     {
                         return; //The object is being disposed
                     }
@@ -364,9 +338,9 @@ namespace TeamDecided.RaftNetworking
 
         public void SendMessage(BaseMessage message)
         {
-            lock(statusLockObject)
+            lock (statusLockObject)
             {
-                if(status == EUDPNetworkingStatus.STOPPED)
+                if (status == EUDPNetworkingStatus.STOPPED)
                 {
                     throw new InvalidOperationException("Library is currently not in a state it may start in"); ;
                 }
@@ -380,7 +354,7 @@ namespace TeamDecided.RaftNetworking
 
         public EUDPNetworkingStatus GetStatus()
         {
-            lock(statusLockObject)
+            lock (statusLockObject)
             {
                 return status;
             }
