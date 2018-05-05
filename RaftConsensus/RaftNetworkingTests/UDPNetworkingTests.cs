@@ -5,8 +5,6 @@ using System.Threading;
 using NUnit.Framework;
 using TeamDecided.RaftNetworking.Interfaces;
 using TeamDecided.RaftNetworking.Messages;
-using Moq;
-using TeamDecided.RaftNetworking.Exceptions;
 
 namespace TeamDecided.RaftNetworking.Tests
 {
@@ -59,7 +57,6 @@ namespace TeamDecided.RaftNetworking.Tests
 
                 onRecieveMessage.WaitOne();
 
-                //You've got a message, deal with it and check it's the same
                 Assert.NotNull(onRecieveMessage);
                 Assert.AreEqual(typeof(StringMessage), recievedMessage.GetType());
 
@@ -100,13 +97,13 @@ namespace TeamDecided.RaftNetworking.Tests
                     Assert.DoesNotThrow(() => { sut.SendMessage(sendingMessage); });
                 }
 
-                if(!cde.Wait(NUMBER_OF_MESSAGES * 2))
+                if (!cde.Wait(NUMBER_OF_MESSAGES * 2))
                 {
                     Assert.Fail();
                 }
 
                 Assert.IsTrue(messageBuffer.Count == NUMBER_OF_MESSAGES);
-                
+
                 for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
                 {
                     string data = string.Format("{0}_{1}", stringMessage, i);
@@ -115,7 +112,7 @@ namespace TeamDecided.RaftNetworking.Tests
 
                     Assert.IsTrue(typeof(StringMessage) == messageBuffer[data].GetType());
 
-                    StringMessage message = (StringMessage) messageBuffer[data];
+                    StringMessage message = (StringMessage)messageBuffer[data];
                     Assert.AreEqual(message.To, to);
                     Assert.AreEqual(message.From, from);
                 }
@@ -200,7 +197,7 @@ namespace TeamDecided.RaftNetworking.Tests
 
             //    Assert.IsTrue(wasCalled);
 
-                Assert.Pass();
+            Assert.Pass();
             //}
         }
 
@@ -257,6 +254,61 @@ namespace TeamDecided.RaftNetworking.Tests
                 sut.Start(SUT_PORT);
             }
             Assert.Throws<InvalidOperationException>(() => { sut.SendMessage(stringMessage); });
+        }
+
+        [Test]
+        public void UT_StartPort_FromInitializedToRunning()
+        {
+            using (sut = new UDPNetworking())
+            {
+                Assert.True(sut.GetStatus() == Enums.EUDPNetworkingStatus.INITIALIZED);
+                sut.Start(SUT_PORT);
+                Assert.True(sut.GetStatus() == Enums.EUDPNetworkingStatus.RUNNING);
+            }
+        }
+
+        [Test]
+        public void UT_StartIPEndPoint_FromInitializedToRunning()
+        {
+            using (sut = new UDPNetworking())
+            {
+                Assert.True(sut.GetStatus() == Enums.EUDPNetworkingStatus.INITIALIZED);
+                sut.Start(new IPEndPoint(IPAddress.Parse(IP_TO_BIND), SUT_PORT));
+                Assert.True(sut.GetStatus() == Enums.EUDPNetworkingStatus.RUNNING);
+            }
+        }
+
+        [Test]
+        public void UT_RemovePeer_PeerNoLongerExists()
+        {
+            using (sut = new UDPNetworking())
+            {
+                sut.ManualAddPeer(to, new IPEndPoint(IPAddress.Parse(IP_TO_BIND), SUT_PORT));
+                Assert.IsTrue(sut.HasPeer(to));
+                sut.RemovePeer(to);
+                Assert.IsFalse(sut.HasPeer(to));
+            }
+        }
+
+        [Test]
+        public void UT_CountPeer_PeerCountIsCorrect()
+        {
+            using (sut = new UDPNetworking())
+            {
+                string peer1 = Guid.NewGuid().ToString();
+                string peer2 = Guid.NewGuid().ToString();
+                string peer3 = Guid.NewGuid().ToString();
+
+                sut.ManualAddPeer(peer1, new IPEndPoint(IPAddress.Parse(IP_TO_BIND), SUT_PORT));
+                sut.ManualAddPeer(peer2, new IPEndPoint(IPAddress.Parse(IP_TO_BIND), SUT_PORT));
+                sut.ManualAddPeer(peer3, new IPEndPoint(IPAddress.Parse(IP_TO_BIND), SUT_PORT));
+
+                Assert.IsTrue(sut.HasPeer(peer1));
+                Assert.IsTrue(sut.HasPeer(peer2));
+                Assert.IsTrue(sut.HasPeer(peer3));
+
+                Assert.AreEqual(sut.CountPeers(),3);
+            }
         }
 
         private void Sut_OnMessageReceived(object sender, BaseMessage e)
