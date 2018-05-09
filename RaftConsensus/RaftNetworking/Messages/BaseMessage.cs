@@ -7,10 +7,10 @@ namespace TeamDecided.RaftNetworking.Messages
 {
     public abstract class BaseMessage
     {
-        public string To { get; private set; }
-        public string From { get; private set; }
+        public string To { get; set; }
+        public string From { get; set; }
         public Type MessageType { get; private set; }
-        internal IPEndPoint IPEndPoint;
+        internal IPEndPoint IPEndPoint { get; set; }
 
         internal BaseMessage()
         {

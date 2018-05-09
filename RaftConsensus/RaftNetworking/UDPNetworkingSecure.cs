@@ -6,68 +6,83 @@ using System.Net;
 using System.Security;
 using System.Security.Cryptography;
 using System.Text;
-using Org.BouncyCastle.Crypto.Agreement.Srp;
-using Org.BouncyCastle.Crypto.Digests;
-using Org.BouncyCastle.Crypto.Generators;
-using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Math;
-using Org.BouncyCastle.Security;
+using TeamDecided.RaftNetworking.Enums;
 using TeamDecided.RaftNetworking.Exceptions;
+using TeamDecided.RaftNetworking.Helpers;
 using TeamDecided.RaftNetworking.Messages;
+
+/* TODO:
+ *      Make thread safe
+ *      Make a thread which times out messages, raises errors where required
+ *      Base, set from. Remove BaseMessage requirement. Internal set. (well, detect in base if To is set, if it is, set from
+ *      Ensure the case of repeatedly trying to connect
+ *      How does receive handle the IPAddress map
+ *      Need to detect if we're talking to ourselves
+ *      Encryption/decryption exceptions
+ *      Figure out when IP Addresses are added/session/username
+ *      Check session forgery, include in HMAC?
+ *      Handle the errors in the Handle methods
+ *      Add get IPEndPoint/port number to the IUDPNEtworking interface
+ *      Issues with BaseMessage from/to in json serialiser
+ * 
+ */
 
 namespace TeamDecided.RaftNetworking
 {
-    public class UDPNetworkingSecure : UDPNetworking
+    public sealed class UDPNetworkingSecure : UDPNetworking
     {
-        //private readonly SecureRandom random = new SecureRandom();
+        private static readonly RNGCryptoServiceProvider rand = new RNGCryptoServiceProvider();
 
-        //Dictionary<string, BaseMessage> sessionToStoredMessage;
-        Dictionary<string, string> clientToSession;
-        Dictionary<string, byte[]> sessionToSymetricKey;
-        Dictionary<string, byte[]> sessionToHMACSecret;
+        private Dictionary<string, List<BaseMessage>> clientToStoredMessage;
+        private Dictionary<string, string> clientToSession;
+        private Dictionary<string, string> sessionToClient;
+        private Dictionary<string, byte[]> sessionToSymetricKey;
+        private Dictionary<string, byte[]> sessionToHMACSecret;
 
-        //Need to override SendMessage
-        //Need to hook into RecieveMessage
-        //Need to hook into the user, don't show it until they're authenticated
+        private Dictionary<string, byte[]> sessionToChallenge;
 
-        //private byte[] passwordHashed;
-        //private byte[] passwordSalt;
-
-        private const int SYMETRIC_KEY_LENGTH_BITS = 128;
-        private const int SYMETRIC_KEY_LENGTH_BYTES = SYMETRIC_KEY_LENGTH_BITS / 8;
-        private const int HMAC_SECRET_LENGTH_BITS = 128;
-        private const int HMAC_SECRET_LENGTH_BYTES = HMAC_SECRET_LENGTH_BITS / 8;
-        private const int PASSWORD_HASH_LENGTH_BITS = 256;
-        private const int PASSWORD_HASH_LENGTH_BYTES = PASSWORD_HASH_LENGTH_BITS / 8;
-        //private const int DIFFIE_HELLMAN_CERTAINTY = 25; //Recommended value from BouncyCastle spec
+        private byte[] passwordBytes;
+        private RSAParameters rsaPair;
+        private string rsaPublicKey;
 
         public UDPNetworkingSecure(string password)
         {
+            passwordBytes = Encoding.UTF8.GetBytes(password);
+
+            clientToStoredMessage = new Dictionary<string, List<BaseMessage>>();
             clientToSession = new Dictionary<string, string>();
+            sessionToClient = new Dictionary<string, string>();
             sessionToSymetricKey = new Dictionary<string, byte[]>();
             sessionToHMACSecret = new Dictionary<string, byte[]>();
+            sessionToChallenge = new Dictionary<string, byte[]>();
+
+            RSACryptoServiceProvider rsaPairGen = new RSACryptoServiceProvider(2048);
+            rsaPair = rsaPairGen.ExportParameters(true);
+            rsaPublicKey = rsaPairGen.ToXmlString(false);
         }
 
         public override void SendMessage(BaseMessage message)
         {
             if(!clientToSession.ContainsKey(message.To))
             {
-                //We need to setup a secure session
-                ClientAuthStep1(message);
+                SendSecureClientHello(message); //We need to setup a secure session
                 return;
             }
 
             string session = clientToSession[message.To];
+
+            if(!sessionToSymetricKey.ContainsKey(session) || !sessionToHMACSecret.ContainsKey(session))
+            {
+                GenerateSendFailureException("Failed to locate required encryption information to send message", message);
+                return;
+            }
+
             byte[] symetricKey = sessionToSymetricKey[session];
             byte[] hmacSecret = sessionToHMACSecret[session];
 
             byte[] serialisedMessage = SerialiseMessage(message);
-            byte[] encryptedMessage = Encrypt(serialisedMessage, symetricKey);
-
-            string str1 = Encoding.UTF8.GetString(serialisedMessage);
-            string str2 = Encoding.UTF8.GetString(encryptedMessage);
-
-            byte[] hmacOfEncryptedMessage = GenerateHMAC(encryptedMessage, hmacSecret);
+            byte[] encryptedMessage = CryptoHelper.Encrypt(serialisedMessage, symetricKey);
+            byte[] hmacOfEncryptedMessage = CryptoHelper.GenerateHMAC(encryptedMessage, hmacSecret);
 
             IPEndPoint ipEndPoint = GetPeerIPEndPoint(message.To);
 
@@ -76,47 +91,227 @@ namespace TeamDecided.RaftNetworking
             base.SendMessage(secureMessage);
         }
 
-        protected override BaseMessage DerivedMessageProcessing(BaseMessage message)
+        protected override BaseMessage DerivedMessageProcessing(BaseMessage message, IPEndPoint ipEndPoint)
         {
-            if (message.GetType() == typeof(SecureMessage))
+            if (message.GetType().IsSubclassOf(typeof(SecureMessage)) || message.GetType() == typeof(SecureMessage))
             {
-                SecureMessage secureMessage = (SecureMessage)message;
-
-                string session = secureMessage.Session;
-                byte[] hmacSecret = sessionToHMACSecret[session];
-                byte[] hmacOfMessage = GenerateHMAC(secureMessage.EncryptedData, hmacSecret);
-
-                if (!hmacOfMessage.SequenceEqual(secureMessage.HMAC))
+                //AES Encrypted message, unknown internal message
+                BaseMessage decryptedMessage = null;
+                if (message.GetType() == typeof(SecureMessage)) //AES Encrypted
                 {
-                    GenerateReceiveFailureException("HMAC of message was not equal to expected", null);
-                    return null;
+                    decryptedMessage = HandleSecureMessage((SecureMessage)message);
+                }
+                //Non-AES Encrypted hankshaking messages
+                else if (message.GetType() == typeof(SecureClientHello)) //Unencrypted
+                {
+                    HandleSecureClientHello((SecureClientHello)message, ipEndPoint);
+                }
+                else if (message.GetType() == typeof(SecureServerHelloResponse)) //RSA Encrypted
+                {
+                    HandleSecureServerHelloResponse((SecureServerHelloResponse)message);
                 }
 
-                byte[] symetricKey = sessionToSymetricKey[session];
-                byte[] plainText = Decrypt(secureMessage.EncryptedData, symetricKey);
+                if(decryptedMessage == null)
+                {
+                    return null; //The error will have been written to the log inside the decryption method
+                }
 
-                string str1 = Encoding.UTF8.GetString(secureMessage.EncryptedData);
-                string str2 = Encoding.UTF8.GetString(plainText);
-
-                BaseMessage returnMessage = DeserialiseMessage(plainText);
-
-                return returnMessage;
-            }
-            else if (message.GetType() == typeof(SecureHello))
-            {
-                ServerAuthStep1((SecureHello)message);
-                return null; //Consume the message, it's internal to UDPNetworkingSecure
-            }
-            else if (message.GetType() == typeof(SecureHelloResponse))
-            {
-                ClientAuthStep2((SecureHelloResponse)message);
-                return null; //Consume the message, it's internal to UDPNetworkingSecure
+                //Decrypted the internal message, process the internal message
+                if (decryptedMessage.GetType() == typeof(SecureClientChallengeResponse))
+                {
+                    HandleSecureClientChallengeResponse((SecureClientChallengeResponse)decryptedMessage);
+                }
+                else if (decryptedMessage.GetType() == typeof(SecureServerChallengeResponse))
+                {
+                    HandleSecureServerChallengeResponse((SecureServerChallengeResponse)decryptedMessage);
+                }
+                else if (decryptedMessage.GetType() == typeof(SecureClientChallengeResult))
+                {
+                    HandleSecureClientChallengeResult((SecureClientChallengeResult)decryptedMessage);
+                }
+                else
+                {
+                    return decryptedMessage; //It was something to user sent, not an internal message.
+                }
             }
             else
             {
                 GenerateReceiveFailureException("Unencrypted message recieved, this is unsupported", null);
+            }
+            return null;
+        }
+
+        private BaseMessage HandleSecureMessage(SecureMessage message)
+        {
+            //This is AES encrypted, the session value will let us lookup values we need to decrypt
+            if(!sessionToSymetricKey.ContainsKey(message.Session) || !sessionToHMACSecret.ContainsKey(message.Session))
+            {
+                GenerateReceiveFailureException("We did not have sufficient encryption parameters to decrypt the given message. Session: " + message.Session, null);
                 return null;
             }
+
+            byte[] hmacSecret = sessionToHMACSecret[message.Session];
+            byte[] hmacOfMessage = CryptoHelper.GenerateHMAC(message.EncryptedData, hmacSecret);
+
+            if (!hmacOfMessage.SequenceEqual(message.HMAC))
+            {
+                GenerateReceiveFailureException("HMAC of message was not equal to expected", null);
+                return null;
+            }
+
+            byte[] symetricKey = sessionToSymetricKey[message.Session];
+            byte[] plainText = CryptoHelper.Decrypt(message.EncryptedData, symetricKey);
+
+            return DeserialiseMessage(plainText);
+        }
+
+        private void SendSecureClientHello(BaseMessage message)
+        {
+            //We're already waiting to hear back from setting up an encrypted channel
+            //Thse will be flushed when we have the channel
+            if(clientToStoredMessage.ContainsKey(message.To))
+            {
+                clientToStoredMessage[message.To].Add(message);
+                return;
+            }
+            //We haven't got an encrypted channel yet, store the message for now and we'll send later
+            clientToStoredMessage.Add(message.To, new List<BaseMessage>());
+            clientToStoredMessage[message.To].Add(message);
+
+            SecureClientHello secureClientHello = new SecureClientHello()
+            {
+                PublicKey = Encoding.UTF8.GetBytes(rsaPublicKey),
+                IPEndPoint = GetPeerIPEndPoint(message.To)
+            };
+
+            base.SendMessage(secureClientHello);
+        }
+
+        private void HandleSecureClientHello(SecureClientHello message, IPEndPoint ipEndPoint)
+        {
+            string session = Guid.NewGuid().ToString();
+
+            byte[] challenge = new byte[16];
+            rand.GetBytes(challenge);
+            sessionToChallenge.Add(session, challenge);
+
+            byte[] symetricKey = new byte[16];
+            rand.GetBytes(symetricKey);
+            sessionToSymetricKey.Add(session, symetricKey);
+
+            byte[] hmacSecret = new byte[16];
+            rand.GetBytes(hmacSecret);
+            sessionToHMACSecret.Add(session, hmacSecret);
+
+            //Meed to encrypt each part seperately as RSA keys cannot encrypt much data
+            SecureServerHelloResponse secureServerHelloResponse = new SecureServerHelloResponse()
+            {
+                IPEndPoint = ipEndPoint,
+                ServerName = CryptoHelper.RSAEncrypt(Encoding.UTF8.GetBytes(GetClientName()), message.PublicKey),
+                SessionInitial = CryptoHelper.RSAEncrypt(Encoding.UTF8.GetBytes(session), message.PublicKey),
+                Challenge = CryptoHelper.RSAEncrypt(challenge, message.PublicKey),
+                SymetricKey = CryptoHelper.RSAEncrypt(symetricKey, message.PublicKey),
+                HMACSecret = CryptoHelper.RSAEncrypt(hmacSecret, message.PublicKey)
+            };
+
+            base.SendMessage(secureServerHelloResponse);
+        }
+
+        private void HandleSecureServerHelloResponse(SecureServerHelloResponse message)
+        {
+            string serverName = Encoding.UTF8.GetString(CryptoHelper.RSADecrypt(message.ServerName, rsaPair));
+
+            if(!clientToStoredMessage.ContainsKey(serverName))
+            {
+                return; //We did not request this connection/response is stale, drop it
+            }
+
+            string session = Encoding.UTF8.GetString(CryptoHelper.RSADecrypt(message.SessionInitial, rsaPair));
+            byte[] challenge = CryptoHelper.RSADecrypt(message.Challenge, rsaPair);
+            byte[] symetricKey = CryptoHelper.RSADecrypt(message.SymetricKey, rsaPair);
+            byte[] hmacSecret = CryptoHelper.RSADecrypt(message.HMACSecret, rsaPair);
+
+            //Store required info. Challenge not required
+            clientToSession.Add(serverName, session);
+            sessionToClient.Add(session, serverName);
+            sessionToSymetricKey.Add(session, symetricKey);
+            sessionToHMACSecret.Add(session, hmacSecret);
+
+            byte[] returnChallenge = new byte[16];
+            rand.GetBytes(returnChallenge);
+            sessionToChallenge.Add(session, returnChallenge);
+
+            SecureClientChallengeResponse secureClientChallengeResponse = new SecureClientChallengeResponse()
+            {
+                Session = session,
+                To = serverName,
+                From = GetClientName(),
+                ChallengeResponse = CryptoHelper.CompleteChallenge(passwordBytes, challenge),
+                Challenge = returnChallenge,
+                ClientName = GetClientName()
+            };
+            SecureMessage messageToSend = EncryptExchangeMessageSymetric(secureClientChallengeResponse, session, symetricKey, hmacSecret);
+            base.SendMessage(messageToSend);
+        }
+
+        private void HandleSecureClientChallengeResponse(SecureClientChallengeResponse message)
+        {
+            if(!sessionToChallenge.ContainsKey(message.Session))
+            {
+                return; //We no longer have their challenge
+            }
+
+            sessionToClient.Add(message.Session, message.ClientName);
+
+            bool challengeResult = CryptoHelper.VerifyChallenge(passwordBytes, sessionToChallenge[message.Session], message.ChallengeResponse);
+            ESecureChallengeResult serverChallengeResultEnum = (challengeResult) ? ESecureChallengeResult.ACCEPT : ESecureChallengeResult.REJECT;
+
+            SecureServerChallengeResponse secureServerChallengeResponse = new SecureServerChallengeResponse()
+            {
+                Session = message.Session,
+                To = message.ClientName,
+                From = GetClientName(),
+                ChallengeResult = serverChallengeResultEnum,
+            };
+
+            if (serverChallengeResultEnum == ESecureChallengeResult.ACCEPT)
+            {
+                secureServerChallengeResponse.ChallengeResponse = CryptoHelper.CompleteChallenge(passwordBytes, message.Challenge);
+            }
+
+            SecureMessage messageToSend = EncryptExchangeMessageSymetric(secureServerChallengeResponse, message.Session);
+            base.SendMessage(messageToSend);
+        }
+
+        private void HandleSecureServerChallengeResponse(SecureServerChallengeResponse message)
+        {
+            if(message.ChallengeResult == ESecureChallengeResult.REJECT)
+            {
+                return; //We failed their test
+            }
+            if (!sessionToChallenge.ContainsKey(message.Session))
+            {
+                return; //We no longer have their challenge
+            }
+
+            bool challengeResult = CryptoHelper.VerifyChallenge(passwordBytes, sessionToChallenge[message.Session], message.ChallengeResponse);
+            ESecureChallengeResult clientChallengeResultEnum = (challengeResult) ? ESecureChallengeResult.ACCEPT : ESecureChallengeResult.REJECT;
+
+            SecureClientChallengeResult secureClientChallengeSucess = new SecureClientChallengeResult()
+            {
+                Session = message.Session,
+                To = message.From,
+                ChallengeResult = clientChallengeResultEnum
+            };
+
+            SecureMessage messageToSend = EncryptExchangeMessageSymetric(secureClientChallengeSucess, message.Session);
+            base.SendMessage(messageToSend);
+        }
+
+        private void HandleSecureClientChallengeResult(SecureClientChallengeResult message)
+        {
+            //TODO: Something with this
+            throw new NotImplementedException();
         }
 
         protected override bool DerivedHandleMessageProcessing(object messageToProcess)
@@ -124,122 +319,26 @@ namespace TeamDecided.RaftNetworking
             return false; //Consume the message, it can't be used
         }
 
-        public void ManualAdd(string client, string session, byte[] symetricKey, byte[] hmacSecret)
+        private SecureMessage EncryptExchangeMessageSymetric(SecureMessage message, string session)
         {
-            clientToSession.Add(client, session);
-            sessionToSymetricKey.Add(session, symetricKey);
-            sessionToHMACSecret.Add(session, hmacSecret);
-        }
-
-        private void ClientAuthStep1(BaseMessage message)
-        {
-
-        }
-
-        private void ServerAuthStep1(SecureHello message)
-        {
-
-        }
-
-        private void ClientAuthStep2(SecureHelloResponse message)
-        {
-
-        }
-
-        private static byte[] Encrypt(byte[] plainText, byte[] symetricKey)
-        {
-            using (Aes aes = Aes.Create())
+            if(!sessionToSymetricKey.ContainsKey(session) || !sessionToHMACSecret.ContainsKey(session))
             {
-                if (plainText == null || plainText.Length == 0)
-                    throw new ArgumentNullException("plainText is invalid");
-                if (symetricKey == null || symetricKey.Length != SYMETRIC_KEY_LENGTH_BYTES)
-                    throw new ArgumentNullException("symetricKey is invalid");
-
-                aes.Key = symetricKey;
-
-                using (MemoryStream cipherTextStream = new MemoryStream())
-                {
-                    cipherTextStream.Write(aes.IV, 0, aes.IV.Length);
-                    using (ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV))
-                    {
-                        using (CryptoStream csEncrypt = new CryptoStream(cipherTextStream, encryptor, CryptoStreamMode.Write))
-                        {
-                            using (BinaryWriter bwEncrypt = new BinaryWriter(csEncrypt))
-                            {
-                                bwEncrypt.Write(plainText);
-                            }
-                            byte[] cipherText = cipherTextStream.ToArray();
-                            return cipherText;
-                        }
-                    }
-                }
+                return null;
             }
+
+            byte[] symetricKey = sessionToSymetricKey[session];
+            byte[] hmacSecret = sessionToHMACSecret[session];
+
+            return EncryptExchangeMessageSymetric(message, session, symetricKey, hmacSecret);
         }
 
-        private static byte[] Decrypt(byte[] cipherText, byte[] symetricKey)
+        private SecureMessage EncryptExchangeMessageSymetric(SecureMessage message, string session, byte[] symetricKey, byte[] hmacSecret)
         {
-            if (cipherText == null || cipherText.Length == 0)
-                throw new ArgumentNullException("cipherText is invalid");
-            if (symetricKey == null || symetricKey.Length != SYMETRIC_KEY_LENGTH_BYTES)
-                throw new ArgumentNullException("symetricKey is invalid");
+            IPEndPoint ipEndPoint = GetPeerIPEndPoint(message.To);
+            byte[] encryptedData = CryptoHelper.Encrypt(SerialiseMessage(message), symetricKey);
+            byte[] hmac = CryptoHelper.GenerateHMAC(encryptedData, hmacSecret);
 
-            using (Aes aes = Aes.Create())
-            {
-                aes.Key = symetricKey;
-                using (MemoryStream msDecrypt = new MemoryStream(cipherText))
-                {
-                    byte[] aesIV = new byte[aes.IV.Length];
-                    msDecrypt.Read(aesIV, 0, aes.IV.Length);
-                    aes.IV = aesIV;
-                    using (ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV))
-                    {
-                        using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
-                        {
-                            using (BinaryReader brDecrypt = new BinaryReader(csDecrypt))
-                            {
-                                using (MemoryStream plainTextStream = new MemoryStream())
-                                {
-                                    byte[] buffer = new byte[256];
-                                    int count;
-                                    while ((count = brDecrypt.Read(buffer, 0, buffer.Length)) != 0)
-                                        plainTextStream.Write(buffer, 0, count);
-                                    return plainTextStream.ToArray();
-                                }
-                            }
-                        }
-                    }
-                }
-
-            }
+            return new SecureMessage(ipEndPoint, session, encryptedData, hmac);
         }
-
-        private static byte[] GenerateHMAC(byte[] data, byte[] hashKey)
-        {
-            using (HMACSHA256 hmac = new HMACSHA256(hashKey))
-            {
-                return hmac.ComputeHash(data);
-            }
-        }
-
-        private static bool VerifyHMAC(byte[] data, byte[] hashKey, byte[] hmac)
-        {
-            byte[] calcualtedHMAC = GenerateHMAC(data, hashKey);
-            return calcualtedHMAC.SequenceEqual(hmac);
-        }
-
-
-        //private void ServerAuthStep1()
-        //{
-        //    DHParametersGenerator paramGen = new DHParametersGenerator();
-        //    paramGen.Init(SYMETRIC_KEY_LENGTH_BITS + HMAC_SECRET_LENGTH_BITS, DIFFIE_HELLMAN_CERTAINTY, random);
-        //    DHParameters parameters = paramGen.GenerateParameters();
-
-        //    //testMutualVerification(new Srp6GroupParameters(parameters.P, parameters.G));
-
-        //    Srp6VerifierGenerator gen = new Srp6VerifierGenerator();
-        //    //gen.Init(group, new Sha256Digest());
-        //    //BigInteger v = gen.GenerateVerifier(s, I, P);
-        //}
-
     }
 }

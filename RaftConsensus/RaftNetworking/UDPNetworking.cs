@@ -45,6 +45,7 @@ namespace TeamDecided.RaftNetworking
         private ManualResetEvent onNetworkingStop;
 
         private UdpClient udpClient;
+        private string clientName;
 
         private EUDPNetworkingStatus status;
         private object statusLockObject;
@@ -81,6 +82,8 @@ namespace TeamDecided.RaftNetworking
             onMessageToSend = new ManualResetEvent(false);
 
             onNetworkingStop = new ManualResetEvent(false);
+
+            clientName = Guid.NewGuid().ToString();
 
             status = EUDPNetworkingStatus.INITIALIZED;
             statusLockObject = new object();
@@ -233,6 +236,7 @@ namespace TeamDecided.RaftNetworking
                         if (message.IPEndPoint == null)
                         {
                             GenerateSendFailureException("Failed to convert recipient to IPAddress", message);
+                            continue;
                         }
                         recipient = message.IPEndPoint;
                     }
@@ -298,7 +302,7 @@ namespace TeamDecided.RaftNetworking
                         try
                         {
                             message = DeserialiseMessage(newMessageByteArray);
-                            message = DerivedMessageProcessing(message); //This is for derived classes to do encryption, if it returns null it was consumed
+                            message = DerivedMessageProcessing(message, newMessageIPEndPoint); //This is for derived classes to do encryption, if it returns null it was consumed
                         }
                         catch (Exception e)
                         {
@@ -393,7 +397,7 @@ namespace TeamDecided.RaftNetworking
             return false;
         }
 
-        protected virtual BaseMessage DerivedMessageProcessing(BaseMessage message)
+        protected virtual BaseMessage DerivedMessageProcessing(BaseMessage message, IPEndPoint ipEndPoint)
         {
             return message;
         }
@@ -495,6 +499,11 @@ namespace TeamDecided.RaftNetworking
                     peers.Remove(peerName);
                 }
             }
+        }
+
+        public string GetClientName()
+        {
+            return clientName;
         }
 
         protected byte[] SerialiseMessage(BaseMessage message)
