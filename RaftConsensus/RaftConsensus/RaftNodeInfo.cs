@@ -21,6 +21,5 @@ namespace TeamDecided.RaftConsensus
         {
             LastReceived = DateTime.Now;
         }
-
     }
 }
