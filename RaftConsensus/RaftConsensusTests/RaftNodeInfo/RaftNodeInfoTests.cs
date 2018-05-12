@@ -3,7 +3,7 @@ using System.Threading;
 using NUnit.Framework;
 using TeamDecided.RaftConsensus;
 
-namespace TeamDecided.RaftConsensus.Tests.RaftNodeInfo
+namespace TeamDecided.RaftConsensus.Tests
 {
     [TestFixture]
     public class RaftNodeInfoTests
@@ -11,9 +11,9 @@ namespace TeamDecided.RaftConsensus.Tests.RaftNodeInfo
         NodeInfo node1;
 
         string nodeName;
-        int nextIndex;
-        int matchIndex;
-        bool voteGranted;
+        int nextIndex = 0;
+        int matchIndex = 0;
+        bool voteGranted = false;
         //DateTime lastReceived;
         //DateTime rpcDue;
 
