@@ -129,5 +129,21 @@ namespace TeamDecided.RaftNetworking.Helpers
             }
             return decryptedData;
         }
+
+        internal static bool IsPublicKey(byte[] publicKey)
+        {
+            try
+            {
+                using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider(2048))
+                {
+                    RSA.FromXmlString(Encoding.UTF8.GetString(publicKey));
+                }
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
+        }
     }
 }

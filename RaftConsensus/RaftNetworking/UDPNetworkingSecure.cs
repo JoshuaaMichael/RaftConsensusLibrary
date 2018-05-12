@@ -1,30 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
-using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using TeamDecided.RaftNetworking.Enums;
-using TeamDecided.RaftNetworking.Exceptions;
 using TeamDecided.RaftNetworking.Helpers;
 using TeamDecided.RaftNetworking.Messages;
 
 /* TODO:
- *      Make thread safe
- *      Make a thread which times out messages, raises errors where required
- *      Base, set from. Remove BaseMessage requirement. Internal set. (well, detect in base if To is set, if it is, set from
- *      Ensure the case of repeatedly trying to connect
- *      How does receive handle the IPAddress map
- *      Need to detect if we're talking to ourselves
- *      Encryption/decryption exceptions
- *      Figure out when IP Addresses are added/session/username
- *      Check session forgery, include in HMAC?
- *      Handle the errors in the Handle methods
- *      Add get IPEndPoint/port number to the IUDPNEtworking interface
- *      Issues with BaseMessage from/to in json serialiser
- * 
+ *      Make a thread which times out messages, raises errors where required, will need an extra thread
+ *      See about moving away from From/To given in message, and use session lookup
+ *      BaseMessage, auto set from
+ *      Solve the case of repeatedly trying to connect
  */
 
 namespace TeamDecided.RaftNetworking
@@ -33,52 +21,75 @@ namespace TeamDecided.RaftNetworking
     {
         private static readonly RNGCryptoServiceProvider rand = new RNGCryptoServiceProvider();
 
-        private Dictionary<string, List<BaseMessage>> clientToStoredMessage;
+        private Dictionary<string, Queue<BaseMessage>> clientToStoredMessage;
+        private object clientToStoredMessageLockObject;
         private Dictionary<string, string> clientToSession;
-        private Dictionary<string, string> sessionToClient;
+        private object clientToSessionLockObject;
         private Dictionary<string, byte[]> sessionToSymetricKey;
+        private object sessionToSymetricKeyLockObject;
         private Dictionary<string, byte[]> sessionToHMACSecret;
-
+        private object sessionToHMACSecretLockObject;
         private Dictionary<string, byte[]> sessionToChallenge;
+        private object sessionToChallengeLockObject;
 
         private byte[] passwordBytes;
         private RSAParameters rsaPair;
-        private string rsaPublicKey;
+        private byte[] rsaPublicKeyBytes;
 
         public UDPNetworkingSecure(string password)
         {
             passwordBytes = Encoding.UTF8.GetBytes(password);
 
-            clientToStoredMessage = new Dictionary<string, List<BaseMessage>>();
+            clientToStoredMessage = new Dictionary<string, Queue<BaseMessage>>();
+            clientToStoredMessageLockObject = new object();
             clientToSession = new Dictionary<string, string>();
-            sessionToClient = new Dictionary<string, string>();
+            clientToSessionLockObject = new object();
             sessionToSymetricKey = new Dictionary<string, byte[]>();
+            sessionToSymetricKeyLockObject = new object();
             sessionToHMACSecret = new Dictionary<string, byte[]>();
+            sessionToHMACSecretLockObject = new object();
             sessionToChallenge = new Dictionary<string, byte[]>();
+            sessionToChallengeLockObject = new object();
 
             RSACryptoServiceProvider rsaPairGen = new RSACryptoServiceProvider(2048);
             rsaPair = rsaPairGen.ExportParameters(true);
-            rsaPublicKey = rsaPairGen.ToXmlString(false);
+            rsaPublicKeyBytes = Encoding.UTF8.GetBytes(rsaPairGen.ToXmlString(false));
         }
 
         public override void SendMessage(BaseMessage message)
         {
-            if(!clientToSession.ContainsKey(message.To))
+            string session;
+            bool clientToSessionContainsKey;
+            lock (clientToSessionLockObject)
+            {
+                clientToSessionContainsKey = clientToSession.TryGetValue(message.To, out session);
+            }
+
+            if (!clientToSessionContainsKey)
             {
                 SendSecureClientHello(message); //We need to setup a secure session
                 return;
             }
 
-            string session = clientToSession[message.To];
+            byte[] symetricKey;
+            bool sessionToSymetricKeyContainKey;
+            lock (sessionToSymetricKeyLockObject)
+            {
+                sessionToSymetricKeyContainKey = sessionToSymetricKey.TryGetValue(session, out symetricKey);
+            }
 
-            if(!sessionToSymetricKey.ContainsKey(session) || !sessionToHMACSecret.ContainsKey(session))
+            byte[] hmacSecret;
+            bool sessionToHMACSecretContainKey;
+            lock (sessionToHMACSecretLockObject)
+            {
+                sessionToHMACSecretContainKey = sessionToHMACSecret.TryGetValue(session, out hmacSecret);
+            }
+
+            if (!sessionToSymetricKeyContainKey || !sessionToHMACSecretContainKey)
             {
                 GenerateSendFailureException("Failed to locate required encryption information to send message", message);
                 return;
             }
-
-            byte[] symetricKey = sessionToSymetricKey[session];
-            byte[] hmacSecret = sessionToHMACSecret[session];
 
             byte[] serialisedMessage = SerialiseMessage(message);
             byte[] encryptedMessage = CryptoHelper.Encrypt(serialisedMessage, symetricKey);
@@ -129,6 +140,10 @@ namespace TeamDecided.RaftNetworking
                 {
                     HandleSecureClientChallengeResult((SecureClientChallengeResult)decryptedMessage);
                 }
+                else if (decryptedMessage.GetType() == typeof(SecureServerGoAhead))
+                {
+                    HandleSecureServerGoAhead((SecureServerGoAhead)decryptedMessage);
+                }
                 else
                 {
                     return decryptedMessage; //It was something to user sent, not an internal message.
@@ -143,44 +158,76 @@ namespace TeamDecided.RaftNetworking
 
         private BaseMessage HandleSecureMessage(SecureMessage message)
         {
-            //This is AES encrypted, the session value will let us lookup values we need to decrypt
-            if(!sessionToSymetricKey.ContainsKey(message.Session) || !sessionToHMACSecret.ContainsKey(message.Session))
+            byte[] symetricKey;
+            bool sessionToSymetricKeyContainKey;
+            lock (sessionToSymetricKeyLockObject)
+            {
+                sessionToSymetricKeyContainKey = sessionToSymetricKey.TryGetValue(message.Session, out symetricKey);
+            }
+
+            byte[] hmacSecret;
+            bool sessionToHMACSecretContainKey;
+            lock (sessionToHMACSecretLockObject)
+            {
+                sessionToHMACSecretContainKey = sessionToHMACSecret.TryGetValue(message.Session, out hmacSecret);
+            }
+
+            if (!sessionToSymetricKeyContainKey || !sessionToHMACSecretContainKey)
             {
                 GenerateReceiveFailureException("We did not have sufficient encryption parameters to decrypt the given message. Session: " + message.Session, null);
                 return null;
             }
 
-            byte[] hmacSecret = sessionToHMACSecret[message.Session];
             byte[] hmacOfMessage = CryptoHelper.GenerateHMAC(message.EncryptedData, hmacSecret);
-
             if (!hmacOfMessage.SequenceEqual(message.HMAC))
             {
                 GenerateReceiveFailureException("HMAC of message was not equal to expected", null);
                 return null;
             }
 
-            byte[] symetricKey = sessionToSymetricKey[message.Session];
-            byte[] plainText = CryptoHelper.Decrypt(message.EncryptedData, symetricKey);
+            byte[] plainText;
+            try
+            {
+                plainText = CryptoHelper.Decrypt(message.EncryptedData, symetricKey);
+            }
+            catch
+            {
+                GenerateReceiveFailureException("Recieved a message that we failed to decrypt with symetric key, discarding", null);
+                return null;
+            }
 
-            return DeserialiseMessage(plainText);
+            BaseMessage plainTextBaseMessage;
+            try
+            {
+                plainTextBaseMessage = DeserialiseMessage(plainText);
+            }
+            catch
+            {
+                GenerateReceiveFailureException("Recieved a message that we failed to deserialise, discarding", null);
+                return null;
+            }
+
+            return plainTextBaseMessage;
         }
 
         private void SendSecureClientHello(BaseMessage message)
         {
-            //We're already waiting to hear back from setting up an encrypted channel
-            //Thse will be flushed when we have the channel
-            if(clientToStoredMessage.ContainsKey(message.To))
+            lock (clientToStoredMessageLockObject)
             {
-                clientToStoredMessage[message.To].Add(message);
-                return;
+                //We're already waiting to hear back from setting up an encrypted channel
+                //These will be flushed when we have the channel
+                if (clientToStoredMessage.ContainsKey(message.To))
+                {
+                    clientToStoredMessage[message.To].Enqueue(message);
+                    return;
+                }
+                //We haven't got an encrypted channel yet, store the message for now and we'll send later
+                clientToStoredMessage.Add(message.To, new Queue<BaseMessage>());
+                clientToStoredMessage[message.To].Enqueue(message);
             }
-            //We haven't got an encrypted channel yet, store the message for now and we'll send later
-            clientToStoredMessage.Add(message.To, new List<BaseMessage>());
-            clientToStoredMessage[message.To].Add(message);
-
             SecureClientHello secureClientHello = new SecureClientHello()
             {
-                PublicKey = Encoding.UTF8.GetBytes(rsaPublicKey),
+                PublicKey = rsaPublicKeyBytes,
                 IPEndPoint = GetPeerIPEndPoint(message.To)
             };
 
@@ -189,19 +236,40 @@ namespace TeamDecided.RaftNetworking
 
         private void HandleSecureClientHello(SecureClientHello message, IPEndPoint ipEndPoint)
         {
+            if(!CryptoHelper.IsPublicKey(message.PublicKey))
+            {
+                GenerateReceiveFailureException("Recieved a SecureClientHello with a non-valid public key, discarding", null);
+                return;
+            }
+
+            if(message.PublicKey.SequenceEqual(rsaPublicKeyBytes))
+            {
+                GenerateReceiveFailureException("We are talking to ourselves, this is not supported, discarding", null);
+                return;
+            }
+
             string session = Guid.NewGuid().ToString();
 
             byte[] challenge = new byte[16];
             rand.GetBytes(challenge);
-            sessionToChallenge.Add(session, challenge);
+            lock (sessionToChallengeLockObject)
+            {
+                sessionToChallenge.Add(session, challenge);
+            }
 
             byte[] symetricKey = new byte[16];
             rand.GetBytes(symetricKey);
-            sessionToSymetricKey.Add(session, symetricKey);
+            lock (sessionToSymetricKeyLockObject)
+            {
+                sessionToSymetricKey.Add(session, symetricKey);
+            }
 
             byte[] hmacSecret = new byte[16];
             rand.GetBytes(hmacSecret);
-            sessionToHMACSecret.Add(session, hmacSecret);
+            lock (sessionToHMACSecretLockObject)
+            {
+                sessionToHMACSecret.Add(session, hmacSecret);
+            }
 
             //Meed to encrypt each part seperately as RSA keys cannot encrypt much data
             SecureServerHelloResponse secureServerHelloResponse = new SecureServerHelloResponse()
@@ -219,27 +287,63 @@ namespace TeamDecided.RaftNetworking
 
         private void HandleSecureServerHelloResponse(SecureServerHelloResponse message)
         {
-            string serverName = Encoding.UTF8.GetString(CryptoHelper.RSADecrypt(message.ServerName, rsaPair));
-
-            if(!clientToStoredMessage.ContainsKey(serverName))
+            string serverName;
+            try
             {
-                return; //We did not request this connection/response is stale, drop it
+                serverName = Encoding.UTF8.GetString(CryptoHelper.RSADecrypt(message.ServerName, rsaPair));
+            }
+            catch
+            {
+                GenerateReceiveFailureException("Recieved a SecureServerHelloResponse which we failed to decrypt, discarding", null);
+                return; //This was an invalid message or malicious
             }
 
-            string session = Encoding.UTF8.GetString(CryptoHelper.RSADecrypt(message.SessionInitial, rsaPair));
-            byte[] challenge = CryptoHelper.RSADecrypt(message.Challenge, rsaPair);
-            byte[] symetricKey = CryptoHelper.RSADecrypt(message.SymetricKey, rsaPair);
-            byte[] hmacSecret = CryptoHelper.RSADecrypt(message.HMACSecret, rsaPair);
+            lock (clientToStoredMessageLockObject)
+            {
+                if (!clientToStoredMessage.ContainsKey(serverName))
+                {
+                    GenerateReceiveFailureException("Recieved a SecureServerHelloResponse which we didn't request, discarding", null);
+                    return; //We did not request this connection/response is stale, drop it
+                }
+            }
+
+            string session;
+            byte[] challenge;
+            byte[] symetricKey;
+            byte[] hmacSecret;
+            try
+            {
+                session = Encoding.UTF8.GetString(CryptoHelper.RSADecrypt(message.SessionInitial, rsaPair));
+                challenge = CryptoHelper.RSADecrypt(message.Challenge, rsaPair);
+                symetricKey = CryptoHelper.RSADecrypt(message.SymetricKey, rsaPair);
+                hmacSecret = CryptoHelper.RSADecrypt(message.HMACSecret, rsaPair);
+            }
+            catch
+            {
+                GenerateReceiveFailureException("Recieved a SecureServerHelloResponse which we failed to decrypt, discarding", null);
+                return;
+            }
 
             //Store required info. Challenge not required
-            clientToSession.Add(serverName, session);
-            sessionToClient.Add(session, serverName);
-            sessionToSymetricKey.Add(session, symetricKey);
-            sessionToHMACSecret.Add(session, hmacSecret);
+            lock (clientToSessionLockObject)
+            {
+                clientToSession.Add(serverName, session);
+            }
+            lock (sessionToSymetricKeyLockObject)
+            {
+                sessionToSymetricKey.Add(session, symetricKey);
+            }
+            lock (sessionToHMACSecretLockObject)
+            {
+                sessionToHMACSecret.Add(session, hmacSecret);
+            }
 
             byte[] returnChallenge = new byte[16];
             rand.GetBytes(returnChallenge);
-            sessionToChallenge.Add(session, returnChallenge);
+            lock (sessionToChallengeLockObject)
+            {
+                sessionToChallenge.Add(session, returnChallenge);
+            }
 
             SecureClientChallengeResponse secureClientChallengeResponse = new SecureClientChallengeResponse()
             {
@@ -256,14 +360,20 @@ namespace TeamDecided.RaftNetworking
 
         private void HandleSecureClientChallengeResponse(SecureClientChallengeResponse message)
         {
-            if(!sessionToChallenge.ContainsKey(message.Session))
+            byte[] challenge;
+            bool sessionToChallengeContainKey;
+            lock (sessionToChallengeLockObject)
             {
-                return; //We no longer have their challenge
+                sessionToChallengeContainKey = sessionToChallenge.TryGetValue(message.Session, out challenge);
             }
 
-            sessionToClient.Add(message.Session, message.ClientName);
+            if (!sessionToChallengeContainKey)
+            {
+                GenerateReceiveFailureException("Recieved a SecureClientChallengeResponse which we no longer have the challenge for, discarding", null);
+                return;
+            }
 
-            bool challengeResult = CryptoHelper.VerifyChallenge(passwordBytes, sessionToChallenge[message.Session], message.ChallengeResponse);
+            bool challengeResult = CryptoHelper.VerifyChallenge(passwordBytes, challenge, message.ChallengeResponse);
             ESecureChallengeResult serverChallengeResultEnum = (challengeResult) ? ESecureChallengeResult.ACCEPT : ESecureChallengeResult.REJECT;
 
             SecureServerChallengeResponse secureServerChallengeResponse = new SecureServerChallengeResponse()
@@ -289,18 +399,34 @@ namespace TeamDecided.RaftNetworking
             {
                 return; //We failed their test
             }
-            if (!sessionToChallenge.ContainsKey(message.Session))
+
+            if (message.ChallengeResult != ESecureChallengeResult.ACCEPT)
             {
-                return; //We no longer have their challenge
+                GenerateReceiveFailureException("Recieved a SecureServerChallengeResponse with an invalid ESecureChallengeResult, discarding", null);
+                return;
             }
 
-            bool challengeResult = CryptoHelper.VerifyChallenge(passwordBytes, sessionToChallenge[message.Session], message.ChallengeResponse);
+            byte[] challenge;
+            bool sessionToChallengeContainKey;
+            lock (sessionToChallengeLockObject)
+            {
+                sessionToChallengeContainKey = sessionToChallenge.TryGetValue(message.Session, out challenge);
+            }
+
+            if (!sessionToChallengeContainKey)
+            {
+                GenerateReceiveFailureException("Recieved a SecureServerChallengeResponse which we no longer have the challenge for, discarding", null);
+                return;
+            }
+
+            bool challengeResult = CryptoHelper.VerifyChallenge(passwordBytes, challenge, message.ChallengeResponse);
             ESecureChallengeResult clientChallengeResultEnum = (challengeResult) ? ESecureChallengeResult.ACCEPT : ESecureChallengeResult.REJECT;
 
             SecureClientChallengeResult secureClientChallengeSucess = new SecureClientChallengeResult()
             {
                 Session = message.Session,
                 To = message.From,
+                From = GetClientName(),
                 ChallengeResult = clientChallengeResultEnum
             };
 
@@ -310,8 +436,35 @@ namespace TeamDecided.RaftNetworking
 
         private void HandleSecureClientChallengeResult(SecureClientChallengeResult message)
         {
-            //TODO: Something with this
-            throw new NotImplementedException();
+            if (message.ChallengeResult == ESecureChallengeResult.REJECT)
+            {
+                return; //We failed their test
+            }
+
+            SecureServerGoAhead secureServerGoAhead = new SecureServerGoAhead()
+            {
+                Session = message.Session,
+                To = message.From,
+                From = GetClientName()
+            };
+
+            SecureMessage messageToSend = EncryptExchangeMessageSymetric(secureServerGoAhead, message.Session);
+            base.SendMessage(messageToSend);
+        }
+
+        private void HandleSecureServerGoAhead(SecureServerGoAhead message)
+        {
+            Queue<BaseMessage> storedMessages;
+            lock (clientToStoredMessageLockObject)
+            {
+                storedMessages = clientToStoredMessage[message.From];
+                clientToStoredMessage.Remove(message.From);
+            }
+            for (int i = 0; i < storedMessages.Count; ) //Removing messages moves through the list
+            {
+                BaseMessage dequeuedMessage = storedMessages.Dequeue();
+                SendMessage(dequeuedMessage);
+            }
         }
 
         protected override bool DerivedHandleMessageProcessing(object messageToProcess)
@@ -321,13 +474,24 @@ namespace TeamDecided.RaftNetworking
 
         private SecureMessage EncryptExchangeMessageSymetric(SecureMessage message, string session)
         {
-            if(!sessionToSymetricKey.ContainsKey(session) || !sessionToHMACSecret.ContainsKey(session))
+            byte[] symetricKey;
+            bool sessionToSymetricKeyContainKey;
+            lock (sessionToSymetricKeyLockObject)
+            {
+                sessionToSymetricKeyContainKey = sessionToSymetricKey.TryGetValue(session, out symetricKey);
+            }
+
+            byte[] hmacSecret;
+            bool sessionToHMACSecretContainKey;
+            lock (sessionToHMACSecretLockObject)
+            {
+                sessionToHMACSecretContainKey = sessionToHMACSecret.TryGetValue(session, out hmacSecret);
+            }
+
+            if (!sessionToSymetricKeyContainKey || !sessionToHMACSecretContainKey)
             {
                 return null;
             }
-
-            byte[] symetricKey = sessionToSymetricKey[session];
-            byte[] hmacSecret = sessionToHMACSecret[session];
 
             return EncryptExchangeMessageSymetric(message, session, symetricKey, hmacSecret);
         }
