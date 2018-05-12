@@ -10,4 +10,10 @@
     <ProjectReference Include="..\RaftNetworking\RaftNetworking.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Enums\" />
+    <Folder Include="Exceptions\" />
+    <Folder Include="Interfaces\" />
+  </ItemGroup>
+
 </Project>
