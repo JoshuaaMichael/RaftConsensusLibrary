@@ -119,7 +119,7 @@ namespace TeamDecided.RaftNetworking
                 }
                 else if (message.GetType() == typeof(SecureServerHelloResponse)) //RSA Encrypted
                 {
-                    HandleSecureServerHelloResponse((SecureServerHelloResponse)message);
+                    HandleSecureServerHelloResponse((SecureServerHelloResponse)message, ipEndPoint);
                 }
 
                 if(decryptedMessage == null)
@@ -130,15 +130,15 @@ namespace TeamDecided.RaftNetworking
                 //Decrypted the internal message, process the internal message
                 if (decryptedMessage.GetType() == typeof(SecureClientChallengeResponse))
                 {
-                    HandleSecureClientChallengeResponse((SecureClientChallengeResponse)decryptedMessage);
+                    HandleSecureClientChallengeResponse((SecureClientChallengeResponse)decryptedMessage, ipEndPoint);
                 }
                 else if (decryptedMessage.GetType() == typeof(SecureServerChallengeResponse))
                 {
-                    HandleSecureServerChallengeResponse((SecureServerChallengeResponse)decryptedMessage);
+                    HandleSecureServerChallengeResponse((SecureServerChallengeResponse)decryptedMessage, ipEndPoint);
                 }
                 else if (decryptedMessage.GetType() == typeof(SecureClientChallengeResult))
                 {
-                    HandleSecureClientChallengeResult((SecureClientChallengeResult)decryptedMessage);
+                    HandleSecureClientChallengeResult((SecureClientChallengeResult)decryptedMessage, ipEndPoint);
                 }
                 else if (decryptedMessage.GetType() == typeof(SecureServerGoAhead))
                 {
@@ -285,7 +285,7 @@ namespace TeamDecided.RaftNetworking
             base.SendMessage(secureServerHelloResponse);
         }
 
-        private void HandleSecureServerHelloResponse(SecureServerHelloResponse message)
+        private void HandleSecureServerHelloResponse(SecureServerHelloResponse message, IPEndPoint ipEndPoint)
         {
             string serverName;
             try
@@ -354,11 +354,11 @@ namespace TeamDecided.RaftNetworking
                 Challenge = returnChallenge,
                 ClientName = GetClientName()
             };
-            SecureMessage messageToSend = EncryptExchangeMessageSymetric(secureClientChallengeResponse, session, symetricKey, hmacSecret);
+            SecureMessage messageToSend = EncryptExchangeMessageSymetric(secureClientChallengeResponse, session, ipEndPoint, symetricKey, hmacSecret);
             base.SendMessage(messageToSend);
         }
 
-        private void HandleSecureClientChallengeResponse(SecureClientChallengeResponse message)
+        private void HandleSecureClientChallengeResponse(SecureClientChallengeResponse message, IPEndPoint ipEndPoint)
         {
             byte[] challenge;
             bool sessionToChallengeContainKey;
@@ -389,11 +389,11 @@ namespace TeamDecided.RaftNetworking
                 secureServerChallengeResponse.ChallengeResponse = CryptoHelper.CompleteChallenge(passwordBytes, message.Challenge);
             }
 
-            SecureMessage messageToSend = EncryptExchangeMessageSymetric(secureServerChallengeResponse, message.Session);
+            SecureMessage messageToSend = EncryptExchangeMessageSymetric(secureServerChallengeResponse, message.Session, ipEndPoint);
             base.SendMessage(messageToSend);
         }
 
-        private void HandleSecureServerChallengeResponse(SecureServerChallengeResponse message)
+        private void HandleSecureServerChallengeResponse(SecureServerChallengeResponse message, IPEndPoint ipEndPoint)
         {
             if(message.ChallengeResult == ESecureChallengeResult.REJECT)
             {
@@ -430,11 +430,11 @@ namespace TeamDecided.RaftNetworking
                 ChallengeResult = clientChallengeResultEnum
             };
 
-            SecureMessage messageToSend = EncryptExchangeMessageSymetric(secureClientChallengeSucess, message.Session);
+            SecureMessage messageToSend = EncryptExchangeMessageSymetric(secureClientChallengeSucess, message.Session, ipEndPoint);
             base.SendMessage(messageToSend);
         }
 
-        private void HandleSecureClientChallengeResult(SecureClientChallengeResult message)
+        private void HandleSecureClientChallengeResult(SecureClientChallengeResult message, IPEndPoint ipEndPoint)
         {
             if (message.ChallengeResult == ESecureChallengeResult.REJECT)
             {
@@ -448,7 +448,7 @@ namespace TeamDecided.RaftNetworking
                 From = GetClientName()
             };
 
-            SecureMessage messageToSend = EncryptExchangeMessageSymetric(secureServerGoAhead, message.Session);
+            SecureMessage messageToSend = EncryptExchangeMessageSymetric(secureServerGoAhead, message.Session, ipEndPoint);
             base.SendMessage(messageToSend);
         }
 
@@ -472,7 +472,7 @@ namespace TeamDecided.RaftNetworking
             return false; //Consume the message, it can't be used
         }
 
-        private SecureMessage EncryptExchangeMessageSymetric(SecureMessage message, string session)
+        private SecureMessage EncryptExchangeMessageSymetric(SecureMessage message, string session, IPEndPoint ipEndPoint)
         {
             byte[] symetricKey;
             bool sessionToSymetricKeyContainKey;
@@ -493,12 +493,11 @@ namespace TeamDecided.RaftNetworking
                 return null;
             }
 
-            return EncryptExchangeMessageSymetric(message, session, symetricKey, hmacSecret);
+            return EncryptExchangeMessageSymetric(message, session, ipEndPoint, symetricKey, hmacSecret);
         }
 
-        private SecureMessage EncryptExchangeMessageSymetric(SecureMessage message, string session, byte[] symetricKey, byte[] hmacSecret)
+        private SecureMessage EncryptExchangeMessageSymetric(SecureMessage message, string session, IPEndPoint ipEndPoint, byte[] symetricKey, byte[] hmacSecret)
         {
-            IPEndPoint ipEndPoint = GetPeerIPEndPoint(message.To);
             byte[] encryptedData = CryptoHelper.Encrypt(SerialiseMessage(message), symetricKey);
             byte[] hmac = CryptoHelper.GenerateHMAC(encryptedData, hmacSecret);
 

@@ -71,6 +71,7 @@
     <Compile Include="Messages\StringMessageTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UDPNetworkingSecureTests.cs" />
+    <Compile Include="BaseUDPNetworkingTests.cs" />
     <Compile Include="UDPNetworkingTests.cs" />
   </ItemGroup>
   <ItemGroup>

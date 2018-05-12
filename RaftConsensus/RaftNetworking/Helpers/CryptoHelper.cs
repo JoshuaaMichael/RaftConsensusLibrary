@@ -113,7 +113,8 @@ namespace TeamDecided.RaftNetworking.Helpers
             byte[] encryptedData;
             using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider(2048))
             {
-                RSA.FromXmlString(Encoding.UTF8.GetString(publicKey));
+                string publicKeyStr = Encoding.UTF8.GetString(publicKey);
+                RSA.FromXmlString(publicKeyStr);
                 encryptedData = RSA.Encrypt(plainText, true);
             }
             return encryptedData;
