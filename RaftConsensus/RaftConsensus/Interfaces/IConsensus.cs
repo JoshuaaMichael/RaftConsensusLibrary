@@ -1,20 +1,22 @@
 ﻿using System;
+using System.Net;
 using TeamDecided.RaftConsensus.Enums;
-using TeamDecided.RaftNetworking.Interfaces;
+using System.Threading.Tasks;
 
 namespace TeamDecided.RaftConsensus.Interfaces
 {
     public interface IConsensus<TKey, TValue> where TKey : ICloneable where TValue : ICloneable
     {
-        Action<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword, string clientName, IUDPNetworking networking);
-        void CreateCluster(string clusterName, string clusterPassword, string clientName, int maxNodes);
-        void StopCluster();
+        Task<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword);
+        void CreateCluster(string clusterName, string clusterPassword, int maxNodes);
+        void ManualAddPeer(IPEndPoint endPoint);
 
         string GetClusterName();
+        string GetNodeName();
 
         TValue ReadEntryValue(TKey key);
         TValue[] ReadEntryValueHistory(TKey key);
-        void AppendEntry(TKey key, TValue value, Action<ERaftAppendEntryState> callback);
+        Task<ERaftAppendEntryState> AppendEntry(TKey key, TValue value);
 
         event EventHandler StartUAS;
         event EventHandler<EStopUASReason> StopUAS;

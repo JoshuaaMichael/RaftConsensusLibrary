@@ -21,6 +21,7 @@ namespace TeamDecided.RaftNetworking.Interfaces
         string GetClientName();
         string[] GetPeers();
         void ManualAddPeer(string peerName, IPEndPoint endPoint);
+        IPEndPoint GetIPFromName(string peerName);
         bool HasPeer(string peerName);
         void RemovePeer(string peerName);
         int CountPeers();

@@ -94,13 +94,30 @@ namespace TeamDecided.RaftConsensus
 
         public void AppendEntry(RaftLogEntry<TKey, TValue> entry)
         {
-            CommitIndex += 1;
             if (!log.ContainsKey(entry.Key))
             {
                 log.Add(entry.Key, new List<RaftLogEntry<TKey, TValue>>());
             }
             log[entry.Key].Add(entry);
             commitIndexLookup.Add(new Tuple<TKey, int>(entry.Key, log[entry.Key].Count - 1));
+        }
+
+        //TODO: Append entry with index
+
+        public void CommitLastEntry()
+        {
+            CommitIndex += 1;
+        }
+
+        public int GetTermOfLastCommit()
+        {
+            Tuple<TKey, int> lookupData = commitIndexLookup[CommitIndex];
+            return log[lookupData.Item1][lookupData.Item2].Term;
+        }
+
+        public int GetLastIndex()
+        {
+            return commitIndexLookup.Count - 1;
         }
 
         public TValue GetValue(int commitIndex)

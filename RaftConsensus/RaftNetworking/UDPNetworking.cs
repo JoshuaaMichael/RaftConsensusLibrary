@@ -408,7 +408,7 @@ namespace TeamDecided.RaftNetworking
             {
                 if (status != EUDPNetworkingStatus.RUNNING)
                 {
-                    throw new InvalidOperationException("Library is currently not in a state it may start in"); ;
+                    throw new InvalidOperationException("Library is currently not in a state it may send in"); ;
                 }
                 lock (newMessagesToSendLockObject)
                 {
@@ -484,6 +484,17 @@ namespace TeamDecided.RaftNetworking
                     peers.Add(peerName, endPoint);
                 }
             }
+        }
+
+        public IPEndPoint GetIPFromName(string peerName)
+        {
+            IPEndPoint toReturn;
+            lock(peersLockObject)
+            {
+                peers.TryGetValue(peerName, out toReturn);
+            }
+
+            return toReturn;
         }
 
         public void RemovePeer(string peerName)
