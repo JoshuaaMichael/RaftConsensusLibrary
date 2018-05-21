@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace TeamDecided.RaftConsensus.Interfaces
 {
-    public interface IConsensus<TKey, TValue> where TKey : ICloneable where TValue : ICloneable
+    public interface IConsensus<TKey, TValue> : IDisposable where TKey : ICloneable where TValue : ICloneable
     {
         Task<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword);
         void CreateCluster(string clusterName, string clusterPassword, int maxNodes);

@@ -12,7 +12,7 @@ namespace TeamDecided.RaftNetworking.Messages
         public Type MessageType { get; private set; }
         internal IPEndPoint IPEndPoint { get; set; }
 
-        internal BaseMessage()
+        public BaseMessage()
         {
             MessageType = GetType();
         }

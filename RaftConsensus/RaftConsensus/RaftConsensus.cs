@@ -20,7 +20,7 @@ using TeamDecided.RaftNetworking.Messages;
 
 namespace TeamDecided.RaftConsensus
 {
-    public class RaftConsensus<TKey, TValue> : IDisposable, IConsensus<TKey, TValue> where TKey : ICloneable where TValue : ICloneable
+    public class RaftConsensus<TKey, TValue> : IConsensus<TKey, TValue> where TKey : ICloneable where TValue : ICloneable
     {
         private string clusterName;
         private int maxNodes;
@@ -55,9 +55,10 @@ namespace TeamDecided.RaftConsensus
 
         private Task backgroundWorkerThread;
         private ManualResetEvent onChangeState;
+        private CountdownEvent onThreadsStarted;
 
         private ManualResetEvent onWaitingToJoinCluster;
-        private const int waitingToJoinClusterTimeout = 2000; //ms
+        private const int waitingToJoinClusterTimeout = 200000; //ms
         private EJoinClusterResponse eJoinClusterResponse;
         private object eJoinClusterResponeLockObject;
         private int joiningClusterAttemptNumber;
@@ -88,8 +89,8 @@ namespace TeamDecided.RaftConsensus
             nodeLog = new RaftDistributedLog<string, RaftNodeNetworkInfo>();
 
             backgroundWorkerThread = new Task(BackgroundWorker, TaskCreationOptions.LongRunning);
+            onThreadsStarted = new CountdownEvent(1);
             onChangeState = new ManualResetEvent(false);
-            onWaitingToJoinCluster = new ManualResetEvent(false);
             eJoinClusterResponse = EJoinClusterResponse.NOT_YET_SET;
             eJoinClusterResponeLockObject = new object();
             joiningClusterAttemptNumber = 0;
@@ -121,12 +122,22 @@ namespace TeamDecided.RaftConsensus
                     throw new InvalidOperationException("There are no nodes to talk to to enter the cluster");
                 }
 
+                networking = new UDPNetworking();
+                networking.Start(listeningPort);
+                networking.OnMessageReceived += OnMessageReceive;
+                FlushManuallyAddedPeersToNetworking();
+
+                StartThreads();
+
+                onWaitingToJoinCluster = new ManualResetEvent(false);
+
                 currentState = ERaftState.ATTEMPTING_TO_JOIN_CLUSTER;
                 joiningClusterAttemptNumber += 1;
 
-                for (int i = 0; i < manuallyAddedPeers.Count; i++)
+                string[] peers = networking.GetPeers();
+                for (int i = 0; i < peers.Length; i++)
                 {
-                    RaftJoinCluster message = new RaftJoinCluster(manuallyAddedPeers[i].Item1, nodeName, clusterName, manuallyAddedPeers[i].Item1, joiningClusterAttemptNumber);
+                    RaftJoinCluster message = new RaftJoinCluster(peers[i], nodeName, clusterName, peers[i], joiningClusterAttemptNumber);
                     networking.SendMessage(message);
                 }
 
@@ -138,10 +149,11 @@ namespace TeamDecided.RaftConsensus
                         {
                             currentState = ERaftState.INITIALIZING;
                         }
+                        onWaitingToJoinCluster = null;
                         return EJoinClusterResponse.NO_RESPONSE;
                     }
-
-                    lock(eJoinClusterResponeLockObject)
+                    onWaitingToJoinCluster = null;
+                    lock (eJoinClusterResponeLockObject)
                     {
                         return eJoinClusterResponse;
                     }
@@ -168,7 +180,7 @@ namespace TeamDecided.RaftConsensus
                 {
                     throw new ArgumentException("clusterPassword must not be blank");
                 }
-                if (maxNodes >= 3 && maxNodes % 2 == 1)
+                if (!(maxNodes >= 3 && maxNodes % 2 == 1))
                 {
                     throw new ArgumentException("Number of maxNodes must be greater than or equal to 3, and then also be an odd number");
                 }
@@ -179,9 +191,20 @@ namespace TeamDecided.RaftConsensus
                 networking = new UDPNetworking();
                 networking.Start(listeningPort);
                 networking.OnMessageReceived += OnMessageReceive;
+                FlushManuallyAddedPeersToNetworking();
 
                 currentState = ERaftState.LEADER;
+
+                StartThreads();
             }
+        }
+
+        private void StartThreads()
+        {
+            //Only called from within methods which first lock currentStateLockObject, no need to check
+            backgroundWorkerThread.Start();
+
+            onThreadsStarted.Wait();
         }
 
         public string GetClusterName()
@@ -212,6 +235,11 @@ namespace TeamDecided.RaftConsensus
         }
         public void ManualAddPeer(IPEndPoint endPoint)
         {
+            ManaulAddPeerInternal(endPoint);
+        }
+
+        private string ManaulAddPeerInternal(IPEndPoint endPoint)
+        {
             // dictionary - gen'd guid, ipendpoint
             // we do manual add peer
             // then, later when we talk to them, we fire off the request to talk, we include our guid for THEM in the message
@@ -220,7 +248,15 @@ namespace TeamDecided.RaftConsensus
 
             string guid = Guid.NewGuid().ToString();
             manuallyAddedPeers.Add(new Tuple<string, IPEndPoint>(guid, endPoint));
-            networking.ManualAddPeer(guid, endPoint);
+            return guid;
+        }
+        private void FlushManuallyAddedPeersToNetworking()
+        {
+            foreach(Tuple<string, IPEndPoint> peer in manuallyAddedPeers)
+            {
+                networking.ManualAddPeer(peer.Item1, peer.Item2);
+            }
+            manuallyAddedPeers.Clear();
         }
         public Task<ERaftAppendEntryState> AppendEntry(TKey key, TValue value)
         {
@@ -292,6 +328,8 @@ namespace TeamDecided.RaftConsensus
 
         private void BackgroundWorker()
         {
+            onThreadsStarted.Signal();
+            //TODO: On spinup hit the onThreadsStarted
             //Follower/candidate: Wait for candiate time outs
             //Leader: Wait to send out heart beats
             //Leader: Check append entry list to see if there are entries to send out
@@ -300,8 +338,11 @@ namespace TeamDecided.RaftConsensus
 
         private void ChangeStateToFollower()
         {
+            //Status change is already locked
+
+            currentState = ERaftState.FOLLOWER;
             //Check if we're coming from initialised, if we are, we need to kick off our thread
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
         }
         private void ChangeStateToLeader() { throw new NotImplementedException(); }
         private void ChangeStateToCandiate() { throw new NotImplementedException(); }
@@ -362,25 +403,33 @@ namespace TeamDecided.RaftConsensus
                 {
                     if(message.ClusterName != clusterName)
                     {
-                        responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.To, message.JoinClusterAttempt, EJoinClusterResponse.REJECT_WRONG_CLUSTER_NAME);
+                        responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.To, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.REJECT_WRONG_CLUSTER_NAME);
                     }
                     else if (joinClusterResponseFroms.Contains(message.From)) //If we've already talked to you
                     {
-                        responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.To, message.JoinClusterAttempt, EJoinClusterResponse.ACCEPT);
+                        responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.To, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.ACCEPT);
                     }
                     else if(joinClusterResponseFroms.Count >= maxNodes - 1)
                     {
-                        responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.To, message.JoinClusterAttempt, EJoinClusterResponse.REJECT_CLUSTER_FULL);
+                        responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.To, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.REJECT_CLUSTER_FULL);
                     }
                     else
                     {
-                        responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.To, message.JoinClusterAttempt, EJoinClusterResponse.ACCEPT);
+                        responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.To, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.ACCEPT);
                         joinClusterResponseFroms.Add(message.From);
                     }
                 }
                 else if (currentState == ERaftState.FOLLOWER || currentState == ERaftState.CANDIDATE)
                 {
-                    responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.To, message.JoinClusterAttempt, networking.GetIPFromName(leaderName));
+                    responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.To, message.JoinClusterAttempt, message.ClusterName, networking.GetIPFromName(leaderName).Address.ToString(), networking.GetIPFromName(leaderName).Port);
+                }
+                else if (currentState == ERaftState.ATTEMPTING_TO_JOIN_CLUSTER || currentState == ERaftState.ATTEMPTING_TO_START_CLUSTER)
+                {
+                    responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.To, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.REJECT_LEADER_UNKNOWN);
+                }
+                else if(currentState == ERaftState.INITIALIZING)
+                {
+                    return; //Discard message, can't do anything with it yet
                 }
                 else
                 {
@@ -391,24 +440,54 @@ namespace TeamDecided.RaftConsensus
         }
         private void HandleJoinClusterResponse(RaftJoinClusterResponse message)
         {
+            lock(currentStateLockObject)
+            {
+                if(currentState != ERaftState.ATTEMPTING_TO_JOIN_CLUSTER)
+                {
+                    return; //We don't need this, we've already found the leader
+                }
 
+                if (message.JoinClusterAttempt != joiningClusterAttemptNumber)
+                {
+                    return; //Discard
+                }
 
+                if (message.JoinClusterResponse == EJoinClusterResponse.ACCEPT)
+                {
+                    //Resolve the servers actual name from what we set it as initially
+                    IPEndPoint serverEndpoint = networking.GetIPFromName(message.From);
+                    networking.RemovePeer(message.From);
+                    networking.ManualAddPeer(message.From, serverEndpoint);
 
-            //Are we waiting for this response?
-            //Is it one that we're currently still waiting for, or was it from a previous attempt?
-            //If success, make sure we set the cluster name
+                    //Set our current leader name for reference
+                    leaderName = message.From;
 
-            //Lookup in the dict for the reference name, and we'll resolve that conflict in IUDPNetworking
-            //Woohoo, we're now in the cluster... 
-            //Change into a follower
-            //Handle errors, and give back the reject reason to the handle who asked us to join the cluster
+                    eJoinClusterResponse = message.JoinClusterResponse;
+                    onWaitingToJoinCluster.Set();
 
-            //You need to set the value of eJoinClusterResponse, and flick the flag if we're succesful
-            
-            //Set leader name
-
-
-            throw new NotImplementedException();
+                    ChangeStateToFollower();
+                }
+                else if (message.JoinClusterResponse == EJoinClusterResponse.FORWARD)
+                {
+                    string leaderReferenceName = ManaulAddPeerInternal(new IPEndPoint(IPAddress.Parse(message.LeaderIP), message.LeaderPort));
+                    FlushManuallyAddedPeersToNetworking();
+                    RaftJoinCluster messageToSend = new RaftJoinCluster(leaderReferenceName, nodeName, message.ClusterName, leaderReferenceName, joiningClusterAttemptNumber);
+                    networking.SendMessage(messageToSend);
+                    return;
+                }
+                else if (message.JoinClusterResponse == EJoinClusterResponse.REJECT_LEADER_UNKNOWN)
+                {
+                    //TODO: Think about setting the eJoinClusterResponse so they've got something
+                    return;
+                }
+                else
+                {
+                    //We've been unsuccesful
+                    //Set the value of the response for the client, and notify the Task
+                    eJoinClusterResponse = message.JoinClusterResponse;
+                    onWaitingToJoinCluster.Set();
+                }
+            }
         }
         private void HandleAppendEntry(RaftAppendEntry<TKey, TValue> message)
         {

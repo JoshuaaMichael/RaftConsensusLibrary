@@ -4,6 +4,8 @@ namespace TeamDecided.RaftConsensus.RaftMessages
 {
     public class RaftBaseMessage : BaseMessage
     {
+        public RaftBaseMessage() { }
+
         public RaftBaseMessage(string to, string from)
             : base(to, from) { }
     }

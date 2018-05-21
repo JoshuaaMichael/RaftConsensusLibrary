@@ -2,13 +2,14 @@
 {
     public enum EJoinClusterResponse
     {
-        ACCEPT = 0,
-        FORWARD = 1,
-        REJECT_WRONG_CLUSTER_NAME = 2,
-        REJECT_NAME_TAKEN = 3,
-        REJECT_CLUSTER_FULL = 4,
-        REJECT_UNKNOWN_ERROR = 5,
-        NO_RESPONSE = 6,
+        ACCEPT,
+        FORWARD,
+        REJECT_WRONG_CLUSTER_NAME,
+        REJECT_LEADER_UNKNOWN,
+        REJECT_NAME_TAKEN,
+        REJECT_CLUSTER_FULL ,
+        REJECT_UNKNOWN_ERROR ,
+        NO_RESPONSE,
         NOT_YET_SET
     }
 }
