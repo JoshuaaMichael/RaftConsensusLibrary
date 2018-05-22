@@ -13,8 +13,7 @@ namespace TeamDecided.RaftConsensus
         {
             log = new Dictionary<TKey, List<RaftLogEntry<TKey, TValue>>>();
             commitIndexLookup = new List<Tuple<TKey, int>>();
-            commitIndexLookup.Add(null); //You cannot use the 0th index of the array
-            CommitIndex = 0;
+            CommitIndex = -1;
         }
 
         public bool ContainsKey(TKey key)
@@ -92,8 +91,16 @@ namespace TeamDecided.RaftConsensus
             return false;
         }
 
-        public void AppendEntry(RaftLogEntry<TKey, TValue> entry)
+        public void AppendEntry(RaftLogEntry<TKey, TValue> entry, int lastIndex)
         {
+            //if last index (or more) already in log already exists, drop them from the log
+            int index = lastIndex + 1;
+            if(commitIndexLookup.Count - 1 >= index)
+            {
+                //TODO: Confirm if we should be more specifically be checking for the conflict of "same index but different terms"
+                TruncateLog(index);
+            }
+
             if (!log.ContainsKey(entry.Key))
             {
                 log.Add(entry.Key, new List<RaftLogEntry<TKey, TValue>>());
@@ -102,15 +109,60 @@ namespace TeamDecided.RaftConsensus
             commitIndexLookup.Add(new Tuple<TKey, int>(entry.Key, log[entry.Key].Count - 1));
         }
 
-        //TODO: Append entry with index
-
-        public void CommitLastEntry()
+        public void AppendEntry(RaftLogEntry<TKey, TValue> entry)
         {
-            CommitIndex += 1;
+            //This commits in the next available index, it should only be used by testing and doesn't follow Raft rules
+            if (!log.ContainsKey(entry.Key))
+            {
+                log.Add(entry.Key, new List<RaftLogEntry<TKey, TValue>>());
+            }
+            log[entry.Key].Add(entry);
+            commitIndexLookup.Add(new Tuple<TKey, int>(entry.Key, log[entry.Key].Count - 1));
+        }
+
+        private void TruncateLog(int index)
+        {
+            //Drops forward and inclusive of the index given
+            int lastLogEntry = commitIndexLookup.Count - 1;
+
+            for(int i = lastLogEntry; i >= index; i--)
+            {
+                Tuple<TKey, int> commitIndexLookupInfo = commitIndexLookup[i];
+                commitIndexLookup.RemoveAt(i);
+
+                //We're going backwards through, so this is always safe
+                log[commitIndexLookupInfo.Item1].RemoveAt(commitIndexLookupInfo.Item2);
+                if(log[commitIndexLookupInfo.Item1].Count == 0)
+                {
+                    log.Remove(commitIndexLookupInfo.Item1);
+                }
+            }
+        }
+
+        public int GetTermOfIndex(int index)
+        {
+            return GetEntry(index).Term;
+        }
+
+        public bool ConfirmPreviousIndex(int prevIndex, int prevTerm)
+        {
+            if(prevIndex == -1) { return true; } //No preexisting entries yet
+
+            int lastIndex = commitIndexLookup.Count - 1;
+
+            if(lastIndex != prevIndex)
+            {
+                return false;
+            }
+
+            RaftLogEntry<TKey, TValue> lastEntry = GetEntry(lastIndex);
+
+            return (lastEntry.Term == prevTerm);
         }
 
         public int GetTermOfLastCommit()
         {
+            if(CommitIndex == -1) { return -1; } //No previous entries
             Tuple<TKey, int> lookupData = commitIndexLookup[CommitIndex];
             return log[lookupData.Item1][lookupData.Item2].Term;
         }
@@ -120,16 +172,33 @@ namespace TeamDecided.RaftConsensus
             return commitIndexLookup.Count - 1;
         }
 
+        public void CommitUpToIndex(int index)
+        {
+            CommitIndex = index;
+        }
+
         public TValue GetValue(int commitIndex)
         {
-            if(commitIndex < 1 || commitIndex >= commitIndexLookup.Count)
+            if(commitIndex < 0 || commitIndex >= commitIndexLookup.Count)
             {
-                return default(TValue);
+                throw new InvalidOperationException("Failed to get value from log at index " + commitIndex);
             }
 
             Tuple<TKey, int> lookupData = commitIndexLookup[commitIndex];
 
             return (TValue)log[lookupData.Item1][lookupData.Item2].Value.Clone();
+        }
+
+        private RaftLogEntry<TKey, TValue> GetEntry(int commitIndex)
+        {
+            if (commitIndex < 0 || commitIndex >= commitIndexLookup.Count)
+            {
+                throw new InvalidOperationException("Failed to get value from log at index " + commitIndex);
+            }
+
+            Tuple<TKey, int> lookupData = commitIndexLookup[commitIndex];
+
+            return log[lookupData.Item1][lookupData.Item2];
         }
     }
 }

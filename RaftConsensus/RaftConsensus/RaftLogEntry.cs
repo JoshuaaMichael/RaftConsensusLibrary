@@ -9,7 +9,6 @@ namespace TeamDecided.RaftConsensus
         public TKey Key { get; private set; }
         public TValue Value { get; private set; }
         public int Term { get; private set; }
-        public int CommitIndex { get; set; }
 
         public RaftLogEntry(TKey key, TValue value, int term)
         {
@@ -31,7 +30,6 @@ namespace TeamDecided.RaftConsensus
         public object Clone()
         {
             RaftLogEntry<TKey, TValue> clone = new RaftLogEntry<TKey, TValue>((TKey)Key.Clone(), (TValue)Value.Clone(), Term);
-            clone.CommitIndex = CommitIndex;
             return clone;
         }
     }

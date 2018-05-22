@@ -15,6 +15,8 @@ namespace TeamDecided.RaftConsensus
         {
             this.NodeName = nodeName;
             LastReceived = DateTime.Now;
+            NextIndex = 0;
+            MatchIndex = -1;
         }
 
         public void UpdateLastReceived()

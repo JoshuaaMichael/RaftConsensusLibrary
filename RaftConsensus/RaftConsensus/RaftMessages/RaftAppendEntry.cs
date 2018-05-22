@@ -5,32 +5,38 @@ namespace TeamDecided.RaftConsensus.RaftMessages
 {
     public class RaftAppendEntry<TKey, TValue> : RaftBaseMessage where TKey : ICloneable where TValue : ICloneable
     {
-        public ELogName LogName { get; private set; }
-        public int Term { get; private set; }
-        public int PrevIndex { get; private set; }
-        public int PrevTerm { get; private set; }
-        public int CommitIndex { get; private set; }
-        public RaftLogEntry<TKey, TValue> Entry { get; private set; }
+        public ELogName LogName { get; set; }
+        public int Term { get; set; }
+        public int PrevIndex { get; set; }
+        public int PrevTerm { get; set; }
+        public int LeaderCommitIndex { get; set; } //The max commit index of the leader
+        public RaftLogEntry<TKey, TValue> Entry { get; set; }
 
-        public RaftAppendEntry(string to, string from, ELogName logName, int term, int prevIndex, int prevTerm, int commitIndex, RaftLogEntry<TKey, TValue> entry)
+        public RaftAppendEntry() { }
+
+        public RaftAppendEntry(string to, string from, ELogName logName, int term, int prevIndex, int prevTerm, int leaderCommitIndex, RaftLogEntry<TKey, TValue> entry)
             : base(to, from)
         {
             LogName = logName;
             Term = term;
             PrevIndex = prevIndex;
             PrevTerm = prevTerm;
-            CommitIndex = commitIndex;
+            LeaderCommitIndex = leaderCommitIndex;
             Entry = entry;
         }
 
-        public RaftAppendEntry(string to, string from, ELogName logName, int term, int prevIndex, int prevTerm, int commitIndex)
+        public RaftAppendEntry(string to, string from, ELogName logName, int term, int leaderCommitIndex)
             : base(to, from)
         {
             LogName = logName;
             Term = term;
-            PrevIndex = prevIndex;
-            PrevTerm = prevTerm;
-            CommitIndex = commitIndex;
+            LeaderCommitIndex = leaderCommitIndex;
+        }
+
+        //This is the index of this entry
+        public int GetLogIndex()
+        {
+            return PrevIndex + 1;
         }
     }
 }

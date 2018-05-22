@@ -139,7 +139,7 @@ namespace TeamDecided.RaftConsensus.Tests
 
             for (int i = 0; i < value.Length; i++)
             {
-                Assert.AreEqual(value[i], raftDistributedLog.GetValue(i + 1));
+                Assert.AreEqual(value[i], raftDistributedLog.GetValue(i));
             }
         }
     }

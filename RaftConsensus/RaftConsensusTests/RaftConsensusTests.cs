@@ -239,8 +239,8 @@ namespace TeamDecided.RaftConsensus.Tests
             Assert.AreEqual(extraNodes, fulls);
         }
 
-        //[Test]
-        public void IT_MiniClusterReachConsensus()
+        [Test]
+        public void IT_MiniClusterCommitEntry()
         {
             //This will only test 1 leader node, and 1 peer
             int maxNodes = 3;
@@ -260,14 +260,51 @@ namespace TeamDecided.RaftConsensus.Tests
             followerJoinTask.Wait();
 
             // request to commit a message
-            Task<ERaftAppendEntryState> task = nodes[0].AppendEntry("Hello", "World");
+            Task<ERaftAppendEntryState> task = leader.AppendEntry("Hello", "World");
             task.Wait();
 
             leader.Dispose();
             follower.Dispose();
 
             // check if message committed
-            Assert.Equals(ERaftAppendEntryState.COMMITED, task.Result);
+            Assert.AreEqual(ERaftAppendEntryState.COMMITED, task.Result);
+        }
+
+        [Test]
+        public void IT_TwoNodeClusterCommitEntry()
+        {
+            //This will only test 1 leader node, and 2 peers
+            int maxNodes = 3;
+
+            nodes = RaftConsensus<string, string>.MakeNodesForTest(maxNodes, START_PORT);
+
+            IConsensus<string, string> leader = nodes[0];
+            IConsensus<string, string> follower1 = nodes[1];
+            IConsensus<string, string> follower2 = nodes[2];
+
+            // create a cluster
+            leader.CreateCluster(clusterName, clusterPassword, maxNodes);
+
+            //Inform follower of leader IP
+            follower1.ManualAddPeer(new IPEndPoint(IPAddress.Parse(IP_TO_BIND), START_PORT));
+            follower2.ManualAddPeer(new IPEndPoint(IPAddress.Parse(IP_TO_BIND), START_PORT));
+
+            Task<EJoinClusterResponse> follower1JoinTask = follower1.JoinCluster(clusterName, clusterPassword);
+            Task<EJoinClusterResponse> follower2JoinTask = follower2.JoinCluster(clusterName, clusterPassword);
+
+            follower1JoinTask.Wait();
+            follower2JoinTask.Wait();
+
+            // request to commit a message
+            Task<ERaftAppendEntryState> task = leader.AppendEntry("Hello", "World");
+            task.Wait();
+
+            leader.Dispose();
+            follower1.Dispose();
+            follower2.Dispose();
+
+            // check if message committed
+            Assert.AreEqual(ERaftAppendEntryState.COMMITED, task.Result);
         }
     }
 }
