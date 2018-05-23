@@ -27,6 +27,8 @@ namespace TeamDecided.RaftConsensus
         private ERaftState currentState;
         private object currentStateLockObject;
         private int currentTerm;
+        private string votedFor;
+        private object votedForLockObject;
         private object currentTermLockObject;
         private Dictionary<string, NodeInfo> nodesInfo;
         private object nodesInfoLockObject;
@@ -78,6 +80,8 @@ namespace TeamDecided.RaftConsensus
             currentState = ERaftState.INITIALIZING;
             currentStateLockObject = new object();
             currentTerm = 0;
+            votedFor = "";
+            votedForLockObject = new object();
             currentTermLockObject = new object();
             nodesInfo = new Dictionary<string, NodeInfo>();
             nodesInfoLockObject = new object();
@@ -361,13 +365,19 @@ namespace TeamDecided.RaftConsensus
 
         private void ChangeStateToFollower()
         {
+            //Probably pass in leader
+
             //Status change is already locked
 
             currentState = ERaftState.FOLLOWER;
             //Check if we're coming from initialised, if we are, we need to kick off our thread
             //throw new NotImplementedException();
         }
-        private void ChangeStateToLeader() { throw new NotImplementedException(); }
+        private void ChangeStateToLeader()
+        {
+            //Blast out to let everyone know about our victory
+            throw new NotImplementedException();
+        }
         private void ChangeStateToCandiate() { throw new NotImplementedException(); }
 
         private void OnMessageReceive(object sender, BaseMessage message)
@@ -517,24 +527,67 @@ namespace TeamDecided.RaftConsensus
             RaftAppendEntryResponse responseMessage;
             lock (currentStateLockObject)
             {
-                if (currentState != ERaftState.FOLLOWER)
+                if(currentState == ERaftState.LEADER)
                 {
-                    //TODO: Add forwarding for request from Follower to Leader
+                    lock (currentTermLockObject)
+                    {
+                        if (message.Term > currentTerm)
+                        {
+                            UpdateTerm(message.Term);
+                            leaderName = message.From;
+                            ChangeStateToFollower();
+                            return;
+                        }
+                        //Not even going to return false
+                        //TODO: Handle the forwarding of a item to commit through the leader
+                        //else if (message.Term == currentTerm) { }
+                    }
+                }
+                else if(currentState == ERaftState.CANDIDATE)
+                {
+                    lock (currentTermLockObject)
+                    {
+                        if (message.Term >= currentTerm)
+                        {
+                            UpdateTerm(message.Term);
+                            leaderName = message.From;
+                            ChangeStateToFollower();
+                            return;
+                        }
+                        else //message.Term < currentTerm
+                        {
+                            responseMessage = new RaftAppendEntryResponse(message.From, nodeName, message.LogName, currentTerm, false, -1);
+                            networking.SendMessage(responseMessage);
+                            return;
+                        }
+                    }
+                }
+                else if (currentState == ERaftState.FOLLOWER)
+                {
+                    lock (currentTermLockObject)
+                    {
+                        if (message.Term > currentTerm)
+                        {
+                            UpdateTerm(message.Term);
+                            leaderName = message.From;
+                            ChangeStateToFollower();
+                            return;
+                        }
+                        else if(message.Term < currentTerm)
+                        {
+                            responseMessage = new RaftAppendEntryResponse(message.From, nodeName, message.LogName, currentTerm, false, -1);
+                            networking.SendMessage(responseMessage);
+                            return;
+                        }
+                        //Else, this is the a typical message
+                    }
+                }
+                else
+                {
                     return; //We don't recieve these type of requests, drop it
                 }
-                //Are we behind, and we've now got a new leader?
-                if (message.Term > currentTerm)
-                {
-                    currentTerm = message.Term;
-                    leaderName = message.From;
-                }
-                if(message.Term < currentTerm)
-                {
-                    responseMessage = new RaftAppendEntryResponse(message.From, nodeName, message.LogName, currentTerm, false, -1);
-                    networking.SendMessage(responseMessage);
-                    return;
-                }
-                if(message.LogName == ELogName.UAS_LOG)
+
+                if (message.LogName == ELogName.UAS_LOG)
                 {
                     lock (distributedLogLockObject)
                     {
@@ -589,7 +642,7 @@ namespace TeamDecided.RaftConsensus
                 //Are we behind, and we've now got a new leader?
                 if (message.Term > currentTerm)
                 {
-                    currentTerm = message.Term;
+                    UpdateTerm(message.Term);
                     leaderName = message.From;
                     ChangeStateToFollower();
                     return;
@@ -639,18 +692,88 @@ namespace TeamDecided.RaftConsensus
         }
         private void HandleCallElection(RaftRequestVote message)
         {
-            //check if this comes from a newer term then I'm on, if it isn't reply no
-            //increase our current term to that one, it must be the latest
-            //if it is check if we've voted in that term
-            //return yes otherwise, and change into a follower if we're not already
-            throw new NotImplementedException();
+            RaftRequestVoteResponse responseMessage;
+            lock (currentStateLockObject)
+            {
+                if (currentState != ERaftState.LEADER && currentState != ERaftState.CANDIDATE && currentState != ERaftState.FOLLOWER)
+                {
+                    return; //We don't recieve these type of requests, drop it
+                }
+
+                if (message.Term > currentTerm)
+                {
+                    UpdateTerm(message.Term);
+
+                    if (currentState != ERaftState.FOLLOWER)
+                    {
+                        ChangeStateToFollower();
+                    }
+
+                    lock (votedForLockObject)
+                    {
+                        if (votedFor == "") //We haven't voted for anyone
+                        {
+                            lock(distributedLogLockObject)
+                            {
+                                //If they're at least as up to date we'll vote for them
+                                int logLatestIndex = distributedLog.GetLastIndex();
+                                if(message.LastLogIndex >= logLatestIndex && message.LastTermIndex >= distributedLog.GetTermOfIndex(logLatestIndex))
+                                {
+                                    votedFor = message.From;
+                                    responseMessage = new RaftRequestVoteResponse(message.From, nodeName, currentTerm, true);
+                                }
+                                else
+                                {
+                                    responseMessage = new RaftRequestVoteResponse(message.From, nodeName, currentTerm, false);
+                                }
+                            }
+                        }
+                        else if(votedFor == message.From)
+                        {
+                            responseMessage = new RaftRequestVoteResponse(message.From, nodeName, currentTerm, true);
+                        }
+                        else //We've voted for someome else... akward
+                        {
+                            responseMessage = new RaftRequestVoteResponse(message.From, nodeName, currentTerm, false);
+                        }
+                    }
+                }
+                else //Same or old term
+                {
+                    responseMessage = new RaftRequestVoteResponse(message.From, nodeName, currentTerm, false);
+                }
+            }
+            networking.SendMessage(responseMessage);
         }
         private void HandleCallElectionResponse(RaftRequestVoteResponse message)
         {
-            //check if it comes from a newer term than I'm on, if it is revert to follower and give them my vote
-            //otherwise if it's no, live with, someone else is also out there, when we fail we'll do the random thing again with time
-            //otherwise if it's yes, stack it up/record it and we'll see if we win
-            throw new NotImplementedException();
+            lock (currentStateLockObject)
+            {
+                lock(currentTermLockObject)
+                {
+                    if(message.Term > currentTerm)
+                    {
+                        UpdateTerm(message.Term);
+                        leaderName = message.From;
+                        ChangeStateToFollower();
+                        return;
+                    }
+                    else if (message.Term < currentTerm)
+                    {
+                        return; //This is not valid, discard
+                    }
+                }
+
+                if (currentState == ERaftState.CANDIDATE && message.Granted)
+                {
+                    nodesInfo[message.From].VoteGranted = true;
+                    if(CheckForVoteMajority())
+                    {
+                        leaderName = nodeName;
+                        ChangeStateToLeader(); //This includes sending out the blast
+                    }
+                }
+            }
         }
 
         private bool CheckForCommitMajority(int index)
@@ -664,8 +787,37 @@ namespace TeamDecided.RaftConsensus
                 }
             }
 
-            int majorityCount = (maxNodes / 2) + 1;
-            return (total >= majorityCount);
+            int majorityMinimal = (maxNodes / 2) + 1;
+            return (total >= majorityMinimal);
+        }
+        private bool CheckForVoteMajority()
+        {
+            int total = 1; //Initialised to 1 as leader counts
+            foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
+            {
+                if (node.Value.VoteGranted)
+                {
+                    total += 1;
+                }
+            }
+
+            int majorityMinimal = (maxNodes / 2) + 1;
+            return (total >= majorityMinimal);
+        }
+        private void UpdateTerm(int newTerm)
+        {
+            lock (nodesInfo)
+            {
+                foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
+                {
+                    node.Value.VoteGranted = false;
+                }
+            }
+            currentTerm = newTerm;
+            lock(votedForLockObject)
+            {
+                votedFor = "";
+            }
         }
 
         #region Get/set timeout/heartbeat values

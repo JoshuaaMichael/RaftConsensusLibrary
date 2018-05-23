@@ -260,8 +260,11 @@ namespace TeamDecided.RaftConsensus.Tests
             followerJoinTask.Wait();
 
             // request to commit a message
-            Task<ERaftAppendEntryState> task = leader.AppendEntry("Hello", "World");
+            Task<ERaftAppendEntryState> task = leader.AppendEntry("Hello1", "World1");
             task.Wait();
+
+            Task<ERaftAppendEntryState> task2 = leader.AppendEntry("Hello2", "World2");
+            task2.Wait();
 
             leader.Dispose();
             follower.Dispose();
