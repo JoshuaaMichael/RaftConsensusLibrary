@@ -309,5 +309,20 @@ namespace TeamDecided.RaftConsensus.Tests
             // check if message committed
             Assert.AreEqual(ERaftAppendEntryState.COMMITED, task.Result);
         }
+
+        public void IT_LeaderSendsAppendEntriesMessage_IUDPNetworkingReceivesAppendMessageToSend() { }
+        public void IT_FollwerReceivesAppendMessage_FollwerAppendsLogButDoesntCommit() { }
+        public void IT_FollowerSendsSuccessMessageToFollower_IUDPNetworkingReceivesMessageToSend() { }
+        public void IT_LeaderSendsUpdatedCommitMessageToFollower_IUDPNetworkingReceivesUpdatedAppendMessageToSend() { }
+        public void IT_FollowerSendUpdatedAppendMessageWithNewCommit_IUDPNetworkingReceivesUpdatedAppendMessageToSend() { }
+
+        public void IT_FollowerElectionStartsElectionTimeOutRandomizedDuration_FollowerElectionTimeOutDurationIsRandom() { }
+        public void IT_FollowerElectionTimeOutEnterCandidateState_FollowerEntersCandidateState() { }
+        public void IT_CandidateSendsRequestVoteMessage_IUDPNetworkingReceivesRequestVoteMessage() { }
+        public void IT_FollowerRepliesRequestVoteFromNewerTermCandidate_SuccessMessageSent() { }
+        public void IT_FollowerRepliesRequestVoteFromOlderTermCandidate_FailMessageSent() { }
+        public void IT_FollowerRepliesRequestVoteFromNewerTermCandidateWithOlderCommitIndex_FailMessageSent() { }
+        //still reading Raft doc to ensure good test coverage to meet protocol
+
     }
 }
