@@ -200,5 +200,13 @@ namespace TeamDecided.RaftConsensus
 
             return log[lookupData.Item1][lookupData.Item2];
         }
+
+        public RaftLogEntry<TKey, TValue> this[int commitIndex]
+        {
+            get
+            {
+                return GetEntry(commitIndex);
+            }
+        }
     }
 }
