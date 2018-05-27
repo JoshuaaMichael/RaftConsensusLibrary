@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using TeamDecided.RaftCommon.Logging;
 using TeamDecided.RaftConsensus.Enums;
 using TeamDecided.RaftConsensus.Interfaces;
 using TeamDecided.RaftConsensus.RaftMessages;
@@ -139,6 +140,13 @@ namespace TeamDecided.RaftConsensus
                 {
                     throw new ArgumentException("clusterPassword must not be blank");
                 }
+                Log("Trying to join cluster");
+                foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
+                {
+                    IPEndPoint ipEndPoint = networking.GetIPFromName(node.Key);
+                    Log("I know: nodeName={0}, ipAddress={1}, port={2}", node.Key, ipEndPoint.Address.ToString(), ipEndPoint.Port);
+                }
+
                 lock (nodesInfoLockObject)
                 {
                     if (nodesInfo.Count + 1 != maxNodes) //You aren't in the nodesInfo list
@@ -153,6 +161,7 @@ namespace TeamDecided.RaftConsensus
                     currentState = ERaftState.ATTEMPTING_TO_JOIN_CLUSTER;
                     joiningClusterAttemptNumber += 1;
 
+                    Log("Sending out messages to find leader...");
                     foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
                     {
                         RaftJoinCluster message = new RaftJoinCluster(node.Key, nodeName, clusterName, joiningClusterAttemptNumber);
@@ -164,6 +173,7 @@ namespace TeamDecided.RaftConsensus
                 {
                     if (onWaitingToJoinCluster.WaitOne(waitingToJoinClusterTimeout) == false) //The timeout occured
                     {
+                        Log("Never heard back from a leader in {0} millisecond timeout", waitingToJoinClusterTimeout);
                         lock (currentStateLockObject)
                         {
                             currentState = ERaftState.INITIALIZING;
@@ -171,6 +181,7 @@ namespace TeamDecided.RaftConsensus
                         onWaitingToJoinCluster = null;
                         return EJoinClusterResponse.NO_RESPONSE;
                     }
+                    Log("We've got a responce from the leader {0}", leaderName);
                     onWaitingToJoinCluster = null;
                     lock (eJoinClusterResponeLockObject)
                     {
@@ -217,6 +228,13 @@ namespace TeamDecided.RaftConsensus
                 onNotifyBackgroundThread.Set();
 
                 StartThreads();
+                Log("Created cluster");
+                foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
+                {
+                    IPEndPoint ipEndPoint = networking.GetIPFromName(node.Key);
+                    Log("I know: nodeName={0}, ipAddress={1}, port={2}", node.Key, ipEndPoint.Address.ToString(), ipEndPoint.Port);
+                }
+                Log("Notifying UAS to start");
                 StartUAS?.Invoke(this, null);
             }
         }
@@ -274,7 +292,6 @@ namespace TeamDecided.RaftConsensus
                 lock (currentTermLockObject)
                 {
                     entry = new RaftLogEntry<TKey, TValue>(key, value, currentTerm);
-
 
                     int prevIndex;
                     int prevTerm;
@@ -337,16 +354,19 @@ namespace TeamDecided.RaftConsensus
         {
             WaitHandle[] waitHandles = new WaitHandle[] { onShutdown, onNotifyBackgroundThread };
             onThreadsStarted.Signal();
+            Log("Background thread initialised");
             ERaftState threadState = ERaftState.INITIALIZING;
             while (true)
             {
                 int indexOuter = WaitHandle.WaitAny(waitHandles);
                 if (indexOuter == 0) //We've been told to shutdown
                 {
+                    Log("Background thread has been told to shutdown");
                     return;
                 }
                 else if (indexOuter == 1) //We've been notified to update
                 {
+                    Log("Background thread has been notified to update");
                     onNotifyBackgroundThread.Reset();
                     lock (currentStateLockObject)
                     {
@@ -357,14 +377,17 @@ namespace TeamDecided.RaftConsensus
 
                 if (threadState == ERaftState.FOLLOWER)
                 {
+                    Log("Background thread now running as Follower");
                     BackgroundThread_Follower(waitHandles); //We're a follower, so we'll be checking for timeouts from hearing append entry messages
                 }
                 else if (threadState == ERaftState.CANDIDATE)
                 {
+                    Log("Background thread now running as Candidate");
                     BackgroundThread_Candidate(waitHandles); //We're a candidate, so we'll be checking for timeouts from our attempt to become leader
                 }
                 else if(threadState == ERaftState.LEADER)
                 {
+                    Log("Background thread now running as Leader");
                     BackgroundThread_Leader(waitHandles); //We're a leader, so we'll be sending heart beats
                 }
             }
@@ -376,6 +399,7 @@ namespace TeamDecided.RaftConsensus
                 //TODO: Do the math to figure out the next heartbeatTime, technically this way it'll be offset at like every timeout-1ms or something due to the effort when it goes in... technically
                 if (WaitHandle.WaitAny(waitHandles, heartbeatInterval) == WaitHandle.WaitTimeout)
                 {
+                    Log("It's time to send out heartbeats.");
                     //Time to send heart beats
                     lock (currentTermLockObject)
                     {
@@ -421,6 +445,7 @@ namespace TeamDecided.RaftConsensus
             if(WaitHandle.WaitAny(waitHandles, timeoutValue) == WaitHandle.WaitTimeout)
             {
                 //We didn't hear from anyone, so we've got to go candidate again to try be leader... again
+                Log("We didn't get voted in to be leader, time to try again");
                 ChangeStateToCandiate();
                 return;
             }
@@ -447,6 +472,7 @@ namespace TeamDecided.RaftConsensus
                 int indexInner = WaitHandle.WaitAny(waitHandles, timeoutValueTemp);
                 if(indexInner == WaitHandle.WaitTimeout)
                 {
+                    Log("Timing out to be candidate. We haven't heard from the leader in {0} milliseconds", timeoutValue);
                     ChangeStateToCandiate();
                     return;
                 }
@@ -458,6 +484,7 @@ namespace TeamDecided.RaftConsensus
                         lock (timeoutValueLockObject)
                         {
                             timeoutValueTemp = timeoutValue - (DateTime.Now - lastReceivedMessage).Milliseconds;
+                            Log("We heard from the leader, recalculating next timeout.");
                         }
                     }
                 }
@@ -470,8 +497,10 @@ namespace TeamDecided.RaftConsensus
 
         private void ChangeStateToFollower()
         {
-            if(currentState == ERaftState.LEADER)
+            Log("Changing state to Follower");
+            if (currentState == ERaftState.LEADER)
             {
+                Log("Notifying the UAS to stop");
                 StopUAS?.Invoke(this, EStopUASReason.CLUSTER_LEADERSHIP_LOST);
             }
 
@@ -485,6 +514,7 @@ namespace TeamDecided.RaftConsensus
         }
         private void ChangeStateToLeader()
         {
+            Log("Changing state to Leader");
             currentState = ERaftState.LEADER;
 
             lock (distributedLogLockObject)
@@ -495,7 +525,7 @@ namespace TeamDecided.RaftConsensus
                 }
 
                 onNotifyBackgroundThread.Set();
-
+                Log("Letting everyone know about our new leadership");
                 //Blast out to let everyone know about our victory
                 foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
                 {
@@ -503,19 +533,32 @@ namespace TeamDecided.RaftConsensus
                     networking.SendMessage(message);
                 }
             }
-
+            Log("Notifying to start UAS");
             StartUAS?.Invoke(this, null);
         }
         private void ChangeStateToCandiate()
         {
+            Log("Changing state to Candidate");
             currentState = ERaftState.CANDIDATE;
             lock(currentTermLockObject)
             {
                 currentTerm += 1;
             }
             onNotifyBackgroundThread.Set();
-            //Detect if we even know a majority of nodes at the moment, if we don't then don't even bother
-            //Set the random value for the timeout
+            RecalculateTimeoutValue();
+
+            lock (nodesInfo)
+            {
+                Log("Requesting votes for leadership from everyone");
+                lock (distributedLogLockObject)
+                {
+                    foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
+                    {
+                        RaftRequestVote message = new RaftRequestVote(node.Key, nodeName, currentTerm, distributedLog.GetLastIndex(), distributedLog.GetTermOfLastIndex());
+                        networking.SendMessage(message);
+                    }
+                }
+            }
         }
 
         private void OnMessageReceive(object sender, BaseMessage message)
@@ -526,6 +569,8 @@ namespace TeamDecided.RaftConsensus
                 //We've received a message we don't support
                 return;
             }
+
+            Log("Received new message: {0}, from {1}", ((RaftBaseMessage)message).GetType(), message.From);
 
             if (message.MessageType == typeof(RaftJoinCluster))
             {
@@ -576,36 +621,40 @@ namespace TeamDecided.RaftConsensus
                     {
                         if (message.ClusterName != clusterName)
                         {
+                            Log("Rejecting node {0}. They're trying to enter with the wrong cluster name \"{1}\"", message.From, message.ClusterName);
                             responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.REJECT_WRONG_CLUSTER_NAME);
                         }
-                        else if (nodesInfo.ContainsKey(message.From)) //If we've already talked to you
+                        else if (nodesInfo.ContainsKey(message.From))
                         {
+                            Log("Accepting node {0}. They're one of the nodes I'm expecting", message.From);
                             responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.ACCEPT);
-                        }
-                        else if (nodesInfo.Count >= maxNodes - 1)
-                        {
-                            responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.REJECT_CLUSTER_FULL);
                         }
                         else
                         {
-                            responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.ACCEPT);
+                            Log("Rejecting node {0}. We weren't expecting this node to join", message.From);
+                            responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.REJECT_UNKNOWN_ERROR);
                         }
                     }
                 }
                 else if (currentState == ERaftState.FOLLOWER || currentState == ERaftState.CANDIDATE)
                 {
-                    responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, networking.GetIPFromName(leaderName).Address.ToString(), networking.GetIPFromName(leaderName).Port);
+                    IPEndPoint iPEndPoint = networking.GetIPFromName(leaderName);
+                    Log("Forwarding node {0} to leader at {1}:{2}", message.From, iPEndPoint.Address.ToString(), iPEndPoint.Port);
+                    responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, iPEndPoint.Address.ToString(), iPEndPoint.Port);
                 }
                 else if (currentState == ERaftState.ATTEMPTING_TO_JOIN_CLUSTER || currentState == ERaftState.ATTEMPTING_TO_START_CLUSTER)
                 {
+                    Log("Rejecting node {0}. I'm not the leader, and I don't know the leader", message.From);
                     responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.REJECT_LEADER_UNKNOWN);
                 }
                 else if(currentState == ERaftState.INITIALIZING)
                 {
+                    Log("Discarding message from node {0}. We aren't in the correct state to process this message", message.From);
                     return; //Discard message, can't do anything with it yet
                 }
                 else
                 {
+                    Log("Discarding message from node {0}. We aren't in the correct state to process this message. How did you get here?", message.From);
                     throw new InvalidOperationException("How did you even get here?");
                 }
             }
@@ -617,20 +666,19 @@ namespace TeamDecided.RaftConsensus
             {
                 if(currentState != ERaftState.ATTEMPTING_TO_JOIN_CLUSTER)
                 {
+                    Log("Discarding message from node {0}. We've already found the leader", message.From);
                     return; //We don't need this, we've already found the leader
                 }
 
                 if (message.JoinClusterAttempt != joiningClusterAttemptNumber)
                 {
+                    Log("Discarding message from node {0}. It was for a previous joining attempt", message.From);
                     return; //Discard
                 }
 
                 if (message.JoinClusterResponse == EJoinClusterResponse.ACCEPT)
                 {
-                    //Resolve the servers actual name from what we set it as initially
-                    IPEndPoint serverEndpoint = networking.GetIPFromName(message.From);
-                    networking.RemovePeer(message.From);
-                    networking.ManualAddPeer(message.From, serverEndpoint);
+                    Log("Heard back from the leader and they've accepted us, it's {0}", message.From);
 
                     //Set our current leader name for reference
                     leaderName = message.From;
@@ -639,12 +687,20 @@ namespace TeamDecided.RaftConsensus
                     {
                         eJoinClusterResponse = message.JoinClusterResponse;
                     }
+                    Log("Notifying the user we've succesfully joined the cluster");
                     onWaitingToJoinCluster.Set();
 
                     ChangeStateToFollower();
                 }
+                else if(message.JoinClusterResponse == EJoinClusterResponse.REJECT_LEADER_UNKNOWN)
+                {
+                    Log("Discarding message from node {0}. They don't know who the leader is.", message.From);
+                    //TODO: Give this info back to the caller if no accept comes later
+                    return;
+                }
                 else
                 {
+                    Log("Heard back from leader (node {0}), they've rejected our attempt to join", message.From);
                     //We've been unsuccesful
                     //Set the value of the response for the client, and notify the Task
                     lock (eJoinClusterResponeLockObject)
@@ -660,64 +716,47 @@ namespace TeamDecided.RaftConsensus
             RaftAppendEntryResponse responseMessage;
             lock (currentStateLockObject)
             {
-                if(currentState == ERaftState.LEADER)
+                lock (currentTermLockObject)
                 {
-                    lock (currentTermLockObject)
+                    if (message.Term > currentTerm)
                     {
-                        if (message.Term > currentTerm)
-                        {
-                            UpdateTerm(message.Term);
-                            leaderName = message.From;
-                            ChangeStateToFollower();
-                            return;
-                        }
-                        //Not even going to return false
+                        Log("Heard from a node ({0}) with greater term({1}) than ours({2}). Changing to follower", message.From, message.Term, currentTerm);
+                        UpdateTerm(message.Term);
+                        leaderName = message.From;
+                        ChangeStateToFollower();
+                        return;
+                    }
+
+                    if (message.Term < currentTerm)
+                    {
+                        Log("Recieved AppendEntry from node {0} for a previous term. Sending back a reject.", message.From);
+                        responseMessage = new RaftAppendEntryResponse(message.From, nodeName, message.LogName, currentTerm, false, -1);
+                        networking.SendMessage(responseMessage);
+                        return;
+                    }
+
+                    if (currentState == ERaftState.LEADER)
+                    {
                         //TODO: Handle the forwarding of a item to commit through the leader
-                        //else if (message.Term == currentTerm) { }
+                        Log("Recieved AppendEntry from node {0}. Discarding as we're the leader.", message.From);
+                        return;
                     }
-                }
-                else if(currentState == ERaftState.CANDIDATE)
-                {
-                    lock (currentTermLockObject)
+                    else if (currentState == ERaftState.CANDIDATE)
                     {
-                        if (message.Term >= currentTerm)
-                        {
-                            UpdateTerm(message.Term);
-                            leaderName = message.From;
-                            ChangeStateToFollower();
-                            return;
-                        }
-                        else //message.Term < currentTerm
-                        {
-                            responseMessage = new RaftAppendEntryResponse(message.From, nodeName, message.LogName, currentTerm, false, -1);
-                            networking.SendMessage(responseMessage);
-                            return;
-                        }
+                        Log("Recieved AppendEntry from the leader {0} of currentTerm. Going back to being a follower.", message.From);
+                        leaderName = message.From;
+                        ChangeStateToFollower();
+                        return;
                     }
-                }
-                else if (currentState == ERaftState.FOLLOWER)
-                {
-                    lock (currentTermLockObject)
-                    {
-                        if (message.Term > currentTerm)
-                        {
-                            UpdateTerm(message.Term);
-                            leaderName = message.From;
-                            ChangeStateToFollower();
-                            return;
-                        }
-                        else if(message.Term < currentTerm)
-                        {
-                            responseMessage = new RaftAppendEntryResponse(message.From, nodeName, message.LogName, currentTerm, false, -1);
-                            networking.SendMessage(responseMessage);
-                            return;
-                        }
+                    else if (currentState == ERaftState.FOLLOWER)
+                    {                        
                         //Else, continue down, this is the a typical message, therefore message.Term == currentTerm
                     }
-                }
-                else
-                {
-                    return; //We don't recieve these type of requests, drop it
+                    else
+                    {
+                        Log("Recieved AppendEntry from node {0}. We don't recieve these types of requests. How did you even get here?", message.From);
+                        return; //We don't recieve these type of requests, drop it
+                    }
                 }
 
                 RecalculateTimeoutValue();
@@ -727,51 +766,54 @@ namespace TeamDecided.RaftConsensus
                 }
                 onReceivedMessage.Set();
 
-                if (message.LogName == ELogName.UAS_LOG)
+                lock (currentTermLockObject)
                 {
-                    lock (currentTermLockObject)
+                    lock (distributedLogLockObject)
                     {
-                        lock (distributedLogLockObject)
+                        //Check if this is a heart beat with no data
+                        if (message.Entry == null)
                         {
-                            //Check if this is a heart beat with no data
-                            if (message.Entry == null)
+                            Log("This is a heatbeat message from leader {0}", message.From);
+                            //Check if we should move up our commit index, and respond to the leader
+                            if (message.LeaderCommitIndex > distributedLog.CommitIndex)
                             {
-                                //Check if we should move up our commit index, and respond to the leader
+                                Log("Heartbeat contained a request to update out commit index");
+                                int newCommitIndex = Math.Min(message.LeaderCommitIndex, distributedLog.GetLastIndex());
+                                Log("Updated commit index to {0}, leader's is {1}", newCommitIndex, message.LeaderCommitIndex);
+                                distributedLog.CommitUpToIndex(newCommitIndex);
+                            }
+                            responseMessage = new RaftAppendEntryResponse(message.From, nodeName, message.LogName, currentTerm, true, distributedLog.GetLastIndex());
+                            networking.SendMessage(responseMessage);
+                            return;
+                        }
+                        else
+                        {
+                            Log("This is a AppendEntry message from {0} has new entries to commit", message.From);
+                            if (distributedLog.ConfirmPreviousIndex(message.PrevIndex, message.PrevTerm))
+                            {
+                                distributedLog.AppendEntry(message.Entry, message.PrevIndex);
+                                Log("Confirmed previous index. Appended message");
                                 if (message.LeaderCommitIndex > distributedLog.CommitIndex)
                                 {
                                     int newCommitIndex = Math.Min(message.LeaderCommitIndex, distributedLog.GetLastIndex());
+                                    Log("Updated commit index to {0}, leader's is {1}", newCommitIndex, message.LeaderCommitIndex);
                                     distributedLog.CommitUpToIndex(newCommitIndex);
                                 }
+                                Log("Responding to leader with the success of our append");
                                 responseMessage = new RaftAppendEntryResponse(message.From, nodeName, message.LogName, currentTerm, true, distributedLog.GetLastIndex());
                                 networking.SendMessage(responseMessage);
                                 return;
                             }
                             else
                             {
-                                if (distributedLog.ConfirmPreviousIndex(message.PrevIndex, message.PrevTerm))
-                                {
-                                    distributedLog.AppendEntry(message.Entry, message.PrevIndex);
-
-                                    if (message.LeaderCommitIndex > distributedLog.CommitIndex)
-                                    {
-                                        int newCommitIndex = Math.Min(message.LeaderCommitIndex, distributedLog.GetLastIndex());
-                                        distributedLog.CommitUpToIndex(newCommitIndex);
-                                    }
-                                    responseMessage = new RaftAppendEntryResponse(message.From, nodeName, message.LogName, currentTerm, true, distributedLog.GetLastIndex());
-                                    networking.SendMessage(responseMessage);
-                                    return;
-                                }
-                                else
-                                {
-                                    responseMessage = new RaftAppendEntryResponse(message.From, nodeName, message.LogName, currentTerm, false, distributedLog.GetLastIndex());
-                                    networking.SendMessage(responseMessage);
-                                    return;
-                                }
+                                Log("Failed to add new entries because confirming previous index/term failed. Ours ({0}. {1}). Theirs ({2}, {3})", distributedLog.GetLastIndex(), distributedLog.GetTermOfLastIndex(), message.PrevIndex, message.PrevTerm);
+                                responseMessage = new RaftAppendEntryResponse(message.From, nodeName, message.LogName, currentTerm, false, distributedLog.GetLastIndex());
+                                networking.SendMessage(responseMessage);
+                                return;
                             }
                         }
                     }
                 }
-                //TODO: Implement node log
             }
         }
         private void HandleAppendEntryResponse(RaftAppendEntryResponse message)
@@ -782,6 +824,7 @@ namespace TeamDecided.RaftConsensus
                 lock (currentTermLockObject)
                 {
                     //Are we behind, and we've now got a new leader?
+                    Log("Heard from a node ({0}) with greater term({1}) than ours({2}). Changing to follower", message.From, message.Term, currentTerm);
                     if (message.Term > currentTerm)
                     {
                         UpdateTerm(message.Term);
@@ -789,11 +832,18 @@ namespace TeamDecided.RaftConsensus
                         ChangeStateToFollower();
                         return;
                     }
+
+                    if (message.Term < currentTerm)
+                    {
+                        Log("Recieved AppendEntryResponse from node {0} for a previous term. Discarding.", message.From);
+                        return;
+                    }
                 }
                 if (currentState != ERaftState.LEADER)
                 {
                     return; //We don't recieve these type of requests, drop it
                 }
+                Log("Recieved AppendEntryResponse from node {0}. Seems legit so far.", message.From);
                 lock (currentTermLockObject)
                 {
                     lock (nodesInfoLockObject)
@@ -802,46 +852,53 @@ namespace TeamDecided.RaftConsensus
                         nodeInfo.UpdateLastReceived();
                         if (message.MatchIndex == nodeInfo.MatchIndex)
                         {
+                            Log("It was just a heartbeat.");
                             return; //Heart beat, nothing more we need to do
                         }
+                        Log("Setting match index to {0} from {1}.", message.MatchIndex, nodeInfo.MatchIndex);
                         nodeInfo.MatchIndex = message.MatchIndex;
                         nodeInfo.NextIndex = message.MatchIndex + 1;
 
                         if (message.Success)
                         {
+                            Log("The append entry was a success");
                             lock (distributedLogLockObject)
                             {
                                 if (message.MatchIndex > distributedLog.CommitIndex)
                                 {
+                                    Log("Since we've got another commit, we should check if we're at majority now");
                                     //Now we've got another commit, have we reached majority now?
-                                    if (CheckForCommitMajority(message.MatchIndex))
+                                    if (CheckForCommitMajority(message.MatchIndex) && distributedLog.GetTermOfIndex(message.MatchIndex) == currentTerm)
                                     {
-                                        if (distributedLog.GetTermOfIndex(message.MatchIndex) == currentTerm) //An additional check from the paper
+                                        Log("We've reached majority. Time to notify everyone to update.");
+                                        //We have! Update our log. Notify everyone to update their logs
+                                        lock (appendEntryTasksLockObject)
                                         {
-                                            //We have! Update our log. Notify everyone to update their logs
-                                            lock (appendEntryTasksLockObject)
+                                            distributedLog.CommitUpToIndex(message.MatchIndex);
+                                            appendEntryTasks[message.MatchIndex].Set();
+                                            appendEntryTasks.Remove(message.MatchIndex);
+                                            foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
                                             {
-                                                distributedLog.CommitUpToIndex(message.MatchIndex);
-                                                appendEntryTasks[message.MatchIndex].Set();
-                                                appendEntryTasks.Remove(message.MatchIndex);
-                                                foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
-                                                {
-                                                    RaftAppendEntry<TKey, TValue> updateMessage =
-                                                        new RaftAppendEntry<TKey, TValue>(node.Key,
-                                                                                                nodeName,
-                                                                                                ELogName.UAS_LOG,
-                                                                                                currentTerm,
-                                                                                                distributedLog.CommitIndex);
-                                                    networking.SendMessage(updateMessage);
-                                                }
+                                                RaftAppendEntry<TKey, TValue> updateMessage =
+                                                    new RaftAppendEntry<TKey, TValue>(node.Key,
+                                                                                            nodeName,
+                                                                                            ELogName.UAS_LOG,
+                                                                                            currentTerm,
+                                                                                            distributedLog.CommitIndex);
+                                                networking.SendMessage(updateMessage);
                                             }
                                         }
+                                    }
+                                    else
+                                    {
+                                        Log("We've haven't reached majority yet");
                                     }
                                 }
                             }
                         }
                         else
                         {
+                            Log("This follower failed to append entry. Stepping back their next index");
                             //If a follower fails to insert into log, it means that the prev check failed, so we need to step backwards
                             nodesInfo[message.From].NextIndex--;
                         }
@@ -856,6 +913,7 @@ namespace TeamDecided.RaftConsensus
             {
                 if (currentState != ERaftState.LEADER && currentState != ERaftState.CANDIDATE && currentState != ERaftState.FOLLOWER)
                 {
+                    Log("Received message from {0}. We aren't in the correct state to process it. Discarding", message.From);
                     return; //We don't recieve these type of requests, drop it
                 }
 
@@ -863,6 +921,7 @@ namespace TeamDecided.RaftConsensus
                 {
                     if (message.Term > currentTerm)
                     {
+                        Log("Received a RequestVote from {0}. Let's take a look.", message.From);
                         UpdateTerm(message.Term);
 
                         RecalculateTimeoutValue();
@@ -874,6 +933,7 @@ namespace TeamDecided.RaftConsensus
 
                         if (currentState != ERaftState.FOLLOWER)
                         {
+                            Log("We currently aren't a follower. Changing state to follower.");
                             ChangeStateToFollower();
                         }
 
@@ -887,27 +947,32 @@ namespace TeamDecided.RaftConsensus
                                     int logLatestIndex = distributedLog.GetLastIndex();
                                     if (message.LastLogIndex >= logLatestIndex && message.LastTermIndex >= distributedLog.GetTermOfIndex(logLatestIndex))
                                     {
+                                        Log("Their log is at least as up to date as ours, replying accept");
                                         votedFor = message.From;
                                         responseMessage = new RaftRequestVoteResponse(message.From, nodeName, currentTerm, true);
                                     }
                                     else
                                     {
+                                        Log("Their log is not at least as up to date as our, replying reject.");
                                         responseMessage = new RaftRequestVoteResponse(message.From, nodeName, currentTerm, false);
                                     }
                                 }
                             }
                             else if (votedFor == message.From)
                             {
+                                Log("We've already voted for you? Replying accept");
                                 responseMessage = new RaftRequestVoteResponse(message.From, nodeName, currentTerm, true);
                             }
                             else //We've voted for someome else... akward
                             {
+                                Log("We've already voted for someone else in this term ({0}). Akward. Replying rejefct.", votedFor);
                                 responseMessage = new RaftRequestVoteResponse(message.From, nodeName, currentTerm, false);
                             }
                         }
                     }
                     else //Same or old term
                     {
+                        Log("This message is from the same or an old term, returning false");
                         responseMessage = new RaftRequestVoteResponse(message.From, nodeName, currentTerm, false);
                     }
                 }
@@ -922,6 +987,7 @@ namespace TeamDecided.RaftConsensus
                 {
                     if(message.Term > currentTerm)
                     {
+                        Log("Heard from a node ({0}) with greater term({1}) than ours({2}). Changing to follower", message.From, message.Term, currentTerm);
                         UpdateTerm(message.Term);
                         leaderName = message.From;
                         ChangeStateToFollower();
@@ -929,12 +995,13 @@ namespace TeamDecided.RaftConsensus
                     }
                     else if (message.Term < currentTerm)
                     {
+                        Log("Recieved RaftRequestVoteResponse from node {0} for a previous term. Discarding.", message.From);
                         return; //This is not valid, discard
                     }
                 }
-
                 if (currentState == ERaftState.CANDIDATE && message.Granted)
                 {
+                    Log("They accepted our request, we have their vote.");
                     lock (currentTermLockObject) //Used by ChangeStateToLeader, maintaining lock ordering
                     {
                         lock (nodesInfoLockObject)
@@ -942,11 +1009,24 @@ namespace TeamDecided.RaftConsensus
                             nodesInfo[message.From].VoteGranted = true;
                             if (CheckForVoteMajority())
                             {
+                                Log("This vote got us to majority. Changing to leader");
                                 leaderName = nodeName;
                                 ChangeStateToLeader(); //This includes sending out the blast
                             }
+                            else
+                            {
+                                Log("This vote didn't get us to majority. Going to continue waiting...");
+                            }
                         }
                     }
+                }
+                else if(currentState == ERaftState.CANDIDATE && !message.Granted)
+                {
+                    Log("They rejected our request. Discarding.");
+                }
+                else
+                {
+                    Log("We are not in the correct state to process this message. Discarding.");
                 }
             }
         }
@@ -1000,6 +1080,12 @@ namespace TeamDecided.RaftConsensus
             {
                 votedFor = "";
             }
+        }
+
+        private void Log(string format, params object[] args)
+        {
+            string messagePrepend = string.Format("{0} (Status={1}) - ", nodeName, currentState.ToString());
+            RaftLogging.Instance.Debug(messagePrepend + format, args);
         }
 
         #region Get/set timeout/heartbeat values

@@ -167,6 +167,13 @@ namespace TeamDecided.RaftConsensus
             return log[lookupData.Item1][lookupData.Item2].Term;
         }
 
+        public int GetTermOfLastIndex()
+        {
+            if (commitIndexLookup.Count == 0) { return -1; } //No previous entries
+            Tuple<TKey, int> lookupData = commitIndexLookup[commitIndexLookup.Count - 1];
+            return log[lookupData.Item1][lookupData.Item2].Term;
+        }
+
         public int GetLastIndex()
         {
             return commitIndexLookup.Count - 1;
