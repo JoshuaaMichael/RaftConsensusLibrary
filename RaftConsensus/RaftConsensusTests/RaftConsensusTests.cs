@@ -42,14 +42,13 @@ namespace TeamDecided.RaftConsensus.Tests
         
         IConsensus<string, string>[] nodes;
 
-        Mock<IUDPNetworking> mockNetwork;
-
         [SetUp]
         public void BeforeTest()
         {
-            mockNetwork = new Mock<IUDPNetworking>(MockBehavior.Strict);
-            //mockNetwork.Raise(p => p.OnMessageReceived)
-            //mockNetwork.Setup(p => p.OnMessageReceived).Return("expected result");
+            RaftLogging.Instance.OverwriteLoggingFile(@"C:\Users\admin\Downloads\debug.log");
+            RaftLogging.Instance.DeleteExistingLogFile();
+            RaftLogging.Instance.SetDoInfo(true);
+            RaftLogging.Instance.SetDoDebug(true);
         }
 
         private void InformOfIPs(params IConsensus<string, string>[] nodes)
@@ -67,11 +66,9 @@ namespace TeamDecided.RaftConsensus.Tests
             }
         }
 
-        [Test]
+        [Test, Repeat (10)]
         public void IT_TwoNodesJoinCluster()
         {
-            RaftLogging.Instance.OverwriteLoggingFile(@"C:\Users\admin\Downloads\debug.log");
-            RaftLogging.Instance.DeleteExistingLogFile();
             //This will only test 1 leader node, and 1 peers coming to join the cluster
             int maxNodes = 3;
 
@@ -88,10 +85,10 @@ namespace TeamDecided.RaftConsensus.Tests
 
             follower1JoinTask.Wait();
 
-            //Thread.Sleep(5000); //Let's see if we can keep this thing alive for a bit
+            Thread.Sleep(5000); //Let's see if we can keep this thing alive for a bit
 
-            leader.Dispose();
             follower1.Dispose();
+            leader.Dispose();
 
             Assert.AreEqual(EJoinClusterResponse.ACCEPT, follower1JoinTask.Result);
         }
@@ -118,9 +115,11 @@ namespace TeamDecided.RaftConsensus.Tests
             follower1JoinTask.Wait();
             follower2JoinTask.Wait();
 
-            //leader.Dispose();
-            //follower1.Dispose();
-            //follower2.Dispose();
+            Thread.Sleep(2000);
+
+            leader.Dispose();
+            follower1.Dispose();
+            follower2.Dispose();
 
             Assert.AreEqual(EJoinClusterResponse.ACCEPT, follower1JoinTask.Result);
             Assert.AreEqual(EJoinClusterResponse.ACCEPT, follower2JoinTask.Result);
@@ -202,6 +201,37 @@ namespace TeamDecided.RaftConsensus.Tests
             // check if message committed
             Assert.AreEqual(ERaftAppendEntryState.COMMITED, task1.Result);
             Assert.AreEqual(ERaftAppendEntryState.COMMITED, task2.Result);
+        }
+
+        [Test]
+        public void IT_TwoNodesCommitEntries()
+        {
+            //This will only test 1 leader node, and 1 peers coming to join the cluster
+            int maxNodes = 3;
+
+            nodes = RaftConsensus<string, string>.MakeNodesForTest(maxNodes, START_PORT);
+            InformOfIPs(nodes);
+
+            IConsensus<string, string> leader = nodes[0];
+            IConsensus<string, string> follower1 = nodes[1];
+
+            // create a cluster
+            leader.CreateCluster(clusterName, clusterPassword, maxNodes);
+
+            Task<EJoinClusterResponse> follower1JoinTask = follower1.JoinCluster(clusterName, clusterPassword, maxNodes);
+            follower1JoinTask.Wait();
+
+            Thread.Sleep(2000);
+
+            leader.AppendEntry("Hello1", "World1");
+            leader.AppendEntry("Hello2", "World2");
+
+            Thread.Sleep(2000);
+
+            leader.Dispose();
+            follower1.Dispose();
+
+            Assert.AreEqual(EJoinClusterResponse.ACCEPT, follower1JoinTask.Result);
         }
 
         public void IT_LeaderSendsAppendEntriesMessage_IUDPNetworkingReceivesAppendMessageToSend() { }

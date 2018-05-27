@@ -19,5 +19,10 @@ namespace TeamDecided.RaftConsensus.RaftMessages
             Success = success;
             MatchIndex = matchIndex;
         }
+
+        public override string ToString()
+        {
+            return string.Format(base.ToString() + ", LogName:{0}, Term: {1}, Success: {2}, MatchIndex: {3}", LogName, Term, Success, MatchIndex);
+        }
     }
 }

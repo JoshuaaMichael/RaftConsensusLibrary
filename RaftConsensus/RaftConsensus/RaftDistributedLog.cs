@@ -141,6 +141,10 @@ namespace TeamDecided.RaftConsensus
 
         public int GetTermOfIndex(int index)
         {
+            if (index < 0 || index >= commitIndexLookup.Count)
+            {
+                return -1;
+            }
             return GetEntry(index).Term;
         }
 
@@ -208,11 +212,15 @@ namespace TeamDecided.RaftConsensus
             return log[lookupData.Item1][lookupData.Item2];
         }
 
-        public RaftLogEntry<TKey, TValue> this[int commitIndex]
+        public RaftLogEntry<TKey, TValue> this[int index]
         {
             get
             {
-                return GetEntry(commitIndex);
+                if (index < 0 || index >= commitIndexLookup.Count)
+                {
+                    return null;
+                }
+                return GetEntry(index);
             }
         }
     }

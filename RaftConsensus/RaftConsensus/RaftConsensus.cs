@@ -154,8 +154,6 @@ namespace TeamDecided.RaftConsensus
                         throw new InvalidOperationException("There are not enough nodes known yet");
                     }
 
-                    StartThreads();
-
                     onWaitingToJoinCluster = new ManualResetEvent(false);
 
                     currentState = ERaftState.ATTEMPTING_TO_JOIN_CLUSTER;
@@ -165,7 +163,7 @@ namespace TeamDecided.RaftConsensus
                     foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
                     {
                         RaftJoinCluster message = new RaftJoinCluster(node.Key, nodeName, clusterName, joiningClusterAttemptNumber);
-                        networking.SendMessage(message);
+                        SendMessage(message);
                     }
                 }
 
@@ -334,7 +332,7 @@ namespace TeamDecided.RaftConsensus
                                                                         prevTerm,
                                                                         commitIndex,
                                                                         entry);
-                            networking.SendMessage(message);
+                            SendMessage(message);
                         }
                     }
 
@@ -428,7 +426,7 @@ namespace TeamDecided.RaftConsensus
                                     {
                                         heartbeatMessage = new RaftAppendEntry<TKey, TValue>(node.Key, nodeName, ELogName.UAS_LOG, currentTerm, distributedLog.CommitIndex);
                                     }
-                                    networking.SendMessage(heartbeatMessage);
+                                    SendMessage(heartbeatMessage);
                                 }
                             }
                         }
@@ -530,7 +528,7 @@ namespace TeamDecided.RaftConsensus
                 foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
                 {
                     RaftAppendEntry<TKey, TValue> message = new RaftAppendEntry<TKey, TValue>(node.Key, nodeName, ELogName.UAS_LOG, currentTerm, distributedLog.CommitIndex);
-                    networking.SendMessage(message);
+                    SendMessage(message);
                 }
             }
             Log("Notifying to start UAS");
@@ -555,7 +553,7 @@ namespace TeamDecided.RaftConsensus
                     foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
                     {
                         RaftRequestVote message = new RaftRequestVote(node.Key, nodeName, currentTerm, distributedLog.GetLastIndex(), distributedLog.GetTermOfLastIndex());
-                        networking.SendMessage(message);
+                        SendMessage(message);
                     }
                 }
             }
@@ -571,6 +569,7 @@ namespace TeamDecided.RaftConsensus
             }
 
             Log("Received new message: {0}, from {1}", ((RaftBaseMessage)message).GetType(), message.From);
+            LogVerbose(message.ToString());
 
             if (message.MessageType == typeof(RaftJoinCluster))
             {
@@ -658,7 +657,7 @@ namespace TeamDecided.RaftConsensus
                     throw new InvalidOperationException("How did you even get here?");
                 }
             }
-            networking.SendMessage(responseMessage);
+            SendMessage(responseMessage);
         }
         private void HandleJoinClusterResponse(RaftJoinClusterResponse message)
         {
@@ -689,7 +688,7 @@ namespace TeamDecided.RaftConsensus
                     }
                     Log("Notifying the user we've succesfully joined the cluster");
                     onWaitingToJoinCluster.Set();
-
+                    StartThreads();
                     ChangeStateToFollower();
                 }
                 else if(message.JoinClusterResponse == EJoinClusterResponse.REJECT_LEADER_UNKNOWN)
@@ -731,7 +730,7 @@ namespace TeamDecided.RaftConsensus
                     {
                         Log("Recieved AppendEntry from node {0} for a previous term. Sending back a reject.", message.From);
                         responseMessage = new RaftAppendEntryResponse(message.From, nodeName, message.LogName, currentTerm, false, -1);
-                        networking.SendMessage(responseMessage);
+                        SendMessage(responseMessage);
                         return;
                     }
 
@@ -783,7 +782,7 @@ namespace TeamDecided.RaftConsensus
                                 distributedLog.CommitUpToIndex(newCommitIndex);
                             }
                             responseMessage = new RaftAppendEntryResponse(message.From, nodeName, message.LogName, currentTerm, true, distributedLog.GetLastIndex());
-                            networking.SendMessage(responseMessage);
+                            SendMessage(responseMessage);
                             return;
                         }
                         else
@@ -801,14 +800,14 @@ namespace TeamDecided.RaftConsensus
                                 }
                                 Log("Responding to leader with the success of our append");
                                 responseMessage = new RaftAppendEntryResponse(message.From, nodeName, message.LogName, currentTerm, true, distributedLog.GetLastIndex());
-                                networking.SendMessage(responseMessage);
+                                SendMessage(responseMessage);
                                 return;
                             }
                             else
                             {
                                 Log("Failed to add new entries because confirming previous index/term failed. Ours ({0}. {1}). Theirs ({2}, {3})", distributedLog.GetLastIndex(), distributedLog.GetTermOfLastIndex(), message.PrevIndex, message.PrevTerm);
                                 responseMessage = new RaftAppendEntryResponse(message.From, nodeName, message.LogName, currentTerm, false, distributedLog.GetLastIndex());
-                                networking.SendMessage(responseMessage);
+                                SendMessage(responseMessage);
                                 return;
                             }
                         }
@@ -885,7 +884,7 @@ namespace TeamDecided.RaftConsensus
                                                                                             ELogName.UAS_LOG,
                                                                                             currentTerm,
                                                                                             distributedLog.CommitIndex);
-                                                networking.SendMessage(updateMessage);
+                                                SendMessage(updateMessage);
                                             }
                                         }
                                     }
@@ -977,7 +976,7 @@ namespace TeamDecided.RaftConsensus
                     }
                 }
             }
-            networking.SendMessage(responseMessage);
+            SendMessage(responseMessage);
         }
         private void HandleCallElectionResponse(RaftRequestVoteResponse message)
         {
@@ -1082,7 +1081,19 @@ namespace TeamDecided.RaftConsensus
             }
         }
 
+        private void SendMessage(RaftBaseMessage message)
+        {
+            Log("Sending message: {0}, to {1}", message.GetType(), message.To);
+            LogVerbose(message.ToString());
+            networking.SendMessage(message);
+        }
+
         private void Log(string format, params object[] args)
+        {
+            string messagePrepend = string.Format("{0} (Status={1}) - ", nodeName, currentState.ToString());
+            RaftLogging.Instance.Info(messagePrepend + format, args);
+        }
+        private void LogVerbose(string format, params object[] args)
         {
             string messagePrepend = string.Format("{0} (Status={1}) - ", nodeName, currentState.ToString());
             RaftLogging.Instance.Debug(messagePrepend + format, args);

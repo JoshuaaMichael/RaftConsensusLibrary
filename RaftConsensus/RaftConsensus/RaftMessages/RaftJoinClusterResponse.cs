@@ -29,5 +29,10 @@ namespace TeamDecided.RaftConsensus.RaftMessages
             ClusterName = clusterName;
             JoinClusterResponse = joinClusterResponse;
         }
+
+        public override string ToString()
+        {
+            return string.Format(base.ToString() + ", JoinClusterResponse:{0}, LeaderIP: {1}, LeaderPort: {2}, ClusterName: {3}, JoinClusterAttempt: {4}", JoinClusterResponse, LeaderIP, LeaderPort, ClusterName, JoinClusterAttempt);
+        }
     }
 }

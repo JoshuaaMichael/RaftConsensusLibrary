@@ -55,6 +55,9 @@ namespace TeamDecided.RaftNetworking
         private Task processingThread;
         private CountdownEvent onThreadsStarted;
 
+        private int clientPort;
+        private IPEndPoint clientIPEndPoint;
+
         private bool disposedValue = false; // To detect redundant calls
 
         public UDPNetworking()
@@ -93,6 +96,9 @@ namespace TeamDecided.RaftNetworking
             processingThread = new Task(ProcessingThread, TaskCreationOptions.LongRunning);
 
             onThreadsStarted = new CountdownEvent(3);
+
+            clientPort = -1;
+            clientIPEndPoint = null;
         }
 
         public void Start(int port)
@@ -147,17 +153,25 @@ namespace TeamDecided.RaftNetworking
             onThreadsStarted.Signal();
             while (true)
             {
-                byte[] messageBytes;
+                byte[] messageBytes = null;
                 IPEndPoint endPoint = null;
 
-                Task<UdpReceiveResult> result;
+                Task<UdpReceiveResult> result = null;
                 lock (statusLockObject)
                 {
                     if (status != EUDPNetworkingStatus.RUNNING)
                     {
                         return;
                     }
-                    result = udpClient.ReceiveAsync();
+                    try
+                    {
+                        result = udpClient.ReceiveAsync();
+                    }
+                    catch
+                    {
+                        RebuildUDPClient();
+                        continue;
+                    }
                 }
 
                 int index;
@@ -175,7 +189,15 @@ namespace TeamDecided.RaftNetworking
                         return;
                     }
 
-                    messageBytes = result.Result.Buffer;
+                    try
+                    {
+                        messageBytes = result.Result.Buffer;
+                    }
+                    catch
+                    {
+                        RebuildUDPClient();
+                        continue;
+                    }
                     endPoint = result.Result.RemoteEndPoint;
 
                     lock (newMessagesReceivedLockObject)
@@ -184,6 +206,18 @@ namespace TeamDecided.RaftNetworking
                         onMessageReceive.Set();
                     }
                 }
+            }
+        }
+
+        private void RebuildUDPClient()
+        {
+            if(clientPort != -1) //We initied this initially with a port number
+            {
+                udpClient = new UdpClient(clientPort);
+            }
+            else
+            {
+                udpClient = new UdpClient(clientIPEndPoint);
             }
         }
 
@@ -245,7 +279,16 @@ namespace TeamDecided.RaftNetworking
                         recipient = GetPeerIPEndPoint(message.To);
                     }
 
-                    Task<int> sendMessageTask = udpClient.SendAsync(messageToSend, messageToSend.Length, recipient);
+                    Task<int> sendMessageTask;
+                    try
+                    {
+                        sendMessageTask = udpClient.SendAsync(messageToSend, messageToSend.Length, recipient);
+                    }
+                    catch
+                    {
+                        RebuildUDPClient();
+                        continue;
+                    }
                     sendMessageTask.Wait();
 
                     if (sendMessageTask.Result <= 0)
@@ -408,6 +451,10 @@ namespace TeamDecided.RaftNetworking
             {
                 if (status != EUDPNetworkingStatus.RUNNING)
                 {
+                    if(status == EUDPNetworkingStatus.STOPPED)
+                    {
+                        return;
+                    }
                     throw new InvalidOperationException("Library is currently not in a state it may send in"); ;
                 }
                 lock (newMessagesToSendLockObject)
@@ -577,16 +624,16 @@ namespace TeamDecided.RaftNetworking
                         status = EUDPNetworkingStatus.STOPPED;
 
                         onNetworkingStop.Set();
-                        if (udpClient != null)
-                        {
-                            udpClient.Dispose();
-                        }
                     }
                     if(previousStatus == EUDPNetworkingStatus.RUNNING)
                     {
                         listeningThread.Wait();
                         sendingThread.Wait();
                         processingThread.Wait();
+                    }
+                    if (udpClient != null)
+                    {
+                        udpClient.Dispose();
                     }
                 }
                 disposedValue = true;
