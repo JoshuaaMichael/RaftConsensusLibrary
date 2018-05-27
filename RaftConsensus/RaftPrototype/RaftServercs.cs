@@ -10,9 +10,9 @@ using System.Windows.Forms;
 
 namespace RaftPrototype
 {
-    public partial class Form1 : Form
+    public partial class RaftServercs : Form
     {
-        public Form1()
+        public RaftServercs()
         {
             InitializeComponent();
         }
