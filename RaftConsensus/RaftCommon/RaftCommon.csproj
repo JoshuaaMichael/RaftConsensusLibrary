@@ -5,10 +5,4 @@
     <RootNamespace>TeamDecided.RaftCommon</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Update="RaftLogging.cs">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Compile>
-  </ItemGroup>
-
 </Project>

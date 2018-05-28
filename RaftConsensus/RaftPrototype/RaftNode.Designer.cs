@@ -66,7 +66,7 @@
             this.bSendMsg.TabIndex = 2;
             this.bSendMsg.Text = "Send Message";
             this.bSendMsg.UseVisualStyleBackColor = true;
-            this.bSendMsg.Click += new System.EventHandler(this.bSendMsg_Click);
+            this.bSendMsg.Click += new System.EventHandler(this.SendMsg_Click);
             // 
             // bStop
             // 

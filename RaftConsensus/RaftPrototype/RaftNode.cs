@@ -23,6 +23,7 @@ namespace RaftPrototype
         private void Initialize(string serverName, string configFile)
         {
             //TODO: This is where we need to get the current IConsensus log
+            this.Text = string.Format("{0} - {1}", this.Text, serverName);
             lbNodeName.Text = serverName;
             LoadConfig(serverName, configFile);
 
@@ -49,10 +50,16 @@ namespace RaftPrototype
             }
             else
             {
-                //join cluster
-                node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
-                //Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
-                //joinTask.Wait();
+                /// something within JoinCluster breaks and the the window doesnt always display when 
+                /// being initiated from Process.Start() call in RaftBootStrap
+                /// Well a minor correction in that statement.the window does start just never renders
+                /// dodgy windows task manager doesn't always show the offending task either. SYsInternals - ProcessExplorer
+                /// does however show the task. You can restart the task and the window does appear correctly
+
+                ////join cluster
+                //node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+                ////Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+                ////joinTask.Wait();
             }
 
             //The event that is for start/stop UAS
@@ -79,7 +86,7 @@ namespace RaftPrototype
         }
 
 
-        private void bSendMsg_Click(object sender, EventArgs e)
+        private void SendMsg_Click(object sender, EventArgs e)
         {
             //TODO: This is where we'll send a message using IConsensus member.
 

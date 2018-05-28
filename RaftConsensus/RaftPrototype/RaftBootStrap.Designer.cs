@@ -70,7 +70,7 @@
             this.nNodes.Name = "nNodes";
             this.nNodes.Size = new System.Drawing.Size(120, 20);
             this.nNodes.TabIndex = 1;
-            this.nNodes.ValueChanged += new System.EventHandler(this.nNodes_ValueChanged);
+            this.nNodes.ValueChanged += new System.EventHandler(this.Nodes_ValueChanged);
             // 
             // button1
             // 
@@ -80,7 +80,7 @@
             this.button1.TabIndex = 2;
             this.button1.Text = "Exit";
             this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.button1.Click += new System.EventHandler(this.Button1_Click);
             // 
             // label2
             // 
@@ -181,7 +181,7 @@
             this.tbPort.Name = "tbPort";
             this.tbPort.Size = new System.Drawing.Size(100, 20);
             this.tbPort.TabIndex = 15;
-            this.tbPort.TextChanged += new System.EventHandler(this.tbPort_textChangedEventHandler);
+            this.tbPort.TextChanged += new System.EventHandler(this.TbPort_textChangedEventHandler);
             // 
             // lWarningNodesNumber
             // 
@@ -201,7 +201,7 @@
             this.btnCreate.TabIndex = 11;
             this.btnCreate.Text = "Create";
             this.btnCreate.UseVisualStyleBackColor = true;
-            this.btnCreate.Click += new System.EventHandler(this.btnCreate_Click);
+            this.btnCreate.Click += new System.EventHandler(this.CreateRaftNodes_WithStartInfo_Click);
             // 
             // nodeConfigDataView
             // 
