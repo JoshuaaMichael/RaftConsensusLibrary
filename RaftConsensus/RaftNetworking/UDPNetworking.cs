@@ -111,6 +111,7 @@ namespace TeamDecided.RaftNetworking
                 }
                 status = EUDPNetworkingStatus.STARTING;
             }
+            clientPort = port;
             udpClient = new UdpClient(port);
             StartThreads();
         }
@@ -125,6 +126,7 @@ namespace TeamDecided.RaftNetworking
                 }
                 status = EUDPNetworkingStatus.STARTING;
             }
+            clientIPEndPoint = endPoint;
             udpClient = new UdpClient(endPoint);
             StartThreads();
         }
@@ -211,7 +213,8 @@ namespace TeamDecided.RaftNetworking
 
         private void RebuildUDPClient()
         {
-            if(clientPort != -1) //We initied this initially with a port number
+            udpClient.Close();//close the existing UDPClient otherwise you get an System.Net.Sockets.SocketException {"Only one usage of each socket address (protocol/network address/port) is normally permitted"}
+            if (clientPort != -1) //We initied this initially with a port number
             {
                 udpClient = new UdpClient(clientPort);
             }

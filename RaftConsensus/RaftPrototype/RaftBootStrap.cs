@@ -2,18 +2,12 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Diagnostics;
 using System.Threading;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using TeamDecided.RaftConsensus;
-using TeamDecided.RaftConsensus.Interfaces;
 
 namespace RaftPrototype
 {
@@ -21,7 +15,7 @@ namespace RaftPrototype
     {
         private const int MAXIMUM_NODES = 9;
         private const int MINIMUM_NODES = 3;
-        private const int DEFAULT_NODES = 5;
+        private const int DEFAULT_NODES = 3;
         private const int START_PORT = 5555;
 
         private const string MAX_NODES_WARNING = "Maximum nine (9) nodes supported in prototype";
@@ -38,9 +32,6 @@ namespace RaftPrototype
         protected StatusBarPanel statusPanel = new StatusBarPanel();
         protected StatusBarPanel datetimePanel = new StatusBarPanel();
 
-        //////private IConsensus<string, string>[] nodes;
-        //private RaftNode[] servers;
-
         public RaftBootStrap()
         {
             InitializeComponent();
@@ -56,14 +47,11 @@ namespace RaftPrototype
             tbIPAddress.Text = IP_TO_BIND;
             tbIPAddress.Enabled = false;//don't want the user to change this at the moment
 
-            //nodes = RaftConsensus<string, string>.MakeNodesForTest(5, START_PORT);
+            SetNodeCountSelector();// setup node numeric up down UI
 
-            // setup node numeric up down UI
-            SetNodeCountSelector();
-            // setup status bar
-            CreateStatusBar();
-            //Populate the datagrid with nodeName, ipAddress and port information
-            CreateGridView();
+            CreateStatusBar();// setup status bar
+
+            CreateGridView();//Populate the datagrid with nodeName, ipAddress and port based of GUI information provided
         }
 
         private void PopulateNodeInformation(RaftConsensus<string, string>[] nodes)
@@ -113,7 +101,7 @@ namespace RaftPrototype
             else
             {
                 lWarningNodesNumber.Visible = false;
-                statusPanel.Text = "";
+                statusPanel.Text = string.Format("Configuration file: {0}", Path.Combine(Environment.CurrentDirectory, "config.json"));
             }
             nodeConfigDataView.DataSource = null;
             CreateGridView();
@@ -170,39 +158,25 @@ namespace RaftPrototype
             File.Delete(configFile);
             File.WriteAllText(configFile, json);
 
-            //this.Hide();
+            RaftNode[] nodes = new RaftNode[maxNodes];
+
             //this is the leader window
+            //nodes[0] = new RaftNode(rbsc.nodeNames[0], configFile);
+            //nodes[0].Show();
             Process.Start(System.Reflection.Assembly.GetEntryAssembly().Location, string.Format("{0} {1}", rbsc.nodeNames[0], configFile));
 
             //Let's start the leader with a 500ms head start (sleep) beofore starting the rest
-            Thread.Sleep(500);
+
 
             for (int i = 1; i < rbsc.nodeNames.Count; i++)
             {
-                if (i == 1)
-                {
-                    RaftNode node1 = new RaftNode(rbsc.nodeNames[1], configFile);
-                    node1.Show();
-                }
-                else
-                {
-                    Process.Start(System.Reflection.Assembly.GetEntryAssembly().Location, string.Format("{0} {1}", rbsc.nodeNames[i], configFile));
-                }
+                Thread.Sleep(500);
+                Process.Start(System.Reflection.Assembly.GetEntryAssembly().Location, string.Format("{0} {1}", rbsc.nodeNames[i], configFile));
+                //nodes[i] = new RaftNode(rbsc.nodeNames[i], configFile);
+                //nodes[i].Show();
             }
 
             Close();
-
-            //servers = new RaftServer[(int)numericUpDownNodes.Value];
-
-            //for (int i = 0; i < numericUpDownNodes.Value; i++)
-            //{
-            //    servers[i] = new RaftServer();
-            //    servers[i].Show();
-            //}
-            //RaftServer raftServer = new RaftServer();
-
-            //raftServer.Show();
-            //this.Hide();
         }
 
         private void CreateGridView()
@@ -213,15 +187,20 @@ namespace RaftPrototype
 
             for (int i = 0; i< maxNodes; i++)
             {
-                string nodeName = string.Format("Node {0}", i + 1);
+                string nodeName = string.Format("Node{0}", i);
                 string nodeIP = IP_TO_BIND;
-                int nodePort = i + START_PORT;
+                int nodePort = int.Parse(tbPort.Text) + i;
 
                 Tuple<string, string, int> temp = new Tuple<string, string, int> (nodeName, nodeIP, nodePort);
                 config.Add(temp);
             }
 
             nodeConfigDataView.DataSource = config;
+        }
+
+        private void tbPort_textChangedEventHandler(object sender, EventArgs e)
+        {
+            CreateGridView();
         }
     }
 }

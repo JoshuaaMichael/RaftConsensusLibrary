@@ -181,6 +181,7 @@
             this.tbPort.Name = "tbPort";
             this.tbPort.Size = new System.Drawing.Size(100, 20);
             this.tbPort.TabIndex = 15;
+            this.tbPort.TextChanged += new System.EventHandler(this.tbPort_textChangedEventHandler);
             // 
             // lWarningNodesNumber
             // 

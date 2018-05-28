@@ -2,17 +2,17 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using TeamDecided.RaftConsensus;
+using TeamDecided.RaftConsensus.Enums;
 using TeamDecided.RaftConsensus.Interfaces;
 
 namespace RaftPrototype
 {
     public partial class RaftNode : Form
     {
-        //List<KeyValuePair<string, string>> log = new List<KeyValuePair<string, string>>();
-        IConsensus<string, string> node;
-
+        private IConsensus<string, string> node;
 
         public RaftNode(string serverName, string configFile)
         {
@@ -23,15 +23,9 @@ namespace RaftPrototype
         private void Initialize(string serverName, string configFile)
         {
             //TODO: This is where we need to get the current IConsensus log
-
+            lbNodeName.Text = serverName;
             LoadConfig(serverName, configFile);
 
-            //// this is a temp data store
-            //RaftData data = new RaftData();
-            ////adding a dictionary content as a list of KeyValuePairs
-            //log.AddRange(data.Data());
-            //// setting the datagrid source
-            //dataGridView1.DataSource = log;
         }
 
         public void LoadConfig(string serverName, string configFile)
@@ -39,40 +33,26 @@ namespace RaftPrototype
             string json = File.ReadAllText(configFile);
             RaftBootstrapConfig config = JsonConvert.DeserializeObject<RaftBootstrapConfig>(json);
 
-            if(config.nodeNames[0] == serverName)
+            //Get the node id from the node name string
+            int id = int.Parse(serverName.Substring(serverName.Length - 1));
+
+            node = new RaftConsensus<string, string>(config.nodeNames[id], config.nodePorts[id]);
+
+            //populate the peer information
+            AddPeers(config, id);
+
+            //always making the first entry the cluster manager (Leader)
+            if (config.nodeNames[0] == serverName)
             {
-                //nodes = RaftConsensus<string, string>.MakeNodesForTest(config.maxNodes, config.nodePorts[0]);
-                node = new RaftConsensus<string, string>(config.nodeNames[0], config.nodePorts[0]);
-
-                for (int i = 1; i < config.maxNodes; i++)
-                {
-                    IPEndPoint ipEndpoint = new IPEndPoint(IPAddress.Parse(config.nodeIPAddresses[i]), config.nodePorts[i]);
-                    //Add the list of nodes into the PeerList
-                    node.ManualAddPeer(config.nodeNames[i], ipEndpoint);
-                }
-
                 //create cluster
                 node.CreateCluster(config.clusterName, config.clusterPassword, config.maxNodes);
-
             }
             else
             {
-                int id = int.Parse(serverName.Substring(serverName.Length - 2)) - 1;
-                node = new RaftConsensus<string, string>(config.nodeNames[id], config.nodePorts[id]);
-
-                for (int i = 0; i < config.maxNodes; i++)
-                {
-                    IPEndPoint ipEndpoint = new IPEndPoint(IPAddress.Parse(config.nodeIPAddresses[i]), config.nodePorts[i]);
-                    //Add the list of nodes into the PeerList
-                    if (i != id)
-                    {
-                        node.ManualAddPeer(config.nodeNames[i], ipEndpoint);
-                    }
-                }
-
-
                 //join cluster
                 node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+                //Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+                //joinTask.Wait();
             }
 
             //The event that is for start/stop UAS
@@ -82,21 +62,27 @@ namespace RaftPrototype
             //Read out if you are the leader
         }
 
+        private void AddPeers(RaftBootstrapConfig config, int id)
+        {
+            for (int i = 0; i < config.maxNodes; i++)
+            {
+                //Add the list of nodes into the PeerList
+                if (i == id)
+                {
+                    continue;
+                }
+                IPEndPoint ipEndpoint = new IPEndPoint(IPAddress.Parse(config.nodeIPAddresses[i]), config.nodePorts[i]);
+                node.ManualAddPeer(config.nodeNames[i], ipEndpoint);
+                //Console.WriteLine(string.Format("{0} adding {1} to peers", config.nodeNames[id], config.nodeNames[i]));
+            }
+            Console.WriteLine("finished adding peers to {0}", config.nodeNames[id]);
+        }
+
+
         private void bSendMsg_Click(object sender, EventArgs e)
         {
             //TODO: This is where we'll send a message using IConsensus member.
 
-            //KeyValuePair<string, string> temp = new KeyValuePair<string, string>("new", DateTime.Now.Ticks.ToString());
-            //log.Add(temp);
-            
-            //// clear data source
-            //dataGridView1.DataSource = null;
-            //// setting the datagrid source
-            //dataGridView1.DataSource = log;
         }
     }
 }
-        //public void SetLog(IConsensus<string, string> log)
-        //{
-        //    this.distributedLog = log;
-        //}

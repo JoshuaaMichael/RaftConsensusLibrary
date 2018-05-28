@@ -28,11 +28,11 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.lNodeName = new System.Windows.Forms.Label();
+            this.lbNodeName = new System.Windows.Forms.Label();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
             this.bSendMsg = new System.Windows.Forms.Button();
             this.bStop = new System.Windows.Forms.Button();
-            this.lState = new System.Windows.Forms.Label();
+            this.lbState = new System.Windows.Forms.Label();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.textBox2 = new System.Windows.Forms.TextBox();
@@ -40,15 +40,15 @@
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
-            // lNodeName
+            // lbNodeName
             // 
-            this.lNodeName.AutoSize = true;
-            this.lNodeName.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lNodeName.Location = new System.Drawing.Point(9, 9);
-            this.lNodeName.Name = "lNodeName";
-            this.lNodeName.Size = new System.Drawing.Size(79, 17);
-            this.lNodeName.TabIndex = 0;
-            this.lNodeName.Text = "NodeName";
+            this.lbNodeName.AutoSize = true;
+            this.lbNodeName.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lbNodeName.Location = new System.Drawing.Point(9, 9);
+            this.lbNodeName.Name = "lbNodeName";
+            this.lbNodeName.Size = new System.Drawing.Size(79, 17);
+            this.lbNodeName.TabIndex = 0;
+            this.lbNodeName.Text = "NodeName";
             // 
             // dataGridView1
             // 
@@ -77,15 +77,15 @@
             this.bStop.Text = "Stop";
             this.bStop.UseVisualStyleBackColor = true;
             // 
-            // lState
+            // lbState
             // 
-            this.lState.AutoSize = true;
-            this.lState.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lState.Location = new System.Drawing.Point(12, 42);
-            this.lState.Name = "lState";
-            this.lState.Size = new System.Drawing.Size(83, 17);
-            this.lState.TabIndex = 5;
-            this.lState.Text = "ServerState";
+            this.lbState.AutoSize = true;
+            this.lbState.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lbState.Location = new System.Drawing.Point(12, 42);
+            this.lbState.Name = "lbState";
+            this.lbState.Size = new System.Drawing.Size(83, 17);
+            this.lbState.TabIndex = 5;
+            this.lbState.Text = "ServerState";
             // 
             // textBox1
             // 
@@ -112,19 +112,19 @@
             this.textBox2.Size = new System.Drawing.Size(291, 75);
             this.textBox2.TabIndex = 0;
             // 
-            // RaftServer
+            // RaftNode
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(330, 465);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.textBox1);
-            this.Controls.Add(this.lState);
+            this.Controls.Add(this.lbState);
             this.Controls.Add(this.bStop);
             this.Controls.Add(this.bSendMsg);
             this.Controls.Add(this.dataGridView1);
-            this.Controls.Add(this.lNodeName);
-            this.Name = "RaftServer";
+            this.Controls.Add(this.lbNodeName);
+            this.Name = "RaftNode";
             this.Text = "Raft Prototype Node";
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
             this.groupBox1.ResumeLayout(false);
@@ -136,11 +136,11 @@
 
         #endregion
 
-        private System.Windows.Forms.Label lNodeName;
+        private System.Windows.Forms.Label lbNodeName;
         private System.Windows.Forms.DataGridView dataGridView1;
         private System.Windows.Forms.Button bSendMsg;
         private System.Windows.Forms.Button bStop;
-        private System.Windows.Forms.Label lState;
+        private System.Windows.Forms.Label lbState;
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.TextBox textBox2;
