@@ -141,6 +141,10 @@ namespace TeamDecided.RaftConsensus
 
         public int GetTermOfIndex(int index)
         {
+            if (index < 0 || index >= commitIndexLookup.Count)
+            {
+                return -1;
+            }
             return GetEntry(index).Term;
         }
 
@@ -164,6 +168,13 @@ namespace TeamDecided.RaftConsensus
         {
             if(CommitIndex == -1) { return -1; } //No previous entries
             Tuple<TKey, int> lookupData = commitIndexLookup[CommitIndex];
+            return log[lookupData.Item1][lookupData.Item2].Term;
+        }
+
+        public int GetTermOfLastIndex()
+        {
+            if (commitIndexLookup.Count == 0) { return -1; } //No previous entries
+            Tuple<TKey, int> lookupData = commitIndexLookup[commitIndexLookup.Count - 1];
             return log[lookupData.Item1][lookupData.Item2].Term;
         }
 
@@ -201,11 +212,15 @@ namespace TeamDecided.RaftConsensus
             return log[lookupData.Item1][lookupData.Item2];
         }
 
-        public RaftLogEntry<TKey, TValue> this[int commitIndex]
+        public RaftLogEntry<TKey, TValue> this[int index]
         {
             get
             {
-                return GetEntry(commitIndex);
+                if (index < 0 || index >= commitIndexLookup.Count)
+                {
+                    return null;
+                }
+                return GetEntry(index);
             }
         }
     }

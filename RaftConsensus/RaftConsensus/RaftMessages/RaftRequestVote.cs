@@ -13,5 +13,10 @@
             LastLogIndex = lastLogIndex;
             LastTermIndex = lastTermIndex;
         }
+
+        public override string ToString()
+        {
+            return string.Format(base.ToString() + ", Term:{0}, LastLogIndex: {1}, LastTermIndex: {2}", Term, LastLogIndex, LastTermIndex);
+        }
     }
 }

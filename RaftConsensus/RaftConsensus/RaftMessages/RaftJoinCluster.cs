@@ -13,5 +13,10 @@
             ClusterName = clusterName;
             JoinClusterAttempt = joinClusterAttempt;
         }
+
+        public override string ToString()
+        {
+            return string.Format(base.ToString() + ", ClusterName:{0}, JoinClusterAttempt: {1}", ClusterName, JoinClusterAttempt);
+        }
     }
 }

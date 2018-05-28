@@ -11,5 +11,10 @@
             Term = term;
             Granted = granted;
         }
+
+        public override string ToString()
+        {
+            return string.Format(base.ToString() + ", Term:{0}, Granted: {1}", Term, Granted);
+        }
     }
 }

@@ -38,5 +38,10 @@ namespace TeamDecided.RaftConsensus.RaftMessages
         {
             return PrevIndex + 1;
         }
+
+        public override string ToString()
+        {
+            return string.Format(base.ToString() + ", LogName:{0}, Term: {1}, PrevIndex: {2}, PrevTerm: {3}, LeaderCommitIndex: {4}, Entry: {5}", LogName, Term, PrevIndex, PrevTerm, LeaderCommitIndex, Entry);
+        }
     }
 }

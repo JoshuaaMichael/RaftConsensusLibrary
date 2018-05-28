@@ -8,6 +8,7 @@ using TeamDecided.RaftConsensus.Enums;
 using TeamDecided.RaftNetworking.Interfaces;
 using System.Collections.Generic;
 using System.Threading;
+using TeamDecided.RaftCommon.Logging;
 
 /*  TODO:
  *  
@@ -41,14 +42,13 @@ namespace TeamDecided.RaftConsensus.Tests
         
         IConsensus<string, string>[] nodes;
 
-        Mock<IUDPNetworking> mockNetwork;
-
         [SetUp]
         public void BeforeTest()
         {
-            mockNetwork = new Mock<IUDPNetworking>(MockBehavior.Strict);
-            //mockNetwork.Raise(p => p.OnMessageReceived)
-            //mockNetwork.Setup(p => p.OnMessageReceived).Return("expected result");
+            RaftLogging.Instance.OverwriteLoggingFile(@"C:\Users\admin\Downloads\debug.log");
+            RaftLogging.Instance.DeleteExistingLogFile();
+            RaftLogging.Instance.SetDoInfo(true);
+            RaftLogging.Instance.SetDoDebug(true);
         }
 
         private void InformOfIPs(params IConsensus<string, string>[] nodes)
@@ -64,6 +64,33 @@ namespace TeamDecided.RaftConsensus.Tests
                     nodes[i].ManualAddPeer(nodes[j].GetNodeName(), new IPEndPoint(IPAddress.Parse(IP_TO_BIND), START_PORT + j));
                 }
             }
+        }
+
+        [Test, Repeat (10)]
+        public void IT_TwoNodesJoinCluster()
+        {
+            //This will only test 1 leader node, and 1 peers coming to join the cluster
+            int maxNodes = 3;
+
+            nodes = RaftConsensus<string, string>.MakeNodesForTest(maxNodes, START_PORT);
+            InformOfIPs(nodes);
+
+            IConsensus<string, string> leader = nodes[0];
+            IConsensus<string, string> follower1 = nodes[1];
+
+            // create a cluster
+            leader.CreateCluster(clusterName, clusterPassword, maxNodes);
+
+            Task<EJoinClusterResponse> follower1JoinTask = follower1.JoinCluster(clusterName, clusterPassword, maxNodes);
+
+            follower1JoinTask.Wait();
+
+            Thread.Sleep(5000); //Let's see if we can keep this thing alive for a bit
+
+            follower1.Dispose();
+            leader.Dispose();
+
+            Assert.AreEqual(EJoinClusterResponse.ACCEPT, follower1JoinTask.Result);
         }
 
         [Test]
@@ -88,6 +115,8 @@ namespace TeamDecided.RaftConsensus.Tests
             follower1JoinTask.Wait();
             follower2JoinTask.Wait();
 
+            Thread.Sleep(2000);
+
             leader.Dispose();
             follower1.Dispose();
             follower2.Dispose();
@@ -100,7 +129,7 @@ namespace TeamDecided.RaftConsensus.Tests
         public void IT_ManyNodesJoinCluster()
         {
             //This will only test 1 leader node, and 6 peers coming to join the cluster
-            int maxNodes = 7;
+            int maxNodes = 9;
 
             nodes = RaftConsensus<string, string>.MakeNodesForTest(maxNodes, START_PORT);
             InformOfIPs(nodes);
@@ -110,8 +139,10 @@ namespace TeamDecided.RaftConsensus.Tests
             // create a cluster
             leader.CreateCluster(clusterName, clusterPassword, maxNodes);
 
-            List<Task<EJoinClusterResponse>> joinTasks = new List<Task<EJoinClusterResponse>>();
-            joinTasks.Add(null); //Syncs up the indexes
+            List<Task<EJoinClusterResponse>> joinTasks = new List<Task<EJoinClusterResponse>>
+            {
+                null //Syncs up the indexes
+            };
             for (int i = 1; i < nodes.Length; i++)
             {
                 joinTasks.Add(nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes));
@@ -124,7 +155,7 @@ namespace TeamDecided.RaftConsensus.Tests
 
             for (int i = 0; i < nodes.Length; i++)
             {
-                nodes[i].Dispose();
+                //nodes[i].Dispose();
             }
 
             for (int i = 1; i < nodes.Length; i++)
@@ -172,7 +203,36 @@ namespace TeamDecided.RaftConsensus.Tests
             Assert.AreEqual(ERaftAppendEntryState.COMMITED, task2.Result);
         }
 
+        [Test]
+        public void IT_TwoNodesCommitEntries()
+        {
+            //This will only test 1 leader node, and 1 peers coming to join the cluster
+            int maxNodes = 3;
 
+            nodes = RaftConsensus<string, string>.MakeNodesForTest(maxNodes, START_PORT);
+            InformOfIPs(nodes);
+
+            IConsensus<string, string> leader = nodes[0];
+            IConsensus<string, string> follower1 = nodes[1];
+
+            // create a cluster
+            leader.CreateCluster(clusterName, clusterPassword, maxNodes);
+
+            Task<EJoinClusterResponse> follower1JoinTask = follower1.JoinCluster(clusterName, clusterPassword, maxNodes);
+            follower1JoinTask.Wait();
+
+            Thread.Sleep(2000);
+
+            leader.AppendEntry("Hello1", "World1");
+            leader.AppendEntry("Hello2", "World2");
+
+            Thread.Sleep(2000);
+
+            leader.Dispose();
+            follower1.Dispose();
+
+            Assert.AreEqual(EJoinClusterResponse.ACCEPT, follower1JoinTask.Result);
+        }
 
         public void IT_LeaderSendsAppendEntriesMessage_IUDPNetworkingReceivesAppendMessageToSend() { }
         public void IT_FollwerReceivesAppendMessage_FollwerAppendsLogButDoesntCommit() { }

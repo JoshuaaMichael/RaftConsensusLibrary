@@ -32,5 +32,10 @@ namespace TeamDecided.RaftConsensus
             RaftLogEntry<TKey, TValue> clone = new RaftLogEntry<TKey, TValue>((TKey)Key.Clone(), (TValue)Value.Clone(), Term);
             return clone;
         }
+
+        public override string ToString()
+        {
+            return string.Format("Key:{0}, Value: {1}, Term: {2}", Key, Value, Term);
+        }
     }
 }
