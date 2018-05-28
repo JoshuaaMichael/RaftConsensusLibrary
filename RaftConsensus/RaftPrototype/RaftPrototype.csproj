@@ -32,6 +32,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -45,22 +48,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="RaftForm.cs">
+    <Compile Include="RaftBootstrapConfig.cs" />
+    <Compile Include="RaftData.cs" />
+    <Compile Include="RaftBootStrap.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="RaftForm.Designer.cs">
-      <DependentUpon>RaftForm.cs</DependentUpon>
+    <Compile Include="RaftBootStrap.Designer.cs">
+      <DependentUpon>RaftBootStrap.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RaftServercs.cs">
+    <Compile Include="RaftNode.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="RaftServercs.Designer.cs">
-      <DependentUpon>RaftServercs.cs</DependentUpon>
+    <Compile Include="RaftNode.Designer.cs">
+      <DependentUpon>RaftNode.cs</DependentUpon>
     </Compile>
-    <EmbeddedResource Include="RaftForm.resx">
-      <DependentUpon>RaftForm.cs</DependentUpon>
+    <EmbeddedResource Include="RaftBootStrap.resx">
+      <DependentUpon>RaftBootStrap.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -71,9 +76,10 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <EmbeddedResource Include="RaftServercs.resx">
-      <DependentUpon>RaftServercs.cs</DependentUpon>
+    <EmbeddedResource Include="RaftNode.resx">
+      <DependentUpon>RaftNode.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
