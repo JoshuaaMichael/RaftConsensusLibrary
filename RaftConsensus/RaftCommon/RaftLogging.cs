@@ -26,100 +26,51 @@ namespace TeamDecided.RaftCommon.Logging
         public event EventHandler<string> OnNewLineError;
         public event EventHandler<string> OnNewLineFatal;
 
-        public void Debug(string format, params object[] args)
+        private void WriteToLog(bool doLogLevel, EventHandler<string> onNewLineEvent, string format, params object[] args)
         {
             lock (methodLock)
             {
                 lock (verbositySelection)
                 {
-                    if (doDebug)
+                    if(doLogLevel)
                     {
                         string message = string.Format(GetTimestampString() + format + Environment.NewLine, args);
-                        OnNewLineDebug?.Invoke(this, message);
+                        onNewLineEvent?.Invoke(this, message);
                         File.AppendAllText(loggingFileName, message);
                     }
                 }
             }
+        }
+
+
+        public void Debug(string format, params object[] args)
+        {
+            WriteToLog(doDebug, OnNewLineDebug, format, args);
         }
 
         public void Error(string format, params object[] args)
         {
-            lock (methodLock)
-            {
-                lock (verbositySelection)
-                {
-                    if (doError)
-                    {
-                        string message = string.Format(GetTimestampString() + format + Environment.NewLine, args);
-                        OnNewLineError?.Invoke(this, message);
-                        File.AppendAllText(loggingFileName, message);
-                    }
-                }
-            }
+            WriteToLog(doError, OnNewLineError, format, args);
         }
 
         public void Fatal(string format, params object[] args)
         {
-            lock (methodLock)
-            {
-                lock (verbositySelection)
-                {
-                    if (doFatal)
-                    {
-                        string message = string.Format(GetTimestampString() + format + Environment.NewLine, args);
-                        OnNewLineFatal?.Invoke(this, message);
-                        File.AppendAllText(loggingFileName, message);
-                    }
-                }
-            }
+            WriteToLog(doFatal, OnNewLineFatal, format, args);
         }
 
         public void Info(string format, params object[] args)
         {
-            lock (methodLock)
-            {
-                lock (verbositySelection)
-                {
-                    if (doInfo)
-                    {
-                        string message = string.Format(GetTimestampString() + format + Environment.NewLine, args);
-                        OnNewLineInfo?.Invoke(this, message);
-                        File.AppendAllText(loggingFileName, message);
-                    }
-                }
-            }
+            WriteToLog(doInfo, OnNewLineInfo, format, args);
         }
 
         public void Trace(string format, params object[] args)
         {
-            lock (methodLock)
-            {
-                lock (verbositySelection)
-                {
-                    if (doTrace)
-                    {
-                        string message = string.Format(GetTimestampString() + format + Environment.NewLine, args);
-                        OnNewLineTrace?.Invoke(this, message);
-                        File.AppendAllText(loggingFileName, message);
-                    }
-                }
-            }
+            WriteToLog(doTrace, OnNewLineTrace, format, args);
         }
 
         public void Warn(string format, params object[] args)
         {
-            lock (methodLock)
-            {
-                lock (verbositySelection)
-                {
-                    if (doWarn)
-                    {
-                        string message = string.Format(GetTimestampString() + format + Environment.NewLine, args);
-                        OnNewLineWarn?.Invoke(this, message);
-                        File.AppendAllText(loggingFileName, message);
-                    }
-                }
-            }
+            WriteToLog(doWarn, OnNewLineWarn, format, args);
         }
 
         public void SetDoDebug(bool targetValue = true)
