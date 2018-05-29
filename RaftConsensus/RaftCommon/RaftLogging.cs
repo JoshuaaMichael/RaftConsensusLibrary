@@ -19,6 +19,13 @@ namespace TeamDecided.RaftCommon.Logging
         private static bool doTrace = false;
         private static bool doWarn = false;
 
+        public event EventHandler<string> OnNewLineTrace;
+        public event EventHandler<string> OnNewLineDebug;
+        public event EventHandler<string> OnNewLineInfo;
+        public event EventHandler<string> OnNewLineWarn;
+        public event EventHandler<string> OnNewLineError;
+        public event EventHandler<string> OnNewLineFatal;
+
         public void Debug(string format, params object[] args)
         {
             lock (methodLock)
@@ -27,7 +34,9 @@ namespace TeamDecided.RaftCommon.Logging
                 {
                     if (doDebug)
                     {
-                        File.AppendAllText(loggingFileName, string.Format(GetTimestampString() + format + Environment.NewLine, args));
+                        string message = string.Format(GetTimestampString() + format + Environment.NewLine, args);
+                        OnNewLineDebug?.Invoke(this, message);
+                        File.AppendAllText(loggingFileName, message);
                     }
                 }
             }
@@ -41,7 +50,9 @@ namespace TeamDecided.RaftCommon.Logging
                 {
                     if (doError)
                     {
-                        File.AppendAllText(loggingFileName, string.Format(GetTimestampString() + format + Environment.NewLine, args));
+                        string message = string.Format(GetTimestampString() + format + Environment.NewLine, args);
+                        OnNewLineError?.Invoke(this, message);
+                        File.AppendAllText(loggingFileName, message);
                     }
                 }
             }
@@ -55,7 +66,9 @@ namespace TeamDecided.RaftCommon.Logging
                 {
                     if (doFatal)
                     {
-                        File.AppendAllText(loggingFileName, string.Format(GetTimestampString() + format + Environment.NewLine, args));
+                        string message = string.Format(GetTimestampString() + format + Environment.NewLine, args);
+                        OnNewLineFatal?.Invoke(this, message);
+                        File.AppendAllText(loggingFileName, message);
                     }
                 }
             }
@@ -69,7 +82,9 @@ namespace TeamDecided.RaftCommon.Logging
                 {
                     if (doInfo)
                     {
-                        File.AppendAllText(loggingFileName, string.Format(GetTimestampString() + format + Environment.NewLine, args));
+                        string message = string.Format(GetTimestampString() + format + Environment.NewLine, args);
+                        OnNewLineInfo?.Invoke(this, message);
+                        File.AppendAllText(loggingFileName, message);
                     }
                 }
             }
@@ -83,7 +98,9 @@ namespace TeamDecided.RaftCommon.Logging
                 {
                     if (doTrace)
                     {
-                        File.AppendAllText(loggingFileName, string.Format(GetTimestampString() + format + Environment.NewLine, args));
+                        string message = string.Format(GetTimestampString() + format + Environment.NewLine, args);
+                        OnNewLineTrace?.Invoke(this, message);
+                        File.AppendAllText(loggingFileName, message);
                     }
                 }
             }
@@ -97,7 +114,9 @@ namespace TeamDecided.RaftCommon.Logging
                 {
                     if (doWarn)
                     {
-                        File.AppendAllText(loggingFileName, string.Format(GetTimestampString() + format + Environment.NewLine, args));
+                        string message = string.Format(GetTimestampString() + format + Environment.NewLine, args);
+                        OnNewLineWarn?.Invoke(this, message);
+                        File.AppendAllText(loggingFileName, message);
                     }
                 }
             }
