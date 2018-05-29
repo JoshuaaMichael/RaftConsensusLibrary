@@ -57,6 +57,9 @@ namespace TeamDecided.RaftNetworking
 
         private int clientPort;
         private IPEndPoint clientIPEndPoint;
+        private bool isRebuilding;
+        private ManualResetEvent isSocketReady;
+        private object isRebuildingLockObject;
 
         private bool disposedValue = false; // To detect redundant calls
 
@@ -99,6 +102,9 @@ namespace TeamDecided.RaftNetworking
 
             clientPort = -1;
             clientIPEndPoint = null;
+            isRebuilding = false;
+            isSocketReady = new ManualResetEvent(true);
+            isRebuildingLockObject = new object();
         }
 
         public void Start(int port)
@@ -167,6 +173,7 @@ namespace TeamDecided.RaftNetworking
                     }
                     try
                     {
+                        isSocketReady.WaitOne();
                         result = udpClient.ReceiveAsync();
                     }
                     catch
@@ -184,43 +191,62 @@ namespace TeamDecided.RaftNetworking
                     return;
                 }
 
-                lock (statusLockObject)
+
+                if (status != EUDPNetworkingStatus.RUNNING)
                 {
-                    if (status != EUDPNetworkingStatus.RUNNING)
-                    {
-                        return;
-                    }
+                    return;
+                }
 
-                    try
-                    {
-                        messageBytes = result.Result.Buffer;
-                    }
-                    catch
-                    {
-                        RebuildUDPClient();
-                        continue;
-                    }
-                    endPoint = result.Result.RemoteEndPoint;
+                try
+                {
+                    isSocketReady.WaitOne();
+                    messageBytes = result.Result.Buffer;
+                }
+                catch
+                {
+                    RebuildUDPClient();
+                    continue;
+                }
+                endPoint = result.Result.RemoteEndPoint;
 
-                    lock (newMessagesReceivedLockObject)
-                    {
-                        newMessagesReceived.Enqueue(new Tuple<byte[], IPEndPoint>(messageBytes, endPoint));
-                        onMessageReceive.Set();
-                    }
+                lock (newMessagesReceivedLockObject)
+                {
+                    newMessagesReceived.Enqueue(new Tuple<byte[], IPEndPoint>(messageBytes, endPoint));
+                    onMessageReceive.Set();
                 }
             }
         }
 
         private void RebuildUDPClient()
         {
-            udpClient.Close();//close the existing UDPClient otherwise you get an System.Net.Sockets.SocketException {"Only one usage of each socket address (protocol/network address/port) is normally permitted"}
-            if (clientPort != -1) //We initied this initially with a port number
+            lock(isRebuildingLockObject)
+            {
+                if(isRebuilding)
+                {
+                    return; //It's currently rebuilding
+                }
+                else
+                {
+                    isRebuilding = true;
+                    isSocketReady.Reset();
+                }
+            }
+
+            udpClient.Dispose();
+            udpClient = null;
+            if(clientPort != -1) //We initied this initially with a port number
             {
                 udpClient = new UdpClient(clientPort);
             }
             else
             {
                 udpClient = new UdpClient(clientIPEndPoint);
+            }
+
+            lock(isRebuildingLockObject)
+            {
+                isRebuilding = false;
+                isSocketReady.Set();
             }
         }
 
@@ -450,21 +476,19 @@ namespace TeamDecided.RaftNetworking
 
         public virtual void SendMessage(BaseMessage message)
         {
-            lock (statusLockObject)
+            if (status != EUDPNetworkingStatus.RUNNING)
             {
-                if (status != EUDPNetworkingStatus.RUNNING)
+                if(status == EUDPNetworkingStatus.STOPPED)
                 {
-                    if(status == EUDPNetworkingStatus.STOPPED)
-                    {
-                        return;
-                    }
-                    throw new InvalidOperationException("Library is currently not in a state it may send in"); ;
+                    return;
                 }
-                lock (newMessagesToSendLockObject)
-                {
-                    newMessagesToSend.Enqueue(message);
-                    onMessageToSend.Set();
-                }
+                throw new InvalidOperationException("Library is currently not in a state it may send in"); ;
+            }
+
+            lock (newMessagesToSendLockObject)
+            {
+                newMessagesToSend.Enqueue(message);
+                onMessageToSend.Set();
             }
         }
 
@@ -523,16 +547,13 @@ namespace TeamDecided.RaftNetworking
 
         public void ManualAddPeer(string peerName, IPEndPoint endPoint)
         {
-            lock (statusLockObject)
+            if (status == EUDPNetworkingStatus.STOPPED)
             {
-                if (status == EUDPNetworkingStatus.STOPPED)
-                {
-                    throw new InvalidOperationException("Library is currently not in a state it may start in"); ;
-                }
-                lock (peersLockObject)
-                {
-                    peers.Add(peerName, endPoint);
-                }
+                throw new InvalidOperationException("Library is currently not in a state it may start in"); ;
+            }
+            lock (peersLockObject)
+            {
+                peers.Add(peerName, endPoint);
             }
         }
 

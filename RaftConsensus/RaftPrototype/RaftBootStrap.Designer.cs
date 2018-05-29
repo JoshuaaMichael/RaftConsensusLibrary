@@ -201,7 +201,7 @@
             this.btnCreate.TabIndex = 11;
             this.btnCreate.Text = "Create";
             this.btnCreate.UseVisualStyleBackColor = true;
-            this.btnCreate.Click += new System.EventHandler(this.CreateRaftNodes_WithInstantiate_Click);
+            this.btnCreate.Click += new System.EventHandler(this.CreateRaftNodes_WithStartInfo_Click);
             // 
             // nodeConfigDataView
             // 

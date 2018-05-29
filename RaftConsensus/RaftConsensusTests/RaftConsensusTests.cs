@@ -9,6 +9,7 @@ using TeamDecided.RaftNetworking.Interfaces;
 using System.Collections.Generic;
 using System.Threading;
 using TeamDecided.RaftCommon.Logging;
+using System.IO;
 
 /*  TODO:
  *  
@@ -45,7 +46,7 @@ namespace TeamDecided.RaftConsensus.Tests
         [SetUp]
         public void BeforeTest()
         {
-            RaftLogging.Instance.OverwriteLoggingFile(@"C:\Users\admin\Downloads\debug.log");
+            RaftLogging.Instance.OverwriteLoggingFile(@"C:\\Users\\Tori\\Downloads\\debug.log");
             RaftLogging.Instance.DeleteExistingLogFile();
             RaftLogging.Instance.SetDoInfo(true);
             RaftLogging.Instance.SetDoDebug(true);
@@ -66,7 +67,8 @@ namespace TeamDecided.RaftConsensus.Tests
             }
         }
 
-        [Test, Repeat (10)]
+        [Test, Repeat(3)]
+        //[Test]
         public void IT_TwoNodesJoinCluster()
         {
             //This will only test 1 leader node, and 1 peers coming to join the cluster
@@ -87,8 +89,10 @@ namespace TeamDecided.RaftConsensus.Tests
 
             Thread.Sleep(5000); //Let's see if we can keep this thing alive for a bit
 
-            follower1.Dispose();
-            leader.Dispose();
+            for(int i = 0; i < nodes.Length; i++)
+            {
+                nodes[i].Dispose();
+            }
 
             Assert.AreEqual(EJoinClusterResponse.ACCEPT, follower1JoinTask.Result);
         }
@@ -115,7 +119,7 @@ namespace TeamDecided.RaftConsensus.Tests
             follower1JoinTask.Wait();
             follower2JoinTask.Wait();
 
-            Thread.Sleep(2000);
+            Thread.Sleep(60000 * 5);
 
             leader.Dispose();
             follower1.Dispose();
@@ -124,6 +128,39 @@ namespace TeamDecided.RaftConsensus.Tests
             Assert.AreEqual(EJoinClusterResponse.ACCEPT, follower1JoinTask.Result);
             Assert.AreEqual(EJoinClusterResponse.ACCEPT, follower2JoinTask.Result);
         }
+
+        [Test]
+        public void IT_ThreeNodesMaintainCluster()
+        {
+            //This will only test 1 leader node, and 2 peers coming to join the cluster
+            int maxNodes = 3;
+
+            nodes = RaftConsensus<string, string>.MakeNodesForTest(maxNodes, START_PORT);
+            InformOfIPs(nodes);
+
+            IConsensus<string, string> leader = nodes[0];
+            IConsensus<string, string> follower1 = nodes[1];
+            IConsensus<string, string> follower2 = nodes[2];
+
+            // create a cluster
+            leader.CreateCluster(clusterName, clusterPassword, maxNodes);
+
+            Task<EJoinClusterResponse> follower1JoinTask = follower1.JoinCluster(clusterName, clusterPassword, maxNodes);
+            Task<EJoinClusterResponse> follower2JoinTask = follower2.JoinCluster(clusterName, clusterPassword, maxNodes);
+
+            follower1JoinTask.Wait();
+            follower2JoinTask.Wait();
+
+            Thread.Sleep(60000 * 5);
+
+            leader.Dispose();
+            follower1.Dispose();
+            follower2.Dispose();
+
+            Assert.AreEqual(EJoinClusterResponse.ACCEPT, follower1JoinTask.Result);
+            Assert.AreEqual(EJoinClusterResponse.ACCEPT, follower2JoinTask.Result);
+        }
+
 
         [Test]
         public void IT_ManyNodesJoinCluster()
@@ -153,9 +190,11 @@ namespace TeamDecided.RaftConsensus.Tests
                 joinTasks[i].Wait();
             }
 
+            Thread.Sleep(5 * 60 * 1000);
+
             for (int i = 0; i < nodes.Length; i++)
             {
-                //nodes[i].Dispose();
+                nodes[i].Dispose();
             }
 
             for (int i = 1; i < nodes.Length; i++)
@@ -223,8 +262,21 @@ namespace TeamDecided.RaftConsensus.Tests
 
             Thread.Sleep(2000);
 
-            leader.AppendEntry("Hello1", "World1");
-            leader.AppendEntry("Hello2", "World2");
+            for(int i = 0; i < nodes.Length; i++)
+            {
+                if (nodes[i].IsUASRunning())
+                {
+                    leader.AppendEntry("Hello1", "World1");
+                }
+            }
+
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                if (nodes[i].IsUASRunning())
+                {
+                    leader.AppendEntry("Hello2", "World2");
+                }
+            }
 
             Thread.Sleep(2000);
 
