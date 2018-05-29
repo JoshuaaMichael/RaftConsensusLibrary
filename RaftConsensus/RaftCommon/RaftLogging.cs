@@ -19,6 +19,16 @@ namespace TeamDecided.RaftCommon.Logging
         private static bool doTrace = false;
         private static bool doWarn = false;
 
+        public event EventHandler LogEntryEvent;
+        
+        private void OnLogEntryEvent()
+        {
+            if ( LogEntryEvent != null)
+            {
+                LogEntryEvent(this, EventArgs.Empty);
+            }
+        }
+
         public void Debug(string format, params object[] args)
         {
             lock (methodLock)
@@ -70,6 +80,7 @@ namespace TeamDecided.RaftCommon.Logging
                     if (doInfo)
                     {
                         File.AppendAllText(loggingFileName, string.Format(GetTimestampString() + format + Environment.NewLine, args));
+                        OnLogEntryEvent();
                     }
                 }
             }
@@ -132,6 +143,7 @@ namespace TeamDecided.RaftCommon.Logging
             lock (verbositySelection)
             {
                 doInfo = targetValue;
+
             }
         }
 
@@ -161,6 +173,7 @@ namespace TeamDecided.RaftCommon.Logging
                     {
                         instance = new RaftLogging();
                     }
+
                     return instance;
                 }
             }
@@ -180,5 +193,6 @@ namespace TeamDecided.RaftCommon.Logging
         {
             return DateTime.Now.ToString("HH:mm:ss.ffff") + ": ";
         }
+
     }
 }

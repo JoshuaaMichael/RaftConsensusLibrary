@@ -5,9 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Diagnostics;
 using System.Threading;
-using System.Net;
 using System.Windows.Forms;
-using TeamDecided.RaftConsensus;
 using TeamDecided.RaftCommon.Logging;
 
 namespace RaftPrototype
@@ -25,8 +23,8 @@ namespace RaftPrototype
         private const string CLUSTER_PASSWD = "password";
         private const string IP_TO_BIND = "127.0.0.1";
 
+        private string LOGFILE = Path.Combine(Environment.CurrentDirectory, "debug.log");
         private string configFile = "./config.json";
-        //private string configFile = "config.json";
 
         List<Tuple<string, string, int>> config = new List<Tuple<string, string, int>>();
 
@@ -60,8 +58,10 @@ namespace RaftPrototype
         private void SetupDebug()
         {
             //string path = string.Format(@"{0}", Environment.CurrentDirectory);
-            string debug = Path.Combine(Environment.CurrentDirectory, "debug.log");
-            RaftLogging.Instance.OverwriteLoggingFile(debug);
+            //string debug = Path.Combine(Environment.CurrentDirectory, "debug.log");
+            //string debug = Path.Combine("C:\\Users\\Tori\\Downloads\\debug.log");
+
+            RaftLogging.Instance.OverwriteLoggingFile(LOGFILE);
             RaftLogging.Instance.DeleteExistingLogFile();
             RaftLogging.Instance.SetDoInfo(true);
             RaftLogging.Instance.SetDoDebug(true);
@@ -161,12 +161,12 @@ namespace RaftPrototype
 
             int maxNodes = (int)nNodes.Value;
 
-            //create a config file structure
+            //Create a config file structure
             RaftBootstrapConfig rbsc = new RaftBootstrapConfig
             {
                 clusterName = tbClusterName.Text,
                 clusterPassword = tbClusterPasswd.Text,//should this really be plain text!
-                leaderIP = IP_TO_BIND,
+                //leaderIP = IP_TO_BIND,
                 maxNodes = maxNodes//set max nodes, generic for all
             };
 
@@ -181,7 +181,7 @@ namespace RaftPrototype
 
             File.Delete(configFile);
             File.WriteAllText(configFile, json);
-
+            RaftLogging.Instance.Info("Created configuration file {0}", configFile);
             ////The commented out code below is for testing RaftNode with debug
             //RaftNode node = new RaftNode(rbsc.nodeNames[0], configFile);
             //this is the leader window
@@ -206,58 +206,61 @@ namespace RaftPrototype
 
         private void CreateRaftNodes_WithStartInfo_Click(object sender, EventArgs e)
         {
+
+        }
+
+        private void CreateRaftNodes_WithInstantiate_Click(object sender, EventArgs e)
+        {
             ///Create config file, and save it, then start people
             ///Information for config file is represented by information in GUI
 
             int maxNodes = (int)nNodes.Value;
 
-            //create a config file structure
+            //Create a config file structure
             RaftBootstrapConfig rbsc = new RaftBootstrapConfig
             {
                 clusterName = tbClusterName.Text,
                 clusterPassword = tbClusterPasswd.Text,//should this really be plain text!
-                leaderIP = IP_TO_BIND,
+                //leaderIP = IP_TO_BIND,
                 maxNodes = maxNodes//set max nodes, generic for all
             };
 
-            foreach (var node in config)
+            foreach (var item in config)
             {
-                rbsc.nodeNames.Add(node.Item1);
-                rbsc.nodeIPAddresses.Add(node.Item2);
-                rbsc.nodePorts.Add(node.Item3);
+                rbsc.nodeNames.Add(item.Item1);
+                rbsc.nodeIPAddresses.Add(item.Item2);
+                rbsc.nodePorts.Add(item.Item3);
             }
 
             string json = JsonConvert.SerializeObject(rbsc, Formatting.Indented);
 
             File.Delete(configFile);
             File.WriteAllText(configFile, json);
+            RaftLogging.Instance.Info("Created configuration file {0}", configFile);
 
             ////The commented out code below is for testing RaftNode with debug
-            //RaftNode node = new RaftNode(rbsc.nodeNames[0], configFile);
+            RaftNode[] nodes = new RaftNode[maxNodes];
+            RaftNode node = new RaftNode(rbsc.nodeNames[0], configFile, string.Format("{0}-debug.log", rbsc.nodeNames[0]));
             //this is the leader window
-            //node.Show();
+            node.Show();
 
-            ProcessStartInfo startInfo = new ProcessStartInfo()
+            for (int i = 1; i < rbsc.nodeNames.Count; i++)
             {
-                FileName = System.Reflection.Assembly.GetEntryAssembly().Location,
-                WorkingDirectory = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location),
-                UseShellExecute = false,
-                WindowStyle = ProcessWindowStyle.Normal
-            };
-
-            for (int i = 0; i < rbsc.nodeNames.Count; i++)
-            {
-                startInfo.Arguments = string.Format("{0} {1}", rbsc.nodeNames[i], configFile);
-                Process.Start(startInfo);
-
+                //Let's start the leader with a 500ms head start (sleep) before starting the rest
+                if (i == 1)
+                {
+                    Thread.Sleep(1000);
+                }
                 /// seems to perform better with this sleep on all Process.Start() calls. 
                 /// This value increases to 1750ms when we re enable the JoinCluster call 
-                /// within RaftNode, however still volatile and doesn't open window 100% 
+                /// within RaftNode, however still volatile  and doesn't open window 100% 
                 /// of the time
-                Thread.Sleep(500);
+                nodes[i] = new RaftNode(rbsc.nodeNames[i], configFile, string.Format("{0}-debug.log", rbsc.nodeNames[i]));
+                nodes[i].Show();
+                //Process.Start(System.Reflection.Assembly.GetEntryAssembly().Location, string.Format("{0} {1}", rbsc.nodeNames[i], configFile));
             }
 
-            Close();
+            Hide();
         }
     }
 }

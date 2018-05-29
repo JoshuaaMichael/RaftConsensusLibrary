@@ -2,10 +2,9 @@
 using System;
 using System.IO;
 using System.Net;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using TeamDecided.RaftCommon.Logging;
 using TeamDecided.RaftConsensus;
-using TeamDecided.RaftConsensus.Enums;
 using TeamDecided.RaftConsensus.Interfaces;
 
 namespace RaftPrototype
@@ -14,19 +13,34 @@ namespace RaftPrototype
     {
         private IConsensus<string, string> node;
 
-        public RaftNode(string serverName, string configFile)
+
+        public RaftNode(string serverName, string configFile, string logFile)
         {
             InitializeComponent();
-            Initialize(serverName, configFile);
+            Initialize(serverName, configFile, logFile);
         }
 
-        private void Initialize(string serverName, string configFile)
+        private void Initialize(string serverName, string configFile, string logFile)
         {
             //TODO: This is where we need to get the current IConsensus log
             this.Text = string.Format("{0} - {1}", this.Text, serverName);
             lbNodeName.Text = serverName;
+
+            if (serverName == "Node0")
+            {
+                RaftLogging.Instance.LogEntryEvent += WatchLog;
+            }
+
+            SetupDebug(logFile);
             LoadConfig(serverName, configFile);
 
+        }
+
+        private void WatchLog(object sender, EventArgs e)
+        {
+            string log = string.Format("{0:G} | {1} ", DateTime.Now, e);
+            listBox1.Items.Add("name");
+            
         }
 
         public void LoadConfig(string serverName, string configFile)
@@ -41,12 +55,14 @@ namespace RaftPrototype
 
             //populate the peer information
             AddPeers(config, id);
+            RaftLogging.Instance.Info("{0} is adding peers", config.nodeNames[id]);
 
             //always making the first entry the cluster manager (Leader)
             if (config.nodeNames[0] == serverName)
             {
                 //create cluster
                 node.CreateCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+                RaftLogging.Instance.Info("Cluster created by {0}", config.nodeNames[0]);
             }
             else
             {
@@ -57,7 +73,8 @@ namespace RaftPrototype
                 /// does however show the task. You can restart the task and the window does appear correctly
 
                 ////join cluster
-                //node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+                node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+                RaftLogging.Instance.Info("{0} joined Cluster ", config.nodeNames[id]);
                 ////Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
                 ////joinTask.Wait();
             }
@@ -80,16 +97,28 @@ namespace RaftPrototype
                 }
                 IPEndPoint ipEndpoint = new IPEndPoint(IPAddress.Parse(config.nodeIPAddresses[i]), config.nodePorts[i]);
                 node.ManualAddPeer(config.nodeNames[i], ipEndpoint);
+                //RaftLogging.Instance.Info("{0} added {1} to peer list", config.nodeNames[id], config.nodeNames[i]);
                 //Console.WriteLine(string.Format("{0} adding {1} to peers", config.nodeNames[id], config.nodeNames[i]));
             }
-            Console.WriteLine("finished adding peers to {0}", config.nodeNames[id]);
+            //Console.WriteLine("finished adding peers to {0}", config.nodeNames[id]);
         }
-
 
         private void SendMsg_Click(object sender, EventArgs e)
         {
             //TODO: This is where we'll send a message using IConsensus member.
 
+        }
+
+        private void SetupDebug(string logFile)
+        {
+            //string path = string.Format(@"{0}", Environment.CurrentDirectory);
+            //string debug = Path.Combine(Environment.CurrentDirectory, "debug.log");
+            //string debug = Path.Combine("C:\\Users\\Tori\\Downloads\\debug.log");
+
+            RaftLogging.Instance.OverwriteLoggingFile(logFile);
+            RaftLogging.Instance.DeleteExistingLogFile();
+            RaftLogging.Instance.SetDoInfo(true);
+            RaftLogging.Instance.SetDoDebug(true);
         }
     }
 }

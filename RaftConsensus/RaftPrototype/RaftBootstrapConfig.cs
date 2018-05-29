@@ -10,7 +10,6 @@ namespace RaftPrototype
     {
         public string clusterName;
         public string clusterPassword;
-        public string leaderIP;
         public int maxNodes;
         public List<string> nodeNames = new List<string>();
         public List<string> nodeIPAddresses = new List<string>();
