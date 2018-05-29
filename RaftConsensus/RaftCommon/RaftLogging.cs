@@ -19,99 +19,58 @@ namespace TeamDecided.RaftCommon.Logging
         private static bool doTrace = false;
         private static bool doWarn = false;
 
-        public event EventHandler LogEntryEvent;
-        
-        private void OnLogEntryEvent()
-        {
-            if ( LogEntryEvent != null)
-            {
-                LogEntryEvent(this, EventArgs.Empty);
-            }
-        }
+        public event EventHandler<string> OnNewLineTrace;
+        public event EventHandler<string> OnNewLineDebug;
+        public event EventHandler<string> OnNewLineInfo;
+        public event EventHandler<string> OnNewLineWarn;
+        public event EventHandler<string> OnNewLineError;
+        public event EventHandler<string> OnNewLineFatal;
 
-        public void Debug(string format, params object[] args)
+        private void WriteToLog(bool doLogLevel, EventHandler<string> onNewLineEvent, string format, params object[] args)
         {
             lock (methodLock)
             {
                 lock (verbositySelection)
                 {
-                    if (doDebug)
+                    if(doLogLevel)
                     {
-                        File.AppendAllText(loggingFileName, string.Format(GetTimestampString() + format + Environment.NewLine, args));
+                        string message = string.Format(GetTimestampString() + format + Environment.NewLine, args);
+                        onNewLineEvent?.Invoke(this, message);
+                        File.AppendAllText(loggingFileName, message);
                     }
                 }
             }
+        }
+
+
+        public void Debug(string format, params object[] args)
+        {
+            WriteToLog(doDebug, OnNewLineDebug, format, args);
         }
 
         public void Error(string format, params object[] args)
         {
-            lock (methodLock)
-            {
-                lock (verbositySelection)
-                {
-                    if (doError)
-                    {
-                        File.AppendAllText(loggingFileName, string.Format(GetTimestampString() + format + Environment.NewLine, args));
-                    }
-                }
-            }
+            WriteToLog(doError, OnNewLineError, format, args);
         }
 
         public void Fatal(string format, params object[] args)
         {
-            lock (methodLock)
-            {
-                lock (verbositySelection)
-                {
-                    if (doFatal)
-                    {
-                        File.AppendAllText(loggingFileName, string.Format(GetTimestampString() + format + Environment.NewLine, args));
-                    }
-                }
-            }
+            WriteToLog(doFatal, OnNewLineFatal, format, args);
         }
 
         public void Info(string format, params object[] args)
         {
-            lock (methodLock)
-            {
-                lock (verbositySelection)
-                {
-                    if (doInfo)
-                    {
-                        File.AppendAllText(loggingFileName, string.Format(GetTimestampString() + format + Environment.NewLine, args));
-                        OnLogEntryEvent();
-                    }
-                }
-            }
+            WriteToLog(doInfo, OnNewLineInfo, format, args);
         }
 
         public void Trace(string format, params object[] args)
         {
-            lock (methodLock)
-            {
-                lock (verbositySelection)
-                {
-                    if (doTrace)
-                    {
-                        File.AppendAllText(loggingFileName, string.Format(GetTimestampString() + format + Environment.NewLine, args));
-                    }
-                }
-            }
+            WriteToLog(doTrace, OnNewLineTrace, format, args);
         }
 
         public void Warn(string format, params object[] args)
         {
-            lock (methodLock)
-            {
-                lock (verbositySelection)
-                {
-                    if (doWarn)
-                    {
-                        File.AppendAllText(loggingFileName, string.Format(GetTimestampString() + format + Environment.NewLine, args));
-                    }
-                }
-            }
+            WriteToLog(doWarn, OnNewLineWarn, format, args);
         }
 
         public void SetDoDebug(bool targetValue = true)

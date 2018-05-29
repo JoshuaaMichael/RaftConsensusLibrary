@@ -28,7 +28,7 @@ namespace RaftPrototype
 
             if (serverName == "Node0")
             {
-                RaftLogging.Instance.LogEntryEvent += WatchLog;
+                //RaftLogging.Instance.LogEntryEvent += WatchLog;
             }
 
             SetupDebug(logFile);
