@@ -48,6 +48,7 @@ namespace TeamDecided.RaftConsensus
         private Dictionary<string, NodeInfo> nodesInfo;
         private object nodesInfoLockObject;
         private IUDPNetworking networking;
+        private List<Tuple<string, string, int>> manuallyAddedClients;
         private int listeningPort;
         private string nodeName;
         private string leaderName;
@@ -64,8 +65,6 @@ namespace TeamDecided.RaftConsensus
         private int timeoutValueMax = 2 * 10 * networkLatency;
         private int timeoutValue; //The actual timeout value chosen
         private object timeoutValueLockObject;
-        private DateTime lastReceivedMessage;
-        private object lastReceivedMessageLock;
         #endregion
 
         private Task backgroundThread;
@@ -105,7 +104,6 @@ namespace TeamDecided.RaftConsensus
             distributedLogLockObject = new object();
 
             timeoutValueLockObject = new object();
-            lastReceivedMessageLock = new object();
 
             backgroundThread = new Task(BackgroundThread, TaskCreationOptions.LongRunning);
             onNotifyBackgroundThread = new ManualResetEvent(false);
@@ -119,9 +117,7 @@ namespace TeamDecided.RaftConsensus
             appendEntryTasks = new Dictionary<int, ManualResetEvent>();
             appendEntryTasksLockObject = new object();
 
-            networking = new UDPNetworking();
-            networking.Start(listeningPort);
-            networking.OnMessageReceived += OnMessageReceive;
+            manuallyAddedClients = new List<Tuple<string, string, int>>();
         }
 
         public Task<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword, int maxNodes)
@@ -140,6 +136,11 @@ namespace TeamDecided.RaftConsensus
                 {
                     throw new ArgumentException("clusterPassword must not be blank");
                 }
+                networking = new UDPNetworking();
+                networking.Start(listeningPort);
+                networking.OnMessageReceived += OnMessageReceive;
+                FlushNetworkPeerBuffer();
+
                 Log("Trying to join cluster");
                 foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
                 {
@@ -176,11 +177,9 @@ namespace TeamDecided.RaftConsensus
                         {
                             currentState = ERaftState.INITIALIZING;
                         }
-                        onWaitingToJoinCluster = null;
                         return EJoinClusterResponse.NO_RESPONSE;
                     }
                     Log("We've got a responce from the leader {0}", leaderName);
-                    onWaitingToJoinCluster = null;
                     lock (eJoinClusterResponeLockObject)
                     {
                         return eJoinClusterResponse;
@@ -224,6 +223,11 @@ namespace TeamDecided.RaftConsensus
 
                 currentState = ERaftState.LEADER;
                 onNotifyBackgroundThread.Set();
+
+                networking = new UDPNetworking();
+                networking.Start(listeningPort);
+                networking.OnMessageReceived += OnMessageReceive;
+                FlushNetworkPeerBuffer();
 
                 StartThreads();
                 Log("Created cluster");
@@ -271,11 +275,19 @@ namespace TeamDecided.RaftConsensus
         }
         public void ManualAddPeer(string name, IPEndPoint endPoint)
         {
-            networking.ManualAddPeer(name, endPoint);
+            manuallyAddedClients.Add(new Tuple<string, string, int>(name, endPoint.Address.ToString(), endPoint.Port));
             lock (nodesInfoLockObject)
             {
                 nodesInfo.Add(name, new NodeInfo(name));
             }
+        }
+        private void FlushNetworkPeerBuffer()
+        {
+            foreach(Tuple<string, string, int> peer in manuallyAddedClients)
+            {
+                networking.ManualAddPeer(peer.Item1, new IPEndPoint(IPAddress.Parse(peer.Item2), peer.Item3));
+            }
+            manuallyAddedClients.Clear();
         }
         public Task<ERaftAppendEntryState> AppendEntry(TKey key, TValue value)
         {
@@ -460,14 +472,9 @@ namespace TeamDecided.RaftConsensus
             int onReceivedMessageIndex = waitHandles.Length;
             followerWaitHandles[onReceivedMessageIndex] = onReceivedMessage;
 
-            int timeoutValueTemp;
-            lock (timeoutValueLockObject)
-            {
-                timeoutValueTemp = timeoutValue;
-            }
             while (true)
             {
-                int indexInner = WaitHandle.WaitAny(waitHandles, timeoutValueTemp);
+                int indexInner = WaitHandle.WaitAny(followerWaitHandles, timeoutValue);
                 if(indexInner == WaitHandle.WaitTimeout)
                 {
                     Log("Timing out to be candidate. We haven't heard from the leader in {0} milliseconds", timeoutValue);
@@ -477,14 +484,6 @@ namespace TeamDecided.RaftConsensus
                 else if(indexInner == onReceivedMessageIndex)
                 {
                     onReceivedMessage.Reset();
-                    lock (lastReceivedMessageLock)
-                    {
-                        lock (timeoutValueLockObject)
-                        {
-                            timeoutValueTemp = timeoutValue - (DateTime.Now - lastReceivedMessage).Milliseconds;
-                            Log("We heard from the leader, recalculating next timeout.");
-                        }
-                    }
                 }
                 else //We've been signaled. Told to shutdown, onNotifyBackgroundThread doesn't impact us really
                 {
@@ -502,10 +501,6 @@ namespace TeamDecided.RaftConsensus
                 StopUAS?.Invoke(this, EStopUASReason.CLUSTER_LEADERSHIP_LOST);
             }
 
-            lock (lastReceivedMessageLock)
-            {
-                lastReceivedMessage = DateTime.Now;
-            }
             currentState = ERaftState.FOLLOWER;
             RecalculateTimeoutValue();
             onNotifyBackgroundThread.Set();
@@ -616,23 +611,20 @@ namespace TeamDecided.RaftConsensus
             {
                 if(currentState == ERaftState.LEADER)
                 {
-                    lock (nodesInfoLockObject)
+                    if (message.ClusterName != clusterName)
                     {
-                        if (message.ClusterName != clusterName)
-                        {
-                            Log("Rejecting node {0}. They're trying to enter with the wrong cluster name \"{1}\"", message.From, message.ClusterName);
-                            responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.REJECT_WRONG_CLUSTER_NAME);
-                        }
-                        else if (nodesInfo.ContainsKey(message.From))
-                        {
-                            Log("Accepting node {0}. They're one of the nodes I'm expecting", message.From);
-                            responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.ACCEPT);
-                        }
-                        else
-                        {
-                            Log("Rejecting node {0}. We weren't expecting this node to join", message.From);
-                            responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.REJECT_UNKNOWN_ERROR);
-                        }
+                        Log("Rejecting node {0}. They're trying to enter with the wrong cluster name \"{1}\"", message.From, message.ClusterName);
+                        responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.REJECT_WRONG_CLUSTER_NAME);
+                    }
+                    else if (nodesInfo.ContainsKey(message.From))
+                    {
+                        Log("Accepting node {0}. They're one of the nodes I'm expecting", message.From);
+                        responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.ACCEPT);
+                    }
+                    else
+                    {
+                        Log("Rejecting node {0}. We weren't expecting this node to join", message.From);
+                        responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.REJECT_UNKNOWN_ERROR);
                     }
                 }
                 else if (currentState == ERaftState.FOLLOWER || currentState == ERaftState.CANDIDATE)
@@ -715,6 +707,12 @@ namespace TeamDecided.RaftConsensus
             RaftAppendEntryResponse responseMessage;
             lock (currentStateLockObject)
             {
+                if (currentState != ERaftState.LEADER && currentState != ERaftState.CANDIDATE && currentState != ERaftState.FOLLOWER)
+                {
+                    Log("Recieved AppendEntry from node {0}. We don't recieve these types of requests. How did you even get here?", message.From);
+                    return; //We don't recieve these type of requests, drop it
+                }
+
                 lock (currentTermLockObject)
                 {
                     if (message.Term > currentTerm)
@@ -759,10 +757,6 @@ namespace TeamDecided.RaftConsensus
                 }
 
                 RecalculateTimeoutValue();
-                lock(lastReceivedMessageLock)
-                {
-                    lastReceivedMessage = DateTime.Now;
-                }
                 onReceivedMessage.Set();
 
                 lock (currentTermLockObject)
@@ -837,14 +831,13 @@ namespace TeamDecided.RaftConsensus
                         Log("Recieved AppendEntryResponse from node {0} for a previous term. Discarding.", message.From);
                         return;
                     }
-                }
-                if (currentState != ERaftState.LEADER)
-                {
-                    return; //We don't recieve these type of requests, drop it
-                }
-                Log("Recieved AppendEntryResponse from node {0}. Seems legit so far.", message.From);
-                lock (currentTermLockObject)
-                {
+
+                    if (currentState != ERaftState.LEADER)
+                    {
+                        return; //We don't recieve these type of requests, drop it
+                    }
+                    Log("Recieved AppendEntryResponse from node {0}. Seems legit so far.", message.From);
+
                     lock (nodesInfoLockObject)
                     {
                         NodeInfo nodeInfo = nodesInfo[message.From];
@@ -924,10 +917,6 @@ namespace TeamDecided.RaftConsensus
                         UpdateTerm(message.Term);
 
                         RecalculateTimeoutValue();
-                        lock (lastReceivedMessageLock)
-                        {
-                            lastReceivedMessage = DateTime.Now;
-                        }
                         onReceivedMessage.Set();
 
                         if (currentState != ERaftState.FOLLOWER)
@@ -1162,13 +1151,16 @@ namespace TeamDecided.RaftConsensus
                     {
                         previousStatus = currentState;
                         currentState = ERaftState.STOPPED;
-                        onShutdown.Set();
                     }
                     if (previousStatus != ERaftState.INITIALIZING)
                     {
-                        StopUAS?.Invoke(this, EStopUASReason.CLUSTER_STOP);
-                        networking.Dispose();
+                        if (previousStatus == ERaftState.LEADER)
+                        {
+                            StopUAS?.Invoke(this, EStopUASReason.CLUSTER_STOP);
+                        }
+                        onShutdown.Set();
                         backgroundThread.Wait();
+                        networking.Dispose();
                     }
                 }
                 disposedValue = true;

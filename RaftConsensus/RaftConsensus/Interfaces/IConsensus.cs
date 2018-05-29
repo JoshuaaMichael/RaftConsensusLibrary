@@ -18,6 +18,8 @@ namespace TeamDecided.RaftConsensus.Interfaces
         TValue[] ReadEntryValueHistory(TKey key);
         Task<ERaftAppendEntryState> AppendEntry(TKey key, TValue value);
 
+        bool IsUASRunning();
+
         event EventHandler StartUAS;
         event EventHandler<EStopUASReason> StopUAS;
     }
