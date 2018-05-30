@@ -57,33 +57,23 @@ namespace RaftPrototype
                 //Get the node id from the node name string
                 int index = int.Parse(serverName.Substring(serverName.Length - 1)) - 1;
 
-                node = new RaftConsensus<string, string>(config.nodeNames[index], config.nodePorts[index]);
-
-                //populate the peer information
-                AddPeers(config, index);
-                RaftLogging.Instance.Info("{0} is adding peers", config.nodeNames[index]);
-
                 //always making the first entry the cluster manager (Leader)
                 if (config.nodeNames[0] == serverName)
                 {
                     //create cluster
+                    node = new RaftConsensus<string, string>(config.nodeNames[index], config.nodePorts[index]);
+                    RaftLogging.Instance.Info("{0} is adding peers", config.nodeNames[index]);
+                    AddPeers(config, index);
                     node.CreateCluster(config.clusterName, config.clusterPassword, config.maxNodes);
                     RaftLogging.Instance.Info("Cluster created by {0}", config.nodeNames[0]);
                 }
                 else
                 {
-                    /// something within JoinCluster breaks and the the window doesnt always display when 
-                    /// being initiated from Process.Start() call in RaftBootStrap
-                    /// Well a minor correction in that statement.the window does start just never renders
-                    /// dodgy windows task manager doesn't always show the offending task either. SYsInternals - ProcessExplorer
-                    /// does however show the task. You can restart the task and the window does appear correctly
-
-                    ////join cluster
-                    //node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
-
-
                     while (true)
                     {
+                        node = new RaftConsensus<string, string>(config.nodeNames[index], config.nodePorts[index]);
+                        AddPeers(config, index);
+                        RaftLogging.Instance.Info("{0} is adding peers", config.nodeNames[index]);
                         Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
                         joinTask.Wait();
                         EJoinClusterResponse result = joinTask.Result;
@@ -95,6 +85,7 @@ namespace RaftPrototype
                         {
                             if (MessageBox.Show("Failed to join cluster, do you want to retry?", "Error " + serverName, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error) == DialogResult.Retry)
                             {
+                                node.Dispose();
                                 continue;
                             }
                             else
@@ -115,6 +106,10 @@ namespace RaftPrototype
             }
             catch(Exception e)
             {
+                if (node != null)
+                {
+                    node.Dispose();
+                }
                 MessageBox.Show(e.ToString());
             }
         }
