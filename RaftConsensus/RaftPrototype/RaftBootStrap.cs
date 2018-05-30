@@ -193,15 +193,19 @@ namespace RaftPrototype
 
             RaftNode[] nodes = new RaftNode[maxNodes];
 
+            //string s = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), string.Format("{0}-debug.log", rbsc.nodeNames[i]));
+
             for (int i = 0; i < rbsc.nodeNames.Count; i++)
             {
-                //Let's start the leader with a 500ms head start (sleep) before starting the rest
-                if (i == 1)
-                {
-                    Thread.Sleep(1000);
-                }
+                ////Let's start the leader with a 500ms head start (sleep) before starting the rest
+                //if (i == 1)
+                //{
+                //    Thread.Sleep(1000);
+                //}
 
-                nodes[i] = new RaftNode(rbsc.nodeNames[0], configFile, string.Format("{0}-debug.log", rbsc.nodeNames[i]));
+                //nodes[i] = new RaftNode(rbsc.nodeNames[i], configFile, Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), string.Format("{0}-debug.log", rbsc.nodeNames[i])));
+                nodes[i] = new RaftNode(rbsc.nodeNames[i], configFile, string.Format("{0}-debug.log", rbsc.nodeNames[i]));
+                nodes[i].Show();
                 /// seems to perform better with this sleep on all Process.Start() calls. 
                 /// This value increases to 1750ms when we re enable the JoinCluster call 
                 /// within RaftNode, however still volatile and doesn't open window 100% 
@@ -209,10 +213,10 @@ namespace RaftPrototype
                 Thread.Sleep(500);
             }
 
-            Close();
+            Hide();
         }
 
-        private void CreateRaftNodes_WithStartInfo_Click(object sender, EventArgs e)
+        private void cCreateRaftNodes_WithStartInfo_Click(object sender, EventArgs e)
         {
             ///Create config file, and save it, then start people
             ///Information for config file is represented by information in GUI
