@@ -308,23 +308,24 @@ namespace TeamDecided.RaftNetworking
                         recipient = GetPeerIPEndPoint(message.To);
                     }
 
-                    Task<int> sendMessageTask;
                     try
                     {
-                        sendMessageTask = udpClient.SendAsync(messageToSend, messageToSend.Length, recipient);
+                        Task<int> sendMessageTask = udpClient.SendAsync(messageToSend, messageToSend.Length, recipient);
+
+                        sendMessageTask.Wait();
+
+                        if (sendMessageTask.Result <= 0)
+                        {
+                            GenerateSendFailureException("Failed to send message", message);
+                            continue;
+                        }
+                        //else { sent succesfully }
                     }
                     catch
                     {
                         RebuildUDPClient();
                         continue;
-                    }
-                    sendMessageTask.Wait();
-
-                    if (sendMessageTask.Result <= 0)
-                    {
-                        GenerateSendFailureException("Failed to send message", message);
-                        continue;
-                    } //else { sent succesfully }
+                    }                     
                 }
             }
         }
