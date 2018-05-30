@@ -207,7 +207,7 @@
             this.btnCreate.TabIndex = 11;
             this.btnCreate.Text = "Create";
             this.btnCreate.UseVisualStyleBackColor = true;
-            this.btnCreate.Click += new System.EventHandler(this.CreateRaftNodes_WithStartInfo_Click);
+            this.btnCreate.Click += new System.EventHandler(this.cCreateRaftNodes_WithInstantiate_Click);
             // 
             // nodeConfigDataView
             // 
@@ -221,13 +221,16 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoSize = true;
             this.ClientSize = new System.Drawing.Size(546, 450);
             this.Controls.Add(this.nodeConfigDataView);
             this.Controls.Add(this.btnCreate);
             this.Controls.Add(this.tableLayoutPanel1);
             this.Controls.Add(this.button1);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "RaftBootStrap";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.WindowsDefaultBounds;
             this.Text = "Raft Consensus Prototype";
             ((System.ComponentModel.ISupportInitialize)(this.nNodes)).EndInit();
             this.tableLayoutPanel1.ResumeLayout(false);
