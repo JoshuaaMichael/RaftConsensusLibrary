@@ -53,11 +53,11 @@
             // 
             // label1
             // 
+            this.label1.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(4, 120);
-            this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label1.Location = new System.Drawing.Point(3, 112);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(252, 17);
+            this.label1.Size = new System.Drawing.Size(191, 13);
             this.label1.TabIndex = 0;
             this.label1.Text = "How many nodes do you want to start?";
             // 
@@ -68,19 +68,17 @@
             0,
             0,
             0});
-            this.nNodes.Location = new System.Drawing.Point(326, 124);
-            this.nNodes.Margin = new System.Windows.Forms.Padding(4);
+            this.nNodes.Location = new System.Drawing.Point(254, 107);
             this.nNodes.Name = "nNodes";
-            this.nNodes.Size = new System.Drawing.Size(160, 22);
+            this.nNodes.Size = new System.Drawing.Size(120, 20);
             this.nNodes.TabIndex = 1;
             this.nNodes.ValueChanged += new System.EventHandler(this.Nodes_ValueChanged);
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(608, 486);
-            this.button1.Margin = new System.Windows.Forms.Padding(4);
+            this.button1.Location = new System.Drawing.Point(456, 395);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(100, 28);
+            this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 2;
             this.button1.Text = "Exit";
             this.button1.UseVisualStyleBackColor = true;
@@ -88,31 +86,30 @@
             // 
             // label2
             // 
+            this.label2.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(4, 0);
-            this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label2.Location = new System.Drawing.Point(3, 6);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(301, 17);
+            this.label2.Size = new System.Drawing.Size(239, 13);
             this.label2.TabIndex = 8;
-            this.label2.Text = "Please enter the cluster name you wish to join:";
+            this.label2.Text = "Please enter the cluster name you wish to create:";
+            this.label2.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // tbClusterName
             // 
             this.tableLayoutPanel1.SetColumnSpan(this.tbClusterName, 2);
             this.tbClusterName.Dock = System.Windows.Forms.DockStyle.Top;
-            this.tbClusterName.Location = new System.Drawing.Point(326, 4);
-            this.tbClusterName.Margin = new System.Windows.Forms.Padding(4);
+            this.tbClusterName.Location = new System.Drawing.Point(254, 3);
             this.tbClusterName.Name = "tbClusterName";
-            this.tbClusterName.Size = new System.Drawing.Size(362, 22);
+            this.tbClusterName.Size = new System.Drawing.Size(262, 20);
             this.tbClusterName.TabIndex = 9;
             // 
             // tableLayoutPanel1
             // 
             this.tableLayoutPanel1.ColumnCount = 3;
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 46.66667F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 26.66667F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 26.66667F));
-            this.tableLayoutPanel1.Controls.Add(this.label2, 0, 1);
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 48.38709F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25.80645F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25.80645F));
             this.tableLayoutPanel1.Controls.Add(this.tbClusterName, 1, 1);
             this.tableLayoutPanel1.Controls.Add(this.lClusterPasswd, 0, 2);
             this.tableLayoutPanel1.Controls.Add(this.tbClusterPasswd, 1, 2);
@@ -123,8 +120,8 @@
             this.tableLayoutPanel1.Controls.Add(this.tbPort, 1, 3);
             this.tableLayoutPanel1.Controls.Add(this.nNodes, 1, 5);
             this.tableLayoutPanel1.Controls.Add(this.lWarningNodesNumber, 2, 5);
-            this.tableLayoutPanel1.Location = new System.Drawing.Point(16, 15);
-            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4);
+            this.tableLayoutPanel1.Controls.Add(this.label2, 0, 1);
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(12, 12);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 6;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -133,16 +130,16 @@
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(692, 165);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(519, 134);
             this.tableLayoutPanel1.TabIndex = 10;
             // 
             // lClusterPasswd
             // 
+            this.lClusterPasswd.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lClusterPasswd.AutoSize = true;
-            this.lClusterPasswd.Location = new System.Drawing.Point(4, 30);
-            this.lClusterPasswd.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lClusterPasswd.Location = new System.Drawing.Point(3, 32);
             this.lClusterPasswd.Name = "lClusterPasswd";
-            this.lClusterPasswd.Size = new System.Drawing.Size(198, 17);
+            this.lClusterPasswd.Size = new System.Drawing.Size(148, 13);
             this.lClusterPasswd.TabIndex = 11;
             this.lClusterPasswd.Text = "Enter password to join cluster:";
             // 
@@ -150,49 +147,45 @@
             // 
             this.tableLayoutPanel1.SetColumnSpan(this.tbClusterPasswd, 2);
             this.tbClusterPasswd.Dock = System.Windows.Forms.DockStyle.Top;
-            this.tbClusterPasswd.Location = new System.Drawing.Point(326, 34);
-            this.tbClusterPasswd.Margin = new System.Windows.Forms.Padding(4);
+            this.tbClusterPasswd.Location = new System.Drawing.Point(254, 29);
             this.tbClusterPasswd.Name = "tbClusterPasswd";
-            this.tbClusterPasswd.PasswordChar = '*';
-            this.tbClusterPasswd.Size = new System.Drawing.Size(362, 22);
+            this.tbClusterPasswd.Size = new System.Drawing.Size(262, 20);
             this.tbClusterPasswd.TabIndex = 12;
             // 
             // label3
             // 
+            this.label3.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(4, 90);
-            this.label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label3.Location = new System.Drawing.Point(3, 84);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(215, 17);
+            this.label3.Size = new System.Drawing.Size(161, 13);
             this.label3.TabIndex = 13;
-            this.label3.Text = "All Servers will run on IP Address";
+            this.label3.Text = "All servers will run on IP address:";
             // 
             // tbIPAddress
             // 
             this.tableLayoutPanel1.SetColumnSpan(this.tbIPAddress, 2);
             this.tbIPAddress.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tbIPAddress.Location = new System.Drawing.Point(326, 94);
-            this.tbIPAddress.Margin = new System.Windows.Forms.Padding(4);
+            this.tbIPAddress.Location = new System.Drawing.Point(254, 81);
             this.tbIPAddress.Name = "tbIPAddress";
-            this.tbIPAddress.Size = new System.Drawing.Size(362, 22);
+            this.tbIPAddress.Size = new System.Drawing.Size(262, 20);
             this.tbIPAddress.TabIndex = 14;
             // 
             // label4
             // 
+            this.label4.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(4, 60);
-            this.label4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label4.Location = new System.Drawing.Point(3, 58);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(114, 17);
+            this.label4.Size = new System.Drawing.Size(85, 13);
             this.label4.TabIndex = 16;
             this.label4.Text = "Default start port";
             // 
             // tbPort
             // 
-            this.tbPort.Location = new System.Drawing.Point(326, 64);
-            this.tbPort.Margin = new System.Windows.Forms.Padding(4);
+            this.tbPort.Location = new System.Drawing.Point(254, 55);
             this.tbPort.Name = "tbPort";
-            this.tbPort.Size = new System.Drawing.Size(132, 22);
+            this.tbPort.Size = new System.Drawing.Size(100, 20);
             this.tbPort.TabIndex = 15;
             this.tbPort.TextChanged += new System.EventHandler(this.TbPort_textChangedEventHandler);
             // 
@@ -200,19 +193,17 @@
             // 
             this.lWarningNodesNumber.Anchor = System.Windows.Forms.AnchorStyles.Top;
             this.lWarningNodesNumber.AutoSize = true;
-            this.lWarningNodesNumber.Location = new System.Drawing.Point(521, 120);
-            this.lWarningNodesNumber.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lWarningNodesNumber.Location = new System.Drawing.Point(393, 104);
             this.lWarningNodesNumber.Name = "lWarningNodesNumber";
-            this.lWarningNodesNumber.Size = new System.Drawing.Size(155, 17);
+            this.lWarningNodesNumber.Size = new System.Drawing.Size(117, 13);
             this.lWarningNodesNumber.TabIndex = 10;
             this.lWarningNodesNumber.Text = "lWarningNodesNumber";
             // 
             // btnCreate
             // 
-            this.btnCreate.Location = new System.Drawing.Point(500, 486);
-            this.btnCreate.Margin = new System.Windows.Forms.Padding(4);
+            this.btnCreate.Location = new System.Drawing.Point(375, 395);
             this.btnCreate.Name = "btnCreate";
-            this.btnCreate.Size = new System.Drawing.Size(100, 28);
+            this.btnCreate.Size = new System.Drawing.Size(75, 23);
             this.btnCreate.TabIndex = 11;
             this.btnCreate.Text = "Create";
             this.btnCreate.UseVisualStyleBackColor = true;
@@ -221,23 +212,21 @@
             // nodeConfigDataView
             // 
             this.nodeConfigDataView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.nodeConfigDataView.Location = new System.Drawing.Point(24, 187);
-            this.nodeConfigDataView.Margin = new System.Windows.Forms.Padding(4);
+            this.nodeConfigDataView.Location = new System.Drawing.Point(18, 152);
             this.nodeConfigDataView.Name = "nodeConfigDataView";
-            this.nodeConfigDataView.Size = new System.Drawing.Size(684, 292);
+            this.nodeConfigDataView.Size = new System.Drawing.Size(513, 237);
             this.nodeConfigDataView.TabIndex = 12;
             // 
             // RaftBootStrap
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(728, 554);
+            this.ClientSize = new System.Drawing.Size(546, 450);
             this.Controls.Add(this.nodeConfigDataView);
             this.Controls.Add(this.btnCreate);
             this.Controls.Add(this.tableLayoutPanel1);
             this.Controls.Add(this.button1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "RaftBootStrap";
             this.Text = "Raft Consensus Prototype";
             ((System.ComponentModel.ISupportInitialize)(this.nNodes)).EndInit();
