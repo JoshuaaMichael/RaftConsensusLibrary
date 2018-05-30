@@ -53,13 +53,13 @@ namespace RaftPrototype
             RaftBootstrapConfig config = JsonConvert.DeserializeObject<RaftBootstrapConfig>(json);
 
             //Get the node id from the node name string
-            int id = int.Parse(serverName.Substring(serverName.Length - 1));
+            int index = int.Parse(serverName.Substring(serverName.Length - 1 )) - 1;
 
-            node = new RaftConsensus<string, string>(config.nodeNames[id], config.nodePorts[id]);
+            node = new RaftConsensus<string, string>(config.nodeNames[index], config.nodePorts[index]);
 
             //populate the peer information
-            AddPeers(config, id);
-            RaftLogging.Instance.Info("{0} is adding peers", config.nodeNames[id]);
+            AddPeers(config, index);
+            RaftLogging.Instance.Info("{0} is adding peers", config.nodeNames[index]);
 
             //always making the first entry the cluster manager (Leader)
             if (config.nodeNames[0] == serverName)
@@ -78,7 +78,7 @@ namespace RaftPrototype
 
                 ////join cluster
                 node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
-                RaftLogging.Instance.Info("{0} joined Cluster ", config.nodeNames[id]);
+                RaftLogging.Instance.Info("{0} joined Cluster ", config.nodeNames[index]);
                 //Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
                 //joinTask.Wait();
             }
