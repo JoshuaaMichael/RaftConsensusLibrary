@@ -182,6 +182,10 @@ namespace TeamDecided.RaftConsensus
                         networking.Dispose();
                         return EJoinClusterResponse.NO_RESPONSE;
                     }
+                    lock (currentStateLockObject)
+                    {
+                        currentState = ERaftState.INITIALIZING;
+                    }
                     Log("We've got a responce from the leader {0}", leaderName);
                     lock (eJoinClusterResponeLockObject)
                     {

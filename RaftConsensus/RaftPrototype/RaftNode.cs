@@ -49,67 +49,74 @@ namespace RaftPrototype
 
         public void LoadConfig(string serverName, string configFile)
         {
-            string json = File.ReadAllText(configFile);
-            RaftBootstrapConfig config = JsonConvert.DeserializeObject<RaftBootstrapConfig>(json);
-
-            //Get the node id from the node name string
-            int index = int.Parse(serverName.Substring(serverName.Length - 1 )) - 1;
-
-            node = new RaftConsensus<string, string>(config.nodeNames[index], config.nodePorts[index]);
-
-            //populate the peer information
-            AddPeers(config, index);
-            RaftLogging.Instance.Info("{0} is adding peers", config.nodeNames[index]);
-
-            //always making the first entry the cluster manager (Leader)
-            if (config.nodeNames[0] == serverName)
+            try
             {
-                //create cluster
-                node.CreateCluster(config.clusterName, config.clusterPassword, config.maxNodes);
-                RaftLogging.Instance.Info("Cluster created by {0}", config.nodeNames[0]);
-            }
-            else
-            {
-                /// something within JoinCluster breaks and the the window doesnt always display when 
-                /// being initiated from Process.Start() call in RaftBootStrap
-                /// Well a minor correction in that statement.the window does start just never renders
-                /// dodgy windows task manager doesn't always show the offending task either. SYsInternals - ProcessExplorer
-                /// does however show the task. You can restart the task and the window does appear correctly
+                string json = File.ReadAllText(configFile);
+                RaftBootstrapConfig config = JsonConvert.DeserializeObject<RaftBootstrapConfig>(json);
 
-                ////join cluster
-                //node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+                //Get the node id from the node name string
+                int index = int.Parse(serverName.Substring(serverName.Length - 1)) - 1;
 
+                node = new RaftConsensus<string, string>(config.nodeNames[index], config.nodePorts[index]);
 
-                while(true)
+                //populate the peer information
+                AddPeers(config, index);
+                RaftLogging.Instance.Info("{0} is adding peers", config.nodeNames[index]);
+
+                //always making the first entry the cluster manager (Leader)
+                if (config.nodeNames[0] == serverName)
                 {
-                    Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
-                    joinTask.Wait();
-                    EJoinClusterResponse result = joinTask.Result;
-                    if (result == EJoinClusterResponse.ACCEPT)
+                    //create cluster
+                    node.CreateCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+                    RaftLogging.Instance.Info("Cluster created by {0}", config.nodeNames[0]);
+                }
+                else
+                {
+                    /// something within JoinCluster breaks and the the window doesnt always display when 
+                    /// being initiated from Process.Start() call in RaftBootStrap
+                    /// Well a minor correction in that statement.the window does start just never renders
+                    /// dodgy windows task manager doesn't always show the offending task either. SYsInternals - ProcessExplorer
+                    /// does however show the task. You can restart the task and the window does appear correctly
+
+                    ////join cluster
+                    //node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+
+
+                    while (true)
                     {
-                        break;
-                    }
-                    else
-                    {
-                        if (MessageBox.Show("Failed to join cluster, do you want to retry?", "Error " + serverName, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error) == DialogResult.Retry)
+                        Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+                        joinTask.Wait();
+                        EJoinClusterResponse result = joinTask.Result;
+                        if (result == EJoinClusterResponse.ACCEPT)
                         {
-                            continue;
+                            break;
                         }
                         else
                         {
-                            Close();
-                            return;
+                            if (MessageBox.Show("Failed to join cluster, do you want to retry?", "Error " + serverName, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error) == DialogResult.Retry)
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                Close();
+                                return;
+                            }
                         }
                     }
+                    RaftLogging.Instance.Info("{0} joined Cluster ", config.nodeNames[index]);
                 }
-                RaftLogging.Instance.Info("{0} joined Cluster ", config.nodeNames[index]);
+
+                //The event that is for start/stop UAS
+                //Subsribe to it, and have that method update the UI to disable the text entry feild (and update "I am leader")
+
+                //Read out the IP address of everyone else
+                //Read out if you are the leader
             }
-
-            //The event that is for start/stop UAS
-            //Subsribe to it, and have that method update the UI to disable the text entry feild (and update "I am leader")
-
-            //Read out the IP address of everyone else
-            //Read out if you are the leader
+            catch(Exception e)
+            {
+                MessageBox.Show(e.ToString());
+            }
         }
 
         private void AddPeers(RaftBootstrapConfig config, int id)
