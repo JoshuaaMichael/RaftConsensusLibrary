@@ -2,9 +2,12 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using TeamDecided.RaftCommon.Logging;
 using TeamDecided.RaftConsensus;
+using TeamDecided.RaftConsensus.Enums;
 using TeamDecided.RaftConsensus.Interfaces;
 
 namespace RaftPrototype
@@ -12,7 +15,7 @@ namespace RaftPrototype
     public partial class RaftNode : Form
     {
         private IConsensus<string, string> node;
-
+        private StringBuilder debugLog = new StringBuilder();
 
         public RaftNode(string serverName, string configFile, string logFile)
         {
@@ -39,7 +42,8 @@ namespace RaftPrototype
         private void WatchLog(object sender, EventArgs e)
         {
             string log = string.Format("{0:G} | {1} ", DateTime.Now, e);
-            listBox1.Items.Add("name");
+            debugLog.AppendLine(e.ToString());
+            tbDebugLog.Text = debugLog.ToString();
             
         }
 
@@ -75,8 +79,8 @@ namespace RaftPrototype
                 ////join cluster
                 node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
                 RaftLogging.Instance.Info("{0} joined Cluster ", config.nodeNames[id]);
-                ////Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
-                ////joinTask.Wait();
+                //Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+                //joinTask.Wait();
             }
 
             //The event that is for start/stop UAS

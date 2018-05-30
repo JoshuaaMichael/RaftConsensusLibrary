@@ -166,52 +166,50 @@ namespace RaftPrototype
 
             int maxNodes = (int)nNodes.Value;
 
-            //Create a config file structure
+            //create a config file structure
             RaftBootstrapConfig rbsc = new RaftBootstrapConfig
             {
                 clusterName = tbClusterName.Text,
                 clusterPassword = tbClusterPasswd.Text,//should this really be plain text!
-                //leaderIP = IP_TO_BIND,
                 maxNodes = maxNodes//set max nodes, generic for all
             };
 
-            foreach (var item in config)
+            foreach (var node in config)
             {
-                rbsc.nodeNames.Add(item.Item1);
-                rbsc.nodeIPAddresses.Add(item.Item2);
-                rbsc.nodePorts.Add(item.Item3);
+                rbsc.nodeNames.Add(node.Item1);
+                rbsc.nodeIPAddresses.Add(node.Item2);
+                rbsc.nodePorts.Add(node.Item3);
             }
 
             string json = JsonConvert.SerializeObject(rbsc, Formatting.Indented);
 
             File.Delete(configFile);
             File.WriteAllText(configFile, json);
-            RaftLogging.Instance.Info("Created configuration file {0}", configFile);
 
             ////The commented out code below is for testing RaftNode with debug
-            RaftNode[] nodes = new RaftNode[maxNodes];
-            RaftNode node = new RaftNode(rbsc.nodeNames[0], configFile, string.Format("{0}-debug.log", rbsc.nodeNames[0]));
+            //RaftNode node = new RaftNode(rbsc.nodeNames[0], configFile);
             //this is the leader window
-            node.Show();
+            //node.Show();
 
-            for (int i = 1; i < rbsc.nodeNames.Count; i++)
+            RaftNode[] nodes = new RaftNode[maxNodes];
+
+            for (int i = 0; i < rbsc.nodeNames.Count; i++)
             {
                 //Let's start the leader with a 500ms head start (sleep) before starting the rest
                 if (i == 1)
                 {
                     Thread.Sleep(1000);
                 }
+
+                nodes[i] = new RaftNode(rbsc.nodeNames[0], configFile, string.Format("{0}-debug.log", rbsc.nodeNames[i]));
                 /// seems to perform better with this sleep on all Process.Start() calls. 
                 /// This value increases to 1750ms when we re enable the JoinCluster call 
-                /// within RaftNode, however still volatile  and doesn't open window 100% 
+                /// within RaftNode, however still volatile and doesn't open window 100% 
                 /// of the time
-                nodes[i] = new RaftNode(rbsc.nodeNames[i], configFile, string.Format("{0}-debug.log", rbsc.nodeNames[i]));
-                nodes[i].Show();
-                //Process.Start(System.Reflection.Assembly.GetEntryAssembly().Location, string.Format("{0} {1}", rbsc.nodeNames[i], configFile));
+                Thread.Sleep(500);
             }
 
-            Hide();
-
+            Close();
         }
 
         private void CreateRaftNodes_WithStartInfo_Click(object sender, EventArgs e)
@@ -256,7 +254,7 @@ namespace RaftPrototype
 
             for (int i = 0; i < rbsc.nodeNames.Count; i++)
             {
-                startInfo.Arguments = string.Format("{0} {1}", rbsc.nodeNames[i], configFile);
+                startInfo.Arguments = string.Format("{0} {1} {2}", rbsc.nodeNames[i], configFile, string.Format("{0}-debug.log", rbsc.nodeNames[i]));
                 Process.Start(startInfo);
 
                 /// seems to perform better with this sleep on all Process.Start() calls. 
