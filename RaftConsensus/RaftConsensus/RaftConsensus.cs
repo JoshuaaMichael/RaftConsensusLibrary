@@ -296,7 +296,10 @@ namespace TeamDecided.RaftConsensus
         {
             foreach (Tuple<string, string, int> peer in manuallyAddedClients)
             {
-                networking.ManualAddPeer(peer.Item1, new IPEndPoint(IPAddress.Parse(peer.Item2), peer.Item3));
+                if (!networking.HasPeer(peer.Item1))
+                {
+                    networking.ManualAddPeer(peer.Item1, new IPEndPoint(IPAddress.Parse(peer.Item2), peer.Item3));
+                }
             }
         }
         public Task<ERaftAppendEntryState> AppendEntry(TKey key, TValue value)
