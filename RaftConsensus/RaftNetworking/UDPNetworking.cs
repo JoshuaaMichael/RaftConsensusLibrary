@@ -201,19 +201,20 @@ namespace TeamDecided.RaftNetworking
                 {
                     isSocketReady.WaitOne();
                     messageBytes = result.Result.Buffer;
+
+                    endPoint = result.Result.RemoteEndPoint;
+
+                    lock (newMessagesReceivedLockObject)
+                    {
+                        newMessagesReceived.Enqueue(new Tuple<byte[], IPEndPoint>(messageBytes, endPoint));
+                        onMessageReceive.Set();
+                    }
                 }
                 catch
                 {
                     RebuildUDPClient();
                     continue;
-                }
-                endPoint = result.Result.RemoteEndPoint;
-
-                lock (newMessagesReceivedLockObject)
-                {
-                    newMessagesReceived.Enqueue(new Tuple<byte[], IPEndPoint>(messageBytes, endPoint));
-                    onMessageReceive.Set();
-                }
+                }                
             }
         }
 
