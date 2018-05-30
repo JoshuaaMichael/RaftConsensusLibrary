@@ -46,7 +46,7 @@ namespace TeamDecided.RaftConsensus.Tests
         [SetUp]
         public void BeforeTest()
         {
-            RaftLogging.Instance.OverwriteLoggingFile(@"C:\\Users\\Tori\\Downloads\\debug.log");
+            RaftLogging.Instance.OverwriteLoggingFile(@"C:\Users\admin\Downloads\debug.log");
             RaftLogging.Instance.DeleteExistingLogFile();
             RaftLogging.Instance.SetDoInfo(true);
             RaftLogging.Instance.SetDoDebug(true);
@@ -98,6 +98,40 @@ namespace TeamDecided.RaftConsensus.Tests
         }
 
         [Test]
+        public void IT_TwoNodesJoinClusterCantFindInitialLeader()
+        {
+            //This will only test 1 leader node, and 1 peers coming to join the cluster
+            int maxNodes = 3;
+
+            nodes = RaftConsensus<string, string>.MakeNodesForTest(maxNodes, START_PORT);
+            InformOfIPs(nodes);
+
+            IConsensus<string, string> leader = nodes[0];
+            IConsensus<string, string> follower1 = nodes[1];
+
+            // create a cluster
+            //
+
+            Task<EJoinClusterResponse> follower1JoinTask = follower1.JoinCluster(clusterName, clusterPassword, maxNodes);
+            follower1JoinTask.Wait();
+
+            leader.CreateCluster(clusterName, clusterPassword, maxNodes);
+            Thread.Sleep(200);
+
+            follower1JoinTask = follower1.JoinCluster(clusterName, clusterPassword, maxNodes);
+            follower1JoinTask.Wait();
+
+            Thread.Sleep(500); //Let's see if we can keep this thing alive for a bit
+
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                nodes[i].Dispose();
+            }
+
+            Assert.AreEqual(EJoinClusterResponse.ACCEPT, follower1JoinTask.Result);
+        }
+
+        [Test]
         public void IT_ThreeNodesJoinCluster()
         {
             //This will only test 1 leader node, and 2 peers coming to join the cluster
@@ -119,7 +153,7 @@ namespace TeamDecided.RaftConsensus.Tests
             follower1JoinTask.Wait();
             follower2JoinTask.Wait();
 
-            Thread.Sleep(60000 * 5);
+            Thread.Sleep(500);
 
             leader.Dispose();
             follower1.Dispose();

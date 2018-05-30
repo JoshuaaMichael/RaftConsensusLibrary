@@ -56,7 +56,7 @@
             // 
             this.dataGridView1.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridView1.Location = new System.Drawing.Point(16, 76);
-            this.dataGridView1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.dataGridView1.Margin = new System.Windows.Forms.Padding(4);
             this.dataGridView1.Name = "dataGridView1";
             this.dataGridView1.Size = new System.Drawing.Size(404, 313);
             this.dataGridView1.TabIndex = 1;
@@ -64,7 +64,7 @@
             // bSendMsg
             // 
             this.bSendMsg.Location = new System.Drawing.Point(319, 527);
-            this.bSendMsg.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.bSendMsg.Margin = new System.Windows.Forms.Padding(4);
             this.bSendMsg.Name = "bSendMsg";
             this.bSendMsg.Size = new System.Drawing.Size(100, 28);
             this.bSendMsg.TabIndex = 2;
@@ -75,7 +75,7 @@
             // bStop
             // 
             this.bStop.Location = new System.Drawing.Point(320, 41);
-            this.bStop.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.bStop.Margin = new System.Windows.Forms.Padding(4);
             this.bStop.Name = "bStop";
             this.bStop.Size = new System.Drawing.Size(100, 28);
             this.bStop.TabIndex = 3;
@@ -96,7 +96,7 @@
             // textBox1
             // 
             this.textBox1.Location = new System.Drawing.Point(19, 527);
-            this.textBox1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.textBox1.Margin = new System.Windows.Forms.Padding(4);
             this.textBox1.Name = "textBox1";
             this.textBox1.Size = new System.Drawing.Size(291, 22);
             this.textBox1.TabIndex = 6;
@@ -105,9 +105,9 @@
             // 
             this.groupBox1.Controls.Add(this.tbDebugLog);
             this.groupBox1.Location = new System.Drawing.Point(16, 396);
-            this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.groupBox1.Margin = new System.Windows.Forms.Padding(4);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.groupBox1.Padding = new System.Windows.Forms.Padding(4);
             this.groupBox1.Size = new System.Drawing.Size(404, 123);
             this.groupBox1.TabIndex = 7;
             this.groupBox1.TabStop = false;
@@ -116,7 +116,7 @@
             // tbDebugLog
             // 
             this.tbDebugLog.Location = new System.Drawing.Point(8, 23);
-            this.tbDebugLog.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbDebugLog.Margin = new System.Windows.Forms.Padding(4);
             this.tbDebugLog.Multiline = true;
             this.tbDebugLog.Name = "tbDebugLog";
             this.tbDebugLog.Size = new System.Drawing.Size(387, 91);
@@ -135,7 +135,7 @@
             this.Controls.Add(this.dataGridView1);
             this.Controls.Add(this.lbNodeName);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "RaftNode";
             this.Text = "Raft Prototype Node";
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();

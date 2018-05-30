@@ -69,7 +69,7 @@
             0,
             0});
             this.nNodes.Location = new System.Drawing.Point(326, 124);
-            this.nNodes.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.nNodes.Margin = new System.Windows.Forms.Padding(4);
             this.nNodes.Name = "nNodes";
             this.nNodes.Size = new System.Drawing.Size(160, 22);
             this.nNodes.TabIndex = 1;
@@ -78,7 +78,7 @@
             // button1
             // 
             this.button1.Location = new System.Drawing.Point(608, 486);
-            this.button1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.button1.Margin = new System.Windows.Forms.Padding(4);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(100, 28);
             this.button1.TabIndex = 2;
@@ -101,7 +101,7 @@
             this.tableLayoutPanel1.SetColumnSpan(this.tbClusterName, 2);
             this.tbClusterName.Dock = System.Windows.Forms.DockStyle.Top;
             this.tbClusterName.Location = new System.Drawing.Point(326, 4);
-            this.tbClusterName.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbClusterName.Margin = new System.Windows.Forms.Padding(4);
             this.tbClusterName.Name = "tbClusterName";
             this.tbClusterName.Size = new System.Drawing.Size(362, 22);
             this.tbClusterName.TabIndex = 9;
@@ -124,7 +124,7 @@
             this.tableLayoutPanel1.Controls.Add(this.nNodes, 1, 5);
             this.tableLayoutPanel1.Controls.Add(this.lWarningNodesNumber, 2, 5);
             this.tableLayoutPanel1.Location = new System.Drawing.Point(16, 15);
-            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 6;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -151,7 +151,7 @@
             this.tableLayoutPanel1.SetColumnSpan(this.tbClusterPasswd, 2);
             this.tbClusterPasswd.Dock = System.Windows.Forms.DockStyle.Top;
             this.tbClusterPasswd.Location = new System.Drawing.Point(326, 34);
-            this.tbClusterPasswd.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbClusterPasswd.Margin = new System.Windows.Forms.Padding(4);
             this.tbClusterPasswd.Name = "tbClusterPasswd";
             this.tbClusterPasswd.PasswordChar = '*';
             this.tbClusterPasswd.Size = new System.Drawing.Size(362, 22);
@@ -172,7 +172,7 @@
             this.tableLayoutPanel1.SetColumnSpan(this.tbIPAddress, 2);
             this.tbIPAddress.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tbIPAddress.Location = new System.Drawing.Point(326, 94);
-            this.tbIPAddress.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbIPAddress.Margin = new System.Windows.Forms.Padding(4);
             this.tbIPAddress.Name = "tbIPAddress";
             this.tbIPAddress.Size = new System.Drawing.Size(362, 22);
             this.tbIPAddress.TabIndex = 14;
@@ -190,7 +190,7 @@
             // tbPort
             // 
             this.tbPort.Location = new System.Drawing.Point(326, 64);
-            this.tbPort.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbPort.Margin = new System.Windows.Forms.Padding(4);
             this.tbPort.Name = "tbPort";
             this.tbPort.Size = new System.Drawing.Size(132, 22);
             this.tbPort.TabIndex = 15;
@@ -210,7 +210,7 @@
             // btnCreate
             // 
             this.btnCreate.Location = new System.Drawing.Point(500, 486);
-            this.btnCreate.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnCreate.Margin = new System.Windows.Forms.Padding(4);
             this.btnCreate.Name = "btnCreate";
             this.btnCreate.Size = new System.Drawing.Size(100, 28);
             this.btnCreate.TabIndex = 11;
@@ -222,7 +222,7 @@
             // 
             this.nodeConfigDataView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.nodeConfigDataView.Location = new System.Drawing.Point(24, 187);
-            this.nodeConfigDataView.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.nodeConfigDataView.Margin = new System.Windows.Forms.Padding(4);
             this.nodeConfigDataView.Name = "nodeConfigDataView";
             this.nodeConfigDataView.Size = new System.Drawing.Size(684, 292);
             this.nodeConfigDataView.TabIndex = 12;
@@ -237,7 +237,7 @@
             this.Controls.Add(this.tableLayoutPanel1);
             this.Controls.Add(this.button1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "RaftBootStrap";
             this.Text = "Raft Consensus Prototype";
             ((System.ComponentModel.ISupportInitialize)(this.nNodes)).EndInit();

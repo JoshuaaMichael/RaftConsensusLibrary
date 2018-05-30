@@ -77,10 +77,32 @@ namespace RaftPrototype
                 /// does however show the task. You can restart the task and the window does appear correctly
 
                 ////join cluster
-                node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+                //node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+
+
+                while(true)
+                {
+                    Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+                    joinTask.Wait();
+                    EJoinClusterResponse result = joinTask.Result;
+                    if (result == EJoinClusterResponse.ACCEPT)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        if (MessageBox.Show("Failed to join cluster, do you want to retry?", "Error " + serverName, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error) == DialogResult.Retry)
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            Close();
+                            return;
+                        }
+                    }
+                }
                 RaftLogging.Instance.Info("{0} joined Cluster ", config.nodeNames[index]);
-                //Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
-                //joinTask.Wait();
             }
 
             //The event that is for start/stop UAS

@@ -74,7 +74,7 @@ namespace TeamDecided.RaftConsensus
         private CountdownEvent onThreadsStarted;
 
         private ManualResetEvent onWaitingToJoinCluster;
-        private const int waitingToJoinClusterTimeout = 200000; //ms
+        private const int waitingToJoinClusterTimeout = 2000;
         private EJoinClusterResponse eJoinClusterResponse;
         private object eJoinClusterResponeLockObject;
         private int joiningClusterAttemptNumber;
@@ -84,6 +84,7 @@ namespace TeamDecided.RaftConsensus
 
         public event EventHandler StartUAS;
         public event EventHandler<EStopUASReason> StopUAS;
+        public event EventHandler<Tuple<TKey, TValue>> OnNewCommitedEntry;
 
         private bool disposedValue = false; // To detect redundant calls
 
@@ -136,6 +137,7 @@ namespace TeamDecided.RaftConsensus
                 {
                     throw new ArgumentException("clusterPassword must not be blank");
                 }
+
                 networking = new UDPNetworking();
                 networking.Start(listeningPort);
                 networking.OnMessageReceived += OnMessageReceive;
@@ -177,11 +179,16 @@ namespace TeamDecided.RaftConsensus
                         {
                             currentState = ERaftState.INITIALIZING;
                         }
+                        networking.Dispose();
                         return EJoinClusterResponse.NO_RESPONSE;
                     }
                     Log("We've got a responce from the leader {0}", leaderName);
                     lock (eJoinClusterResponeLockObject)
                     {
+                        if(eJoinClusterResponse != EJoinClusterResponse.ACCEPT)
+                        {
+                            networking.Dispose(); //Hi future Josh/Sean. We knew this would bite you in the ass.
+                        }
                         return eJoinClusterResponse;
                     }
                 });
@@ -283,11 +290,10 @@ namespace TeamDecided.RaftConsensus
         }
         private void FlushNetworkPeerBuffer()
         {
-            foreach(Tuple<string, string, int> peer in manuallyAddedClients)
+            foreach (Tuple<string, string, int> peer in manuallyAddedClients)
             {
                 networking.ManualAddPeer(peer.Item1, new IPEndPoint(IPAddress.Parse(peer.Item2), peer.Item3));
             }
-            manuallyAddedClients.Clear();
         }
         public Task<ERaftAppendEntryState> AppendEntry(TKey key, TValue value)
         {
@@ -395,7 +401,7 @@ namespace TeamDecided.RaftConsensus
                     Log("Background thread now running as Candidate");
                     BackgroundThread_Candidate(waitHandles); //We're a candidate, so we'll be checking for timeouts from our attempt to become leader
                 }
-                else if(threadState == ERaftState.LEADER)
+                else if (threadState == ERaftState.LEADER)
                 {
                     Log("Background thread now running as Leader");
                     BackgroundThread_Leader(waitHandles); //We're a leader, so we'll be sending heart beats
@@ -452,7 +458,7 @@ namespace TeamDecided.RaftConsensus
         }
         private void BackgroundThread_Candidate(WaitHandle[] waitHandles)
         {
-            if(WaitHandle.WaitAny(waitHandles, timeoutValue) == WaitHandle.WaitTimeout)
+            if (WaitHandle.WaitAny(waitHandles, timeoutValue) == WaitHandle.WaitTimeout)
             {
                 //We didn't hear from anyone, so we've got to go candidate again to try be leader... again
                 Log("We didn't get voted in to be leader, time to try again");
@@ -475,13 +481,13 @@ namespace TeamDecided.RaftConsensus
             while (true)
             {
                 int indexInner = WaitHandle.WaitAny(followerWaitHandles, timeoutValue);
-                if(indexInner == WaitHandle.WaitTimeout)
+                if (indexInner == WaitHandle.WaitTimeout)
                 {
                     Log("Timing out to be candidate. We haven't heard from the leader in {0} milliseconds", timeoutValue);
                     ChangeStateToCandiate();
                     return;
                 }
-                else if(indexInner == onReceivedMessageIndex)
+                else if (indexInner == onReceivedMessageIndex)
                 {
                     onReceivedMessage.Reset();
                 }
@@ -533,7 +539,7 @@ namespace TeamDecided.RaftConsensus
         {
             Log("Changing state to Candidate");
             currentState = ERaftState.CANDIDATE;
-            lock(currentTermLockObject)
+            lock (currentTermLockObject)
             {
                 currentTerm += 1;
             }
@@ -607,9 +613,9 @@ namespace TeamDecided.RaftConsensus
         private void HandleJoinCluster(RaftJoinCluster message)
         {
             RaftJoinClusterResponse responseMessage;
-            lock(currentStateLockObject)
+            lock (currentStateLockObject)
             {
-                if(currentState == ERaftState.LEADER)
+                if (currentState == ERaftState.LEADER)
                 {
                     if (message.ClusterName != clusterName)
                     {
@@ -638,7 +644,7 @@ namespace TeamDecided.RaftConsensus
                     Log("Rejecting node {0}. I'm not the leader, and I don't know the leader", message.From);
                     responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.REJECT_LEADER_UNKNOWN);
                 }
-                else if(currentState == ERaftState.INITIALIZING)
+                else if (currentState == ERaftState.INITIALIZING)
                 {
                     Log("Discarding message from node {0}. We aren't in the correct state to process this message", message.From);
                     return; //Discard message, can't do anything with it yet
@@ -653,9 +659,9 @@ namespace TeamDecided.RaftConsensus
         }
         private void HandleJoinClusterResponse(RaftJoinClusterResponse message)
         {
-            lock(currentStateLockObject)
+            lock (currentStateLockObject)
             {
-                if(currentState != ERaftState.ATTEMPTING_TO_JOIN_CLUSTER)
+                if (currentState != ERaftState.ATTEMPTING_TO_JOIN_CLUSTER)
                 {
                     Log("Discarding message from node {0}. We've already found the leader", message.From);
                     return; //We don't need this, we've already found the leader
@@ -683,7 +689,7 @@ namespace TeamDecided.RaftConsensus
                     StartThreads();
                     ChangeStateToFollower();
                 }
-                else if(message.JoinClusterResponse == EJoinClusterResponse.REJECT_LEADER_UNKNOWN)
+                else if (message.JoinClusterResponse == EJoinClusterResponse.REJECT_LEADER_UNKNOWN)
                 {
                     Log("Discarding message from node {0}. They don't know who the leader is.", message.From);
                     //TODO: Give this info back to the caller if no accept comes later
@@ -746,7 +752,7 @@ namespace TeamDecided.RaftConsensus
                         return;
                     }
                     else if (currentState == ERaftState.FOLLOWER)
-                    {                        
+                    {
                         //Else, continue down, this is the a typical message, therefore message.Term == currentTerm
                     }
                     else
@@ -971,9 +977,9 @@ namespace TeamDecided.RaftConsensus
         {
             lock (currentStateLockObject)
             {
-                lock(currentTermLockObject)
+                lock (currentTermLockObject)
                 {
-                    if(message.Term > currentTerm)
+                    if (message.Term > currentTerm)
                     {
                         Log("Heard from a node ({0}) with greater term({1}) than ours({2}). Changing to follower", message.From, message.Term, currentTerm);
                         UpdateTerm(message.Term);
@@ -1008,7 +1014,7 @@ namespace TeamDecided.RaftConsensus
                         }
                     }
                 }
-                else if(currentState == ERaftState.CANDIDATE && !message.Granted)
+                else if (currentState == ERaftState.CANDIDATE && !message.Granted)
                 {
                     Log("They rejected our request. Discarding.");
                 }
@@ -1029,9 +1035,9 @@ namespace TeamDecided.RaftConsensus
         private bool CheckForCommitMajority(int index)
         {
             int total = 1; //Initialised to 1 as leader counts
-            foreach(KeyValuePair<string, NodeInfo> node in nodesInfo)
+            foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
             {
-                if(node.Value.MatchIndex == index)
+                if (node.Value.MatchIndex == index)
                 {
                     total += 1;
                 }
@@ -1064,7 +1070,7 @@ namespace TeamDecided.RaftConsensus
                 }
             }
             currentTerm = newTerm;
-            lock(votedForLockObject)
+            lock (votedForLockObject)
             {
                 votedFor = "";
             }
