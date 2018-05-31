@@ -642,6 +642,12 @@ namespace TeamDecided.RaftConsensus
                 }
                 else if (currentState == ERaftState.FOLLOWER || currentState == ERaftState.CANDIDATE)
                 {
+
+                    if(leaderName == null)
+                    {
+                        Log("Why is this null");
+                    }
+
                     IPEndPoint iPEndPoint = networking.GetIPFromName(leaderName);
                     Log("Forwarding node {0} to leader at {1}:{2}", message.From, iPEndPoint.Address.ToString(), iPEndPoint.Port);
                     responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, iPEndPoint.Address.ToString(), iPEndPoint.Port);
@@ -655,6 +661,11 @@ namespace TeamDecided.RaftConsensus
                 {
                     Log("Discarding message from node {0}. We aren't in the correct state to process this message", message.From);
                     return; //Discard message, can't do anything with it yet
+                }
+                else if (currentState == ERaftState.STOPPED)
+                {
+                    Log("Discarding message from node {0}. We are stopping", message.From);
+                    return;
                 }
                 else
                 {
@@ -702,9 +713,14 @@ namespace TeamDecided.RaftConsensus
                     //TODO: Give this info back to the caller if no accept comes later
                     return;
                 }
+                else if (message.JoinClusterResponse == EJoinClusterResponse.FORWARD)
+                {
+                    Log("Discarding message from node {0}. They're just trying to forward us", message.From);
+                    return;
+                }
                 else
                 {
-                    Log("Heard back from leader (node {0}), they've rejected our attempt to join", message.From);
+                    Log("Heard back from leader (node {0}), they've rejected our attempt to join. They've said {1}", message.From, message.JoinClusterResponse.ToString());
                     //We've been unsuccesful
                     //Set the value of the response for the client, and notify the Task
                     lock (eJoinClusterResponeLockObject)
