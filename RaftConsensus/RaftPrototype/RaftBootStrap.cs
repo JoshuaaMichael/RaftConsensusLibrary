@@ -207,6 +207,7 @@ namespace RaftPrototype
                     //start up the rest of the nodes
                     startInfo.Arguments = string.Format("{0} {1} {2}", rbsc.nodeNames[i], CONFIG_FILE, string.Format("{0}-debug.log", rbsc.nodeNames[i]));
                     Process.Start(startInfo);
+                    Thread.Sleep(200);
                 }
 
                 Close();
