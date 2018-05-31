@@ -165,11 +165,13 @@ namespace RaftPrototype
 
             //create new config file 
             File.Delete(CONFIG_FILE);
+            //File.Delete(LOGFILE);
             File.WriteAllText(CONFIG_FILE, json);
-
+            
 
             if (cbInstantiate.Checked)
             {
+                RaftLogging.Instance.DeleteExistingLogFile();
                 //create array of RaftNode
                 nodes = new RaftNode[maxNodes];
 
@@ -204,6 +206,7 @@ namespace RaftPrototype
 
                 for (int i = rbsc.nodeNames.Count - 1; i > 0; i--)
                 {
+                    File.Delete(string.Format("{0}-debug.log", rbsc.nodeNames[i]));
                     //start up the rest of the nodes
                     startInfo.Arguments = string.Format("{0} {1} {2}", rbsc.nodeNames[i], CONFIG_FILE, string.Format("{0}-debug.log", rbsc.nodeNames[i]));
                     Process.Start(startInfo);

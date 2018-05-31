@@ -16,6 +16,11 @@ namespace RaftPrototype
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+
+
+
+            //Application.Run(new RaftNode("Node2", "config.json", "debug.log"));
+
             if (args.Length == 0) //Running the program to bootstrap
             {
                 Application.Run(new RaftBootStrap());

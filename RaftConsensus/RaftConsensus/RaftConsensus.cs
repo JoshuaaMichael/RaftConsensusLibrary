@@ -184,16 +184,16 @@ namespace TeamDecided.RaftConsensus
                     }
                     lock (currentStateLockObject)
                     {
-                        currentState = ERaftState.INITIALIZING;
-                    }
-                    Log("We've got a responce from the leader {0}", leaderName);
-                    lock (eJoinClusterResponeLockObject)
-                    {
-                        if(eJoinClusterResponse != EJoinClusterResponse.ACCEPT)
+                        lock (eJoinClusterResponeLockObject)
                         {
-                            networking.Dispose(); //Hi future Josh/Sean. We knew this would bite you in the ass.
+                            Log("We've got a responce from the leader {0}, it's {1}", leaderName, eJoinClusterResponse.ToString());
+                            if (eJoinClusterResponse != EJoinClusterResponse.ACCEPT)
+                            {
+                                currentState = ERaftState.INITIALIZING; //Because JoinCluster needs to be in initializing state
+                                networking.Dispose(); //Hi future Josh/Sean. We knew this would bite you in the ass. (2018-05-31 20:48, yup)
+                            }
+                            return eJoinClusterResponse;
                         }
-                        return eJoinClusterResponse;
                     }
                 });
 
@@ -1173,6 +1173,10 @@ namespace TeamDecided.RaftConsensus
                         }
                         onShutdown.Set();
                         backgroundThread.Wait();
+                        networking.Dispose();
+                    }
+                    else if (previousStatus == ERaftState.INITIALIZING && joiningClusterAttemptNumber > 0)
+                    {
                         networking.Dispose();
                     }
                 }
