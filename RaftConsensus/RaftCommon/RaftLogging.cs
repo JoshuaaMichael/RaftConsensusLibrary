@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace TeamDecided.RaftCommon.Logging
@@ -7,17 +8,20 @@ namespace TeamDecided.RaftCommon.Logging
     {
         private static RaftLogging instance = null;
         private static readonly object instanceLock = new object();
-        private static readonly object methodLock = new object();
-        private static readonly object verbositySelection = new object();
+        private readonly object methodLock = new object();
+        private readonly object verbositySelection = new object();
         private const string defaultFilename = "debug.log";
         private string loggingFileName = defaultFilename;
 
-        private static bool doDebug = false;
-        private static bool doError = false;
-        private static bool doFatal = false;
-        private static bool doInfo = false;
-        private static bool doTrace = false;
-        private static bool doWarn = false;
+        private int linesToBufferCount;
+        private List<string> buffer;
+
+        private bool doDebug = false;
+        private bool doError = false;
+        private bool doFatal = false;
+        private bool doInfo = false;
+        private bool doTrace = false;
+        private bool doWarn = false;
 
         public event EventHandler<string> OnNewLineTrace;
         public event EventHandler<string> OnNewLineDebug;
@@ -25,6 +29,15 @@ namespace TeamDecided.RaftCommon.Logging
         public event EventHandler<string> OnNewLineWarn;
         public event EventHandler<string> OnNewLineError;
         public event EventHandler<string> OnNewLineFatal;
+
+        public void EnableBuffer(int linesToBufferCount)
+        {
+            lock(methodLock)
+            {
+                this.linesToBufferCount = linesToBufferCount;
+                buffer = new List<string>(linesToBufferCount);
+            }
+        }
 
         private void WriteToLog(bool doLogLevel, EventHandler<string> onNewLineEvent, string format, params object[] args)
         {
@@ -36,10 +49,27 @@ namespace TeamDecided.RaftCommon.Logging
                     {
                         string message = string.Format(GetTimestampString() + format + Environment.NewLine, args);
                         onNewLineEvent?.Invoke(this, message);
-                        File.AppendAllText(loggingFileName, message);
+                        if (buffer == null)
+                        {
+                            File.AppendAllText(loggingFileName, message);
+                        }
+                        else
+                        {
+                            buffer.Add(message.TrimEnd());
+                            if(buffer.Count == linesToBufferCount)
+                            {
+                                FlushBuffer();
+                            }
+                        }
                     }
                 }
             }
+        }
+
+        public void FlushBuffer()
+        {
+            File.AppendAllLines(loggingFileName, buffer);
+            buffer.Clear();
         }
 
 

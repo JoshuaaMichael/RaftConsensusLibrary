@@ -640,22 +640,16 @@ namespace TeamDecided.RaftConsensus
                         responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.REJECT_UNKNOWN_ERROR);
                     }
                 }
-                else if (currentState == ERaftState.FOLLOWER || currentState == ERaftState.CANDIDATE)
-                {
-
-                    if(leaderName == null)
-                    {
-                        Log("Why is this null");
-                    }
-
-                    IPEndPoint iPEndPoint = networking.GetIPFromName(leaderName);
-                    Log("Forwarding node {0} to leader at {1}:{2}", message.From, iPEndPoint.Address.ToString(), iPEndPoint.Port);
-                    responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, iPEndPoint.Address.ToString(), iPEndPoint.Port);
-                }
-                else if (currentState == ERaftState.ATTEMPTING_TO_JOIN_CLUSTER || currentState == ERaftState.ATTEMPTING_TO_START_CLUSTER)
+                else if (currentState == ERaftState.ATTEMPTING_TO_JOIN_CLUSTER || currentState == ERaftState.ATTEMPTING_TO_START_CLUSTER || leaderName == null)
                 {
                     Log("Rejecting node {0}. I'm not the leader, and I don't know the leader", message.From);
                     responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, EJoinClusterResponse.REJECT_LEADER_UNKNOWN);
+                }
+                else if (currentState == ERaftState.FOLLOWER || currentState == ERaftState.CANDIDATE)
+                {
+                    IPEndPoint iPEndPoint = networking.GetIPFromName(leaderName);
+                    Log("Forwarding node {0} to leader at {1}:{2}", message.From, iPEndPoint.Address.ToString(), iPEndPoint.Port);
+                    responseMessage = new RaftJoinClusterResponse(message.From, nodeName, message.JoinClusterAttempt, message.ClusterName, iPEndPoint.Address.ToString(), iPEndPoint.Port);
                 }
                 else if (currentState == ERaftState.INITIALIZING)
                 {
@@ -697,7 +691,7 @@ namespace TeamDecided.RaftConsensus
 
                     //Set our current leader name for reference
                     leaderName = message.From;
-
+                    clusterName = message.ClusterName;
                     lock (eJoinClusterResponeLockObject)
                     {
                         eJoinClusterResponse = message.JoinClusterResponse;
@@ -951,6 +945,7 @@ namespace TeamDecided.RaftConsensus
                         if (currentState != ERaftState.FOLLOWER)
                         {
                             Log("We currently aren't a follower. Changing state to follower.");
+                            leaderName = null;
                             ChangeStateToFollower();
                         }
 
