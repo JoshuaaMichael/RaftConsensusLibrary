@@ -73,7 +73,8 @@
             // 
             // bSendMsg
             // 
-            this.bSendMsg.Location = new System.Drawing.Point(103, 3);
+            this.bSendMsg.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.bSendMsg.Location = new System.Drawing.Point(256, 3);
             this.bSendMsg.Name = "bSendMsg";
             this.bSendMsg.Size = new System.Drawing.Size(75, 23);
             this.bSendMsg.TabIndex = 2;
@@ -96,7 +97,7 @@
             // 
             this.textBox1.Location = new System.Drawing.Point(3, 3);
             this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(94, 20);
+            this.textBox1.Size = new System.Drawing.Size(247, 20);
             this.textBox1.TabIndex = 6;
             // 
             // groupBox1
@@ -104,17 +105,17 @@
             this.groupBox1.Controls.Add(this.tbDebugLog);
             this.groupBox1.Location = new System.Drawing.Point(361, 12);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(496, 366);
+            this.groupBox1.Size = new System.Drawing.Size(350, 409);
             this.groupBox1.TabIndex = 7;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Debug Log";
             // 
             // tbDebugLog
             // 
-            this.tbDebugLog.Location = new System.Drawing.Point(12, 19);
+            this.tbDebugLog.Location = new System.Drawing.Point(9, 19);
             this.tbDebugLog.Multiline = true;
             this.tbDebugLog.Name = "tbDebugLog";
-            this.tbDebugLog.Size = new System.Drawing.Size(291, 75);
+            this.tbDebugLog.Size = new System.Drawing.Size(331, 384);
             this.tbDebugLog.TabIndex = 0;
             // 
             // label1
@@ -177,9 +178,9 @@
             // groupBox4
             // 
             this.groupBox4.Controls.Add(this.tableLayoutPanel2);
-            this.groupBox4.Location = new System.Drawing.Point(361, 384);
+            this.groupBox4.Location = new System.Drawing.Point(361, 427);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(496, 100);
+            this.groupBox4.Size = new System.Drawing.Size(350, 57);
             this.groupBox4.TabIndex = 11;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "groupBox4";
@@ -187,16 +188,15 @@
             // tableLayoutPanel2
             // 
             this.tableLayoutPanel2.ColumnCount = 2;
-            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.tableLayoutPanel2.Controls.Add(this.bSendMsg, 1, 0);
             this.tableLayoutPanel2.Controls.Add(this.textBox1, 0, 0);
             this.tableLayoutPanel2.Location = new System.Drawing.Point(6, 19);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
-            this.tableLayoutPanel2.RowCount = 2;
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(200, 100);
+            this.tableLayoutPanel2.RowCount = 1;
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(334, 31);
             this.tableLayoutPanel2.TabIndex = 0;
             // 
             // RaftNode
@@ -204,7 +204,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ClientSize = new System.Drawing.Size(869, 491);
+            this.ClientSize = new System.Drawing.Size(721, 491);
             this.Controls.Add(this.groupBox4);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);

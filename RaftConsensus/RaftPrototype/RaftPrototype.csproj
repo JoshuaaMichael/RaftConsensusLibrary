@@ -67,6 +67,12 @@
     <Compile Include="RaftNode.Designer.cs">
       <DependentUpon>RaftNode.cs</DependentUpon>
     </Compile>
+    <Compile Include="RaftNode2.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="RaftNode2.Designer.cs">
+      <DependentUpon>RaftNode2.cs</DependentUpon>
+    </Compile>
     <EmbeddedResource Include="RaftBootStrap.resx">
       <DependentUpon>RaftBootStrap.cs</DependentUpon>
     </EmbeddedResource>
@@ -81,6 +87,9 @@
     </Compile>
     <EmbeddedResource Include="RaftNode.resx">
       <DependentUpon>RaftNode.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="RaftNode2.resx">
+      <DependentUpon>RaftNode2.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">

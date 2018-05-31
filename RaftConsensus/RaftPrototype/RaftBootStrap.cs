@@ -165,7 +165,6 @@ namespace RaftPrototype
 
             //create new config file 
             File.Delete(CONFIG_FILE);
-            //File.Delete(LOGFILE);
             File.WriteAllText(CONFIG_FILE, json);
             
 
@@ -180,8 +179,8 @@ namespace RaftPrototype
                     nodes[i] = new RaftNode(rbsc.nodeNames[i], CONFIG_FILE, LOGFILE);
                     nodes[i].FormClosed += new FormClosedEventHandler(RaftNodeClosure);
                     nodes[i].Show();
-                    //this.Enabled = false;
-                    Thread.Sleep(200);
+                    this.Enabled = false;
+                    Thread.Sleep(100);
                 }
 
                 this.Enabled = false;
@@ -198,11 +197,13 @@ namespace RaftPrototype
                     WindowStyle = ProcessWindowStyle.Normal
                 };
 
+                //Clean out old log
+                File.Delete(string.Format("{0}-debug.log", rbsc.nodeNames[0]));
                 //start up node1 first so that it can become leader
                 startInfo.Arguments = string.Format("{0} {1} {2}", rbsc.nodeNames[0], CONFIG_FILE, string.Format("{0}-debug.log", rbsc.nodeNames[0]));
                 Process.Start(startInfo);
                 //sleep to give head start for setting it self up
-                Thread.Sleep(200);
+                Thread.Sleep(100);
 
                 for (int i = rbsc.nodeNames.Count - 1; i > 0; i--)
                 {

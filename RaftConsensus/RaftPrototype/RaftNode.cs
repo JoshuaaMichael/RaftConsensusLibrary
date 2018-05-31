@@ -30,7 +30,13 @@ namespace RaftPrototype
             lbNodeName.Text = serverName;
 
             SetupDebug(logFile);
-            LoadConfig(serverName, configFile);
+
+            //Task t = new Task(LoadConfig, TaskCreationOptions.LongRunning);
+
+            Task task = new TaskFactory().StartNew(new Action<object>((test) =>
+            {
+                LoadConfig(serverName, configFile);
+            }), TaskCreationOptions.None);
         }
 
         private void WatchLog(object sender, EventArgs e)
@@ -84,7 +90,6 @@ namespace RaftPrototype
                             }
                             else
                             {
-                                Close();
                                 return;
                             }
                         }
