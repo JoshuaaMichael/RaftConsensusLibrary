@@ -180,7 +180,10 @@ namespace RaftPrototype
                     nodes[i].FormClosed += new FormClosedEventHandler(RaftNodeClosure);
                     nodes[i].Show();
                     this.Enabled = false;
-                    Thread.Sleep(100);
+                    if (i == 0)
+                    {
+                        Thread.Sleep(500);
+                    }
                 }
 
                 this.Enabled = false;

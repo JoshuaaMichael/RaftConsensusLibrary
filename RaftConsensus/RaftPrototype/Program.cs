@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using TeamDecided.RaftCommon.Logging;
 
 namespace RaftPrototype
 {
@@ -16,21 +17,29 @@ namespace RaftPrototype
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-
-
-
             //Application.Run(new RaftNode("Node2", "config.json", "debug.log"));
-
-            if (args.Length == 0) //Running the program to bootstrap
+            try
             {
-                Application.Run(new RaftBootStrap());
+                RaftLogging.Instance.EnableBuffer(500);
+                if (args.Length == 0) //Running the program to bootstrap
+                {
+                    Application.Run(new RaftBootStrap());
+                }
+                else
+                {
+                    string serverName = args[0];
+                    string configFile = args[1];
+                    string logFile = args[2];
+                    Application.Run(new RaftNode(serverName, configFile, logFile));
+                }
             }
-            else
+            catch(Exception e)
             {
-                string serverName = args[0];
-                string configFile = args[1];
-                string logFile = args[2];
-                Application.Run(new RaftNode(serverName, configFile, logFile));
+
+            }
+            finally
+            {
+                RaftLogging.Instance.FlushBuffer();
             }
         }
     }
