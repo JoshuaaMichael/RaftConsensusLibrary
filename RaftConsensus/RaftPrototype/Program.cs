@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using TeamDecided.RaftCommon.Logging;
 
@@ -30,12 +27,13 @@ namespace RaftPrototype
                     string serverName = args[0];
                     string configFile = args[1];
                     string logFile = args[2];
-                    Application.Run(new RaftNode(serverName, configFile, logFile));
+                    //Application.Run(new RaftNode(serverName, configFile, logFile));
+                    Application.Run(new RaftNode2(serverName, configFile, logFile));
                 }
             }
             catch(Exception e)
             {
-
+                MessageBox.Show(e.ToString());
             }
             finally
             {

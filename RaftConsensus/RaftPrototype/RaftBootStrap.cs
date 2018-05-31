@@ -27,7 +27,8 @@ namespace RaftPrototype
         private string LOGFILE = Path.Combine(Environment.CurrentDirectory, "debug.log");
 
         private List<Tuple<string, string, int>> cluster_peer_list = new List<Tuple<string, string, int>>();
-        private RaftNode[] nodes;
+        //private RaftNode[] nodes;
+        private RaftNode2[] nodes;
 
         protected StatusBar mainStatusBar = new StatusBar();
         protected StatusBarPanel statusPanel = new StatusBarPanel();
@@ -172,17 +173,19 @@ namespace RaftPrototype
             {
                 RaftLogging.Instance.DeleteExistingLogFile();
                 //create array of RaftNode
-                nodes = new RaftNode[maxNodes];
+                //nodes = new RaftNode[maxNodes];
+                nodes = new RaftNode2[maxNodes];
 
                 for (int i = 0; i < rbsc.nodeNames.Count; i++)
                 {
-                    nodes[i] = new RaftNode(rbsc.nodeNames[i], CONFIG_FILE, LOGFILE);
+                    //nodes[i] = new RaftNode(rbsc.nodeNames[i], CONFIG_FILE, LOGFILE);
+                    nodes[i] = new RaftNode2(rbsc.nodeNames[i], CONFIG_FILE, LOGFILE);
                     nodes[i].FormClosed += new FormClosedEventHandler(RaftNodeClosure);
                     nodes[i].Show();
                     this.Enabled = false;
                     if (i == 0)
                     {
-                        Thread.Sleep(500);
+                        Thread.Sleep(100);
                     }
                 }
 

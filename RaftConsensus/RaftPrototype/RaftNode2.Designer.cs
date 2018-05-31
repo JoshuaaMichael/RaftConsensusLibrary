@@ -109,10 +109,10 @@
             // 
             this.lbState.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lbState.AutoSize = true;
-            this.lbState.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lbState.Location = new System.Drawing.Point(78, 37);
+            this.lbState.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lbState.Location = new System.Drawing.Point(78, 39);
             this.lbState.Name = "lbState";
-            this.lbState.Size = new System.Drawing.Size(83, 17);
+            this.lbState.Size = new System.Drawing.Size(63, 13);
             this.lbState.TabIndex = 5;
             this.lbState.Text = "ServerState";
             // 
@@ -120,10 +120,10 @@
             // 
             this.lbNodeName.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lbNodeName.AutoSize = true;
-            this.lbNodeName.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lbNodeName.Location = new System.Drawing.Point(78, 6);
+            this.lbNodeName.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lbNodeName.Location = new System.Drawing.Point(78, 8);
             this.lbNodeName.Name = "lbNodeName";
-            this.lbNodeName.Size = new System.Drawing.Size(79, 17);
+            this.lbNodeName.Size = new System.Drawing.Size(61, 13);
             this.lbNodeName.TabIndex = 0;
             this.lbNodeName.Text = "NodeName";
             // 
@@ -196,7 +196,7 @@
             this.groupBox4.Size = new System.Drawing.Size(350, 90);
             this.groupBox4.TabIndex = 12;
             this.groupBox4.TabStop = false;
-            this.groupBox4.Text = "Add New Entry";
+            this.groupBox4.Text = "Append Entry";
             // 
             // tableLayoutPanel2
             // 
@@ -232,7 +232,7 @@
             this.tableLayoutPanel2.SetRowSpan(this.bSendMsg, 2);
             this.bSendMsg.Size = new System.Drawing.Size(75, 23);
             this.bSendMsg.TabIndex = 2;
-            this.bSendMsg.Text = "Send Message";
+            this.bSendMsg.Text = "Append";
             this.bSendMsg.UseVisualStyleBackColor = true;
             // 
             // textBox2
