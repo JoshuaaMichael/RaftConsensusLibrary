@@ -46,9 +46,19 @@
             this.lWarningNodesNumber = new System.Windows.Forms.Label();
             this.btnCreate = new System.Windows.Forms.Button();
             this.nodeConfigDataView = new System.Windows.Forms.DataGridView();
+            this.gbButton = new System.Windows.Forms.GroupBox();
+            this.cbInstantiate = new System.Windows.Forms.CheckBox();
+            this.gbClusterInfo = new System.Windows.Forms.GroupBox();
+            this.gbTitle = new System.Windows.Forms.GroupBox();
+            this.label5 = new System.Windows.Forms.Label();
+            this.gbConfigDetails = new System.Windows.Forms.GroupBox();
             ((System.ComponentModel.ISupportInitialize)(this.nNodes)).BeginInit();
             this.tableLayoutPanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nodeConfigDataView)).BeginInit();
+            this.gbButton.SuspendLayout();
+            this.gbClusterInfo.SuspendLayout();
+            this.gbTitle.SuspendLayout();
+            this.gbConfigDetails.SuspendLayout();
             this.SuspendLayout();
             // 
             // label1
@@ -76,13 +86,13 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(456, 395);
+            this.button1.Location = new System.Drawing.Point(447, 19);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 2;
             this.button1.Text = "Exit";
             this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.Button1_Click);
+            this.button1.Click += new System.EventHandler(this.Create_Button_Click);
             // 
             // label2
             // 
@@ -121,7 +131,7 @@
             this.tableLayoutPanel1.Controls.Add(this.nNodes, 1, 5);
             this.tableLayoutPanel1.Controls.Add(this.lWarningNodesNumber, 2, 5);
             this.tableLayoutPanel1.Controls.Add(this.label2, 0, 1);
-            this.tableLayoutPanel1.Location = new System.Drawing.Point(12, 12);
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(6, 19);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 6;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -201,38 +211,114 @@
             // 
             // btnCreate
             // 
-            this.btnCreate.Location = new System.Drawing.Point(375, 395);
+            this.btnCreate.Location = new System.Drawing.Point(366, 19);
             this.btnCreate.Name = "btnCreate";
             this.btnCreate.Size = new System.Drawing.Size(75, 23);
             this.btnCreate.TabIndex = 11;
             this.btnCreate.Text = "Create";
             this.btnCreate.UseVisualStyleBackColor = true;
-            this.btnCreate.Click += new System.EventHandler(this.CreateRaftNodes_WithStartInfo_Click);
+            this.btnCreate.Click += new System.EventHandler(this.CreateRaftNodes_Click);
             // 
             // nodeConfigDataView
             // 
+            this.nodeConfigDataView.AllowUserToResizeColumns = false;
+            this.nodeConfigDataView.AllowUserToResizeRows = false;
             this.nodeConfigDataView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.nodeConfigDataView.Location = new System.Drawing.Point(18, 152);
+            this.nodeConfigDataView.Location = new System.Drawing.Point(6, 19);
             this.nodeConfigDataView.Name = "nodeConfigDataView";
-            this.nodeConfigDataView.Size = new System.Drawing.Size(513, 237);
+            this.nodeConfigDataView.Size = new System.Drawing.Size(516, 259);
             this.nodeConfigDataView.TabIndex = 12;
+            // 
+            // gbButton
+            // 
+            this.gbButton.Controls.Add(this.cbInstantiate);
+            this.gbButton.Controls.Add(this.btnCreate);
+            this.gbButton.Controls.Add(this.button1);
+            this.gbButton.Location = new System.Drawing.Point(12, 532);
+            this.gbButton.Name = "gbButton";
+            this.gbButton.Size = new System.Drawing.Size(531, 49);
+            this.gbButton.TabIndex = 13;
+            this.gbButton.TabStop = false;
+            // 
+            // cbInstantiate
+            // 
+            this.cbInstantiate.AutoSize = true;
+            this.cbInstantiate.Location = new System.Drawing.Point(14, 19);
+            this.cbInstantiate.Name = "cbInstantiate";
+            this.cbInstantiate.Size = new System.Drawing.Size(109, 17);
+            this.cbInstantiate.TabIndex = 17;
+            this.cbInstantiate.Text = "Instantiate Nodes";
+            this.cbInstantiate.UseVisualStyleBackColor = true;
+            // 
+            // gbClusterInfo
+            // 
+            this.gbClusterInfo.Controls.Add(this.tableLayoutPanel1);
+            this.gbClusterInfo.Location = new System.Drawing.Point(12, 80);
+            this.gbClusterInfo.Name = "gbClusterInfo";
+            this.gbClusterInfo.Size = new System.Drawing.Size(531, 162);
+            this.gbClusterInfo.TabIndex = 14;
+            this.gbClusterInfo.TabStop = false;
+            this.gbClusterInfo.Text = "Cluster Information";
+            // 
+            // gbTitle
+            // 
+            this.gbTitle.Controls.Add(this.label5);
+            this.gbTitle.Location = new System.Drawing.Point(12, 12);
+            this.gbTitle.Name = "gbTitle";
+            this.gbTitle.Size = new System.Drawing.Size(531, 62);
+            this.gbTitle.TabIndex = 15;
+            this.gbTitle.TabStop = false;
+            // 
+            // label5
+            // 
+            this.label5.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.label5.AutoSize = true;
+            this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 20.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label5.Location = new System.Drawing.Point(38, 16);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(429, 31);
+            this.label5.TabIndex = 0;
+            this.label5.Text = "Team Decided - RaftConsensus";
+            this.label5.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // gbConfigDetails
+            // 
+            this.gbConfigDetails.Controls.Add(this.nodeConfigDataView);
+            this.gbConfigDetails.Location = new System.Drawing.Point(12, 248);
+            this.gbConfigDetails.Name = "gbConfigDetails";
+            this.gbConfigDetails.Size = new System.Drawing.Size(531, 284);
+            this.gbConfigDetails.TabIndex = 16;
+            this.gbConfigDetails.TabStop = false;
+            this.gbConfigDetails.Text = "Configuration Details";
             // 
             // RaftBootStrap
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(546, 450);
-            this.Controls.Add(this.nodeConfigDataView);
-            this.Controls.Add(this.btnCreate);
-            this.Controls.Add(this.tableLayoutPanel1);
-            this.Controls.Add(this.button1);
+            this.AutoSize = true;
+            this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.ClientSize = new System.Drawing.Size(559, 589);
+            this.Controls.Add(this.gbConfigDetails);
+            this.Controls.Add(this.gbTitle);
+            this.Controls.Add(this.gbClusterInfo);
+            this.Controls.Add(this.gbButton);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "RaftBootStrap";
-            this.Text = "Raft Consensus Prototype";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.WindowsDefaultBounds;
+            this.Text = "Raft Consensus BootStrap";
             ((System.ComponentModel.ISupportInitialize)(this.nNodes)).EndInit();
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nodeConfigDataView)).EndInit();
+            this.gbButton.ResumeLayout(false);
+            this.gbButton.PerformLayout();
+            this.gbClusterInfo.ResumeLayout(false);
+            this.gbTitle.ResumeLayout(false);
+            this.gbTitle.PerformLayout();
+            this.gbConfigDetails.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -254,6 +340,12 @@
         private System.Windows.Forms.TextBox tbPort;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.DataGridView nodeConfigDataView;
+        private System.Windows.Forms.GroupBox gbButton;
+        private System.Windows.Forms.GroupBox gbClusterInfo;
+        private System.Windows.Forms.GroupBox gbTitle;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.GroupBox gbConfigDetails;
+        private System.Windows.Forms.CheckBox cbInstantiate;
     }
 }
 
