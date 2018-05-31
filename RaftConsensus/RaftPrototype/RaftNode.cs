@@ -29,14 +29,8 @@ namespace RaftPrototype
             this.Text = string.Format("{0} - {1}", this.Text, serverName);
             lbNodeName.Text = serverName;
 
-            if (serverName == "Node0")
-            {
-                //RaftLogging.Instance.LogEntryEvent += WatchLog;
-            }
-
             SetupDebug(logFile);
             LoadConfig(serverName, configFile);
-
         }
 
         private void WatchLog(object sender, EventArgs e)
@@ -44,7 +38,7 @@ namespace RaftPrototype
             string log = string.Format("{0:G} | {1} ", DateTime.Now, e);
             debugLog.AppendLine(e.ToString());
             tbDebugLog.Text = debugLog.ToString();
-            
+
         }
 
         public void LoadConfig(string serverName, string configFile)
@@ -53,16 +47,17 @@ namespace RaftPrototype
             {
                 string json = File.ReadAllText(configFile);
                 RaftBootstrapConfig config = JsonConvert.DeserializeObject<RaftBootstrapConfig>(json);
-
                 //Get the node id from the node name string
                 int index = int.Parse(serverName.Substring(serverName.Length - 1)) - 1;
+                //populate the peer information
+                RaftLogging.Instance.Info("{0} is adding peers", config.nodeNames[index]);
+
 
                 //always making the first entry the cluster manager (Leader)
                 if (config.nodeNames[0] == serverName)
                 {
                     //create cluster
                     node = new RaftConsensus<string, string>(config.nodeNames[index], config.nodePorts[index]);
-                    RaftLogging.Instance.Info("{0} is adding peers", config.nodeNames[index]);
                     AddPeers(config, index);
                     node.CreateCluster(config.clusterName, config.clusterPassword, config.maxNodes);
                     RaftLogging.Instance.Info("Cluster created by {0}", config.nodeNames[0]);
@@ -73,7 +68,6 @@ namespace RaftPrototype
                     {
                         node = new RaftConsensus<string, string>(config.nodeNames[index], config.nodePorts[index]);
                         AddPeers(config, index);
-                        RaftLogging.Instance.Info("{0} is adding peers", config.nodeNames[index]);
                         Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
                         joinTask.Wait();
                         EJoinClusterResponse result = joinTask.Result;
@@ -97,19 +91,9 @@ namespace RaftPrototype
                     }
                     RaftLogging.Instance.Info("{0} joined Cluster ", config.nodeNames[index]);
                 }
-
-                //The event that is for start/stop UAS
-                //Subsribe to it, and have that method update the UI to disable the text entry feild (and update "I am leader")
-
-                //Read out the IP address of everyone else
-                //Read out if you are the leader
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                if (node != null)
-                {
-                    node.Dispose();
-                }
                 MessageBox.Show(e.ToString());
             }
         }
@@ -144,9 +128,15 @@ namespace RaftPrototype
             //string debug = Path.Combine("C:\\Users\\Tori\\Downloads\\debug.log");
 
             RaftLogging.Instance.OverwriteLoggingFile(logFile);
-            RaftLogging.Instance.DeleteExistingLogFile();
+            //RaftLogging.Instance.DeleteExistingLogFile();
             RaftLogging.Instance.SetDoInfo(true);
             RaftLogging.Instance.SetDoDebug(true);
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            base.OnFormClosed(e);
+            node.Dispose();
         }
     }
 }
