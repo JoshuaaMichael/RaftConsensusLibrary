@@ -178,7 +178,7 @@ namespace RaftPrototype
                     nodes[i] = new RaftNode(rbsc.nodeNames[i], CONFIG_FILE, LOGFILE);
                     nodes[i].FormClosed += new FormClosedEventHandler(RaftNodeClosure);
                     nodes[i].Show();
-                    this.Enabled = false;
+                    //this.Enabled = false;
                     Thread.Sleep(500);
                 }
 
