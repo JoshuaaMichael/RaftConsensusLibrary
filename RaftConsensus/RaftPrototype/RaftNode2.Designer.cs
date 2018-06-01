@@ -32,15 +32,15 @@
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
-            this.lbState = new System.Windows.Forms.Label();
+            this.lbServerState = new System.Windows.Forms.Label();
             this.lbNodeName = new System.Windows.Forms.Label();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
-            this.button2 = new System.Windows.Forms.Button();
+            this.btStop = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
-            this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.gbAppendEntry = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.bSendMsg = new System.Windows.Forms.Button();
@@ -54,7 +54,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
-            this.groupBox4.SuspendLayout();
+            this.gbAppendEntry.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -75,7 +75,7 @@
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.tableLayoutPanel1.Controls.Add(this.label1, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.label2, 0, 1);
-            this.tableLayoutPanel1.Controls.Add(this.lbState, 1, 1);
+            this.tableLayoutPanel1.Controls.Add(this.lbServerState, 1, 1);
             this.tableLayoutPanel1.Controls.Add(this.lbNodeName, 1, 0);
             this.tableLayoutPanel1.Location = new System.Drawing.Point(6, 19);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -105,16 +105,16 @@
             this.label2.TabIndex = 9;
             this.label2.Text = "Server State:";
             // 
-            // lbState
+            // lbServerState
             // 
-            this.lbState.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            this.lbState.AutoSize = true;
-            this.lbState.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lbState.Location = new System.Drawing.Point(78, 39);
-            this.lbState.Name = "lbState";
-            this.lbState.Size = new System.Drawing.Size(63, 13);
-            this.lbState.TabIndex = 5;
-            this.lbState.Text = "ServerState";
+            this.lbServerState.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.lbServerState.AutoSize = true;
+            this.lbServerState.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lbServerState.Location = new System.Drawing.Point(78, 39);
+            this.lbServerState.Name = "lbServerState";
+            this.lbServerState.Size = new System.Drawing.Size(63, 13);
+            this.lbServerState.TabIndex = 5;
+            this.lbServerState.Text = "ServerState";
             // 
             // lbNodeName
             // 
@@ -129,7 +129,7 @@
             // 
             // groupBox3
             // 
-            this.groupBox3.Controls.Add(this.button2);
+            this.groupBox3.Controls.Add(this.btStop);
             this.groupBox3.Controls.Add(this.button1);
             this.groupBox3.Controls.Add(this.dataGridView1);
             this.groupBox3.Location = new System.Drawing.Point(6, 97);
@@ -139,14 +139,15 @@
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Consensus Log";
             // 
-            // button2
+            // btStop
             // 
-            this.button2.Location = new System.Drawing.Point(262, 322);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(75, 23);
-            this.button2.TabIndex = 3;
-            this.button2.Text = "Stop";
-            this.button2.UseVisualStyleBackColor = true;
+            this.btStop.Location = new System.Drawing.Point(262, 322);
+            this.btStop.Name = "btStop";
+            this.btStop.Size = new System.Drawing.Size(75, 23);
+            this.btStop.TabIndex = 3;
+            this.btStop.Text = "Stop";
+            this.btStop.UseVisualStyleBackColor = true;
+            this.btStop.Click += new System.EventHandler(this.Stop_Click);
             // 
             // button1
             // 
@@ -156,6 +157,7 @@
             this.button1.TabIndex = 2;
             this.button1.Text = "Start";
             this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.Start_Click);
             // 
             // dataGridView1
             // 
@@ -177,7 +179,7 @@
             // 
             // tabPage1
             // 
-            this.tabPage1.Controls.Add(this.groupBox4);
+            this.tabPage1.Controls.Add(this.gbAppendEntry);
             this.tabPage1.Controls.Add(this.groupBox3);
             this.tabPage1.Controls.Add(this.groupBox2);
             this.tabPage1.Location = new System.Drawing.Point(4, 22);
@@ -188,15 +190,15 @@
             this.tabPage1.Text = "Node Detail";
             this.tabPage1.UseVisualStyleBackColor = true;
             // 
-            // groupBox4
+            // gbAppendEntry
             // 
-            this.groupBox4.Controls.Add(this.tableLayoutPanel2);
-            this.groupBox4.Location = new System.Drawing.Point(2, 454);
-            this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(350, 90);
-            this.groupBox4.TabIndex = 12;
-            this.groupBox4.TabStop = false;
-            this.groupBox4.Text = "Append Entry";
+            this.gbAppendEntry.Controls.Add(this.tableLayoutPanel2);
+            this.gbAppendEntry.Location = new System.Drawing.Point(2, 454);
+            this.gbAppendEntry.Name = "gbAppendEntry";
+            this.gbAppendEntry.Size = new System.Drawing.Size(350, 90);
+            this.gbAppendEntry.TabIndex = 12;
+            this.gbAppendEntry.TabStop = false;
+            this.gbAppendEntry.Text = "Append Entry";
             // 
             // tableLayoutPanel2
             // 
@@ -287,7 +289,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
-            this.groupBox4.ResumeLayout(false);
+            this.gbAppendEntry.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
             this.tableLayoutPanel2.PerformLayout();
             this.ResumeLayout(false);
@@ -300,15 +302,15 @@
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.Label lbState;
+        private System.Windows.Forms.Label lbServerState;
         private System.Windows.Forms.Label lbNodeName;
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.DataGridView dataGridView1;
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tabPage1;
-        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Button btStop;
         private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.GroupBox groupBox4;
+        private System.Windows.Forms.GroupBox gbAppendEntry;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.Button bSendMsg;
