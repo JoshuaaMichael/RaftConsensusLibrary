@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(RaftNode2));
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.label1 = new System.Windows.Forms.Label();
@@ -36,7 +37,7 @@
             this.lbNodeName = new System.Windows.Forms.Label();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.btStop = new System.Windows.Forms.Button();
-            this.button1 = new System.Windows.Forms.Button();
+            this.btStart = new System.Windows.Forms.Button();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
@@ -48,6 +49,8 @@
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.cbDebug = new System.Windows.Forms.CheckBox();
+            this.tbLog = new System.Windows.Forms.TextBox();
             this.groupBox2.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -56,6 +59,7 @@
             this.tabPage1.SuspendLayout();
             this.gbAppendEntry.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
+            this.tabPage2.SuspendLayout();
             this.SuspendLayout();
             // 
             // groupBox2
@@ -130,7 +134,7 @@
             // groupBox3
             // 
             this.groupBox3.Controls.Add(this.btStop);
-            this.groupBox3.Controls.Add(this.button1);
+            this.groupBox3.Controls.Add(this.btStart);
             this.groupBox3.Controls.Add(this.dataGridView1);
             this.groupBox3.Location = new System.Drawing.Point(6, 97);
             this.groupBox3.Name = "groupBox3";
@@ -149,15 +153,14 @@
             this.btStop.UseVisualStyleBackColor = true;
             this.btStop.Click += new System.EventHandler(this.Stop_Click);
             // 
-            // button1
+            // btStart
             // 
-            this.button1.Location = new System.Drawing.Point(181, 322);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
-            this.button1.TabIndex = 2;
-            this.button1.Text = "Start";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.Start_Click);
+            this.btStart.Location = new System.Drawing.Point(181, 322);
+            this.btStart.Name = "btStart";
+            this.btStart.Size = new System.Drawing.Size(75, 23);
+            this.btStart.TabIndex = 2;
+            this.btStart.Text = "Start";
+            this.btStart.UseVisualStyleBackColor = true;
             // 
             // dataGridView1
             // 
@@ -266,6 +269,8 @@
             // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.cbDebug);
+            this.tabPage2.Controls.Add(this.tbLog);
             this.tabPage2.Location = new System.Drawing.Point(4, 22);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
@@ -274,12 +279,33 @@
             this.tabPage2.Text = "Debug Log";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
+            // cbDebug
+            // 
+            this.cbDebug.AutoSize = true;
+            this.cbDebug.Location = new System.Drawing.Point(6, 6);
+            this.cbDebug.Name = "cbDebug";
+            this.cbDebug.Size = new System.Drawing.Size(112, 17);
+            this.cbDebug.TabIndex = 1;
+            this.cbDebug.Text = "Debug Log Active";
+            this.cbDebug.UseVisualStyleBackColor = true;
+            // 
+            // tbLog
+            // 
+            this.tbLog.Location = new System.Drawing.Point(6, 30);
+            this.tbLog.Multiline = true;
+            this.tbLog.Name = "tbLog";
+            this.tbLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.tbLog.Size = new System.Drawing.Size(343, 504);
+            this.tbLog.TabIndex = 0;
+            // 
             // RaftNode2
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(367, 575);
             this.Controls.Add(this.tabControl1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.MaximizeBox = false;
             this.Name = "RaftNode2";
             this.Text = "RaftNode2";
             this.groupBox2.ResumeLayout(false);
@@ -292,6 +318,8 @@
             this.gbAppendEntry.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
             this.tableLayoutPanel2.PerformLayout();
+            this.tabPage2.ResumeLayout(false);
+            this.tabPage2.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -309,7 +337,7 @@
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tabPage1;
         private System.Windows.Forms.Button btStop;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button btStart;
         private System.Windows.Forms.GroupBox gbAppendEntry;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
         private System.Windows.Forms.TextBox textBox1;
@@ -318,5 +346,7 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.TabPage tabPage2;
+        private System.Windows.Forms.TextBox tbLog;
+        private System.Windows.Forms.CheckBox cbDebug;
     }
 }

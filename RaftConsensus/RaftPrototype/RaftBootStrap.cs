@@ -339,7 +339,7 @@ namespace RaftPrototype
             //this is the leader window
             //node.Show();
 
-            RaftNode[] nodes = new RaftNode[maxNodes];
+            RaftNode2[] nodes = new RaftNode2[maxNodes];
 
             //string s = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), string.Format("{0}-debug.log", rbsc.nodeNames[i]));
 
@@ -352,7 +352,7 @@ namespace RaftPrototype
                 //}
 
                 //nodes[i] = new RaftNode(rbsc.nodeNames[i], configFile, Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), string.Format("{0}-debug.log", rbsc.nodeNames[i])));
-                nodes[i] = new RaftNode(rbsc.nodeNames[i], CONFIG_FILE, string.Format("{0}-debug.log", rbsc.nodeNames[i]));
+                nodes[i] = new RaftNode2(rbsc.nodeNames[i], CONFIG_FILE, string.Format("{0}-debug.log", rbsc.nodeNames[i]));
                 nodes[i].Show();
                 /// seems to perform better with this sleep on all Process.Start() calls. 
                 /// This value increases to 1750ms when we re enable the JoinCluster call 
@@ -449,11 +449,11 @@ namespace RaftPrototype
             if (cbInstantiate.Checked)
             {
                 //create array of RaftNode
-                RaftNode[] nodes = new RaftNode[maxNodes];
+                RaftNode2[] nodes = new RaftNode2[maxNodes];
 
                 for (int i = 0; i < rbsc.nodeNames.Count; i++)
                 {
-                    nodes[i] = new RaftNode(rbsc.nodeNames[i], CONFIG_FILE, LOGFILE);
+                    nodes[i] = new RaftNode2(rbsc.nodeNames[i], CONFIG_FILE, LOGFILE);
                     nodes[i].Show();
                     Thread.Sleep(500);
                 }

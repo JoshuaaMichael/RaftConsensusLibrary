@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -18,32 +19,42 @@ namespace RaftPrototype
         private IConsensus<string, string> node;
         private StringBuilder debugLog = new StringBuilder();
         private SynchronizationContext mainThread;
+        private Queue<string> queue;
+
+        private StringBuilder log;
 
         private string servername;
         private string serverip;
         private int serverport;
         private string configurationFile;
         private string logfile;
-        private bool wasStopped = false;
+
         public RaftNode2(string serverName, string configFile, string logFile)
         {
             //set local attributes
             this.servername = serverName;
             this.configurationFile = configFile;
             this.logfile = logFile;
+            queue = new Queue<string>(1000);
+            this.log = new StringBuilder(20000,50000);//capacity in character, maximum characters
 
+            
             mainThread = SynchronizationContext.Current;
             if (mainThread == null) { mainThread = new SynchronizationContext(); }
             InitializeComponent();
             Initialize();
         }
 
+        #region Setup Node
         private void Initialize()
         {
             //TODO: This is where we need to get the current IConsensus log
-            this.Text = string.Format("{0} - {1}", this.Text, servername);
-            
-            SetupDebug(logfile);
+            this.Text = string.Format("{0} - {1}", this.Text, servername);//append servername in title bar of window
+            this.btStop.Enabled = false;//disable user action
+            this.btStart.Enabled = false;//disable user action
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;// disable resizing of window
+
+            SetupLogging(logfile);
 
             //run the configuration setup on background thread stop GUI from blocking
             Task task = new TaskFactory().StartNew(new Action<object>((test) =>
@@ -51,7 +62,10 @@ namespace RaftPrototype
                 LoadConfig();
             }), TaskCreationOptions.None);
         }
-
+        
+        /// <summary>
+        /// Loads configuration file, instantiate node and update the UI
+        /// </summary>
         public void LoadConfig()
         {
             try
@@ -69,21 +83,26 @@ namespace RaftPrototype
                 //always making the first entry the cluster manager (Leader)
                 if (config.nodeNames[0] == servername)
                 {
-                    //create cluster
-                    node = new RaftConsensus<string, string>(config.nodeNames[index], config.nodePorts[index]);
-                    //AddPeers(config, index);
-                    AddPeers(config);
+                    //Instantiate node and set up peer information
+                    //subscribe to RaftLogging Log Info event
+                    CreateNode(config, 0);
+
+                    //As this is the leader set up the cluster
                     node.CreateCluster(config.clusterName, config.clusterPassword, config.maxNodes);
-                    RaftLogging.Instance.Info("Cluster created by {0}", config.nodeNames[0]);
                 }
                 else
                 {
                     while (true)
                     {
-                        node = new RaftConsensus<string, string>(config.nodeNames[index], config.nodePorts[index]);
-                        AddPeers(config, index);
+                        //Instantiate node and set up peer information
+                        //subscribe to RaftLogging Log Info event
+                        CreateNode(config, index);
+
+                        //call the leader to join cluster
                         Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
                         joinTask.Wait();
+
+                        //check the result of the attempt to join the cluster
                         EJoinClusterResponse result = joinTask.Result;
                         if (result == EJoinClusterResponse.ACCEPT)
                         {
@@ -102,9 +121,6 @@ namespace RaftPrototype
                             }
                         }
                     }
-                    RaftLogging.Instance.Info("{0} joined Cluster ", config.nodeNames[index]);
-                    node.StopUAS += HandleUASChange;
-                    node.StartUAS += HandleUASStart;
                 }
 
                 //update the main UI
@@ -118,39 +134,113 @@ namespace RaftPrototype
             }
         }
 
+        /// <summary>
+        /// Instantiates the node
+        /// </summary>
+        /// <param name="config">Configuration object containing the details of cluster membership</param>
+        /// <param name="index">The index of the node within the configuration object</param>
+        private void CreateNode(RaftBootstrapConfig config, int index)
+        {
+            //Instantiate node
+            node = new RaftConsensus<string, string>(config.nodeNames[index], config.nodePorts[index]);
+            //Add peer to the node
+            AddPeers(config, index);
+            //Subscribe to logging event
+            RaftLogging.Instance.OnNewLineInfo += HandleInfoLogUpdate;
+            
+            //RaftLogging.Instance.Info("Cluster created by {0}", config.nodeNames[0]);
+
+            //Subscribe to the node stop event
+            //node.StopUAS += HandleUASStop;
+            //node.StartUAS += HandleUASStart;
+
+        }
+
+        /// <summary>
+        /// Setup logging
+        /// </summary>
+        /// <param name="logFile">Logfile where to post and read infromation from</param>
+        private void SetupLogging(string logFile)
+        {
+            //string path = string.Format(@"{0}", Environment.CurrentDirectory);
+            //string debug = Path.Combine(Environment.CurrentDirectory, "debug.log");
+            //string debug = Path.Combine("C:\\Users\\Tori\\Downloads\\debug.log");
+
+            RaftLogging.Instance.OverwriteLoggingFile(logFile);
+            //RaftLogging.Instance.DeleteExistingLogFile();
+            RaftLogging.Instance.SetDoInfo(true);
+            RaftLogging.Instance.SetDoDebug(true);
+
+        }
+
+        /// <summary>
+        /// Updates the UI
+        /// </summary>
+        private void UpdateNodeWindow()
+        {
+            //bool isUas = node.IsUASRunning();
+            lbNodeName.Text = servername;
+            if (node != null && node.IsUASRunning())
+            {
+                this.lbServerState.Text = "UAS running.";
+                this.gbAppendEntry.Enabled = true;
+                //this.btStop.Enabled = false;
+            }
+            else
+            {
+                this.lbServerState.Text = "UAS not running.";
+                this.gbAppendEntry.Enabled = false;
+                //this.btStop.Enabled = false;
+            }
+            
+        }
+        #endregion
+
+        #region Event methods
+
         private void HandleUASStart(object sender, EventArgs e)
         {
             mainThread.Send((object state) =>
             {
                 UpdateNodeWindow();
             }, null);
-            //UpdateNodeWindow();
-            //LoadConfig();
         }
 
-        private void HandleUASChange(object sender, EStopUASReason e)
+        private void HandleUASStop(object sender, EStopUASReason e)
         {
             UpdateNodeWindow();
         }
 
-        private void UpdateNodeWindow()
+        private void HandleInfoLogUpdate(object sender, string e)
         {
-            bool isUas = node.IsUASRunning();
-            lbNodeName.Text = servername;
-            if ( isUas)
+            if ( cbDebug.Checked )
             {
-                this.lbServerState.Text = "UAS running.";
-                this.gbAppendEntry.Enabled = true;
-                this.btStop.Enabled = true;
+                mainThread.Send((object state) =>
+                {
+                    if (CheckLogEntry(e))
+                    {
+                        tbLog.AppendText(e);
+                    }
+                }, null);
             }
-            else
-            {
-                this.lbServerState.Text = "UAS not running.";
-                this.gbAppendEntry.Enabled = false;
-                this.btStop.Enabled = false;
-            }
-            
         }
+
+        #endregion
+
+        #region utilities
+
+        private bool CheckLogEntry(string logEntryLine)
+        {
+            if ( logEntryLine.IndexOf(servername) == 15)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        #endregion
+
+        #region consensus stuff
 
         private void AddPeers(RaftBootstrapConfig config, int id)
         {
@@ -179,138 +269,39 @@ namespace RaftPrototype
                 node.ManualAddPeer(config.nodeNames[i], ipEndpoint);
             }
         }
-        private void SendMsg_Click(object sender, EventArgs e)
-        {
-            //TODO: This is where we'll send a message using IConsensus member.
-
-        }
-
-        private void SetupDebug(string logFile)
-        {
-            //string path = string.Format(@"{0}", Environment.CurrentDirectory);
-            //string debug = Path.Combine(Environment.CurrentDirectory, "debug.log");
-            //string debug = Path.Combine("C:\\Users\\Tori\\Downloads\\debug.log");
-
-            RaftLogging.Instance.OverwriteLoggingFile(logFile);
-            //RaftLogging.Instance.DeleteExistingLogFile();
-            RaftLogging.Instance.SetDoInfo(true);
-            RaftLogging.Instance.SetDoDebug(true);
-        }
-
-        protected override void OnFormClosed(FormClosedEventArgs e)
-        {
-            base.OnFormClosed(e);
-            node.Dispose();
-        }
-
-        private void WatchLog(object sender, EventArgs e)
-        {
-            string log = string.Format("{0:G} | {1} ", DateTime.Now, e);
-            debugLog.AppendLine(e.ToString());
-            //tbDebugLog.Text = debugLog.ToString();
-        }
         
+        #endregion
+
+        #region button clickers
+
         private void Stop_Click(object sender, EventArgs e)
         {
             if ( node.IsUASRunning() )
             {
                 node.Dispose();
-                wasStopped = true;
                 UpdateNodeWindow();
-                //run the configuration setup on background thread stop GUI from blocking
-                Task task = new TaskFactory().StartNew(new Action<object>((test) =>
-                {
-                    LoadConfig();
-                }), TaskCreationOptions.None);
             }
         }
 
-        private void Start_Click(object sender, EventArgs e)
+        private void SendMsg_Click(object sender, EventArgs e)
         {
-            MessageBox.Show(string.Format("Start button pressed {0}", servername), "Trying to start UAS.", MessageBoxButtons.OK);
-
-            //run the configuration setup on background thread stop GUI from blocking
-            Task task = new TaskFactory().StartNew(new Action<object>((test) =>
-            {
-                LoadConfig();
-            }), TaskCreationOptions.None);
-
-            //if (!wasStopped)
-            //{
-            //    MessageBox.Show("Can't start from this state", "UAS Start called", MessageBoxButtons.OK);
-            //    return;
-            //}
-            //string json = File.ReadAllText(configurationFile);
-            //RaftBootstrapConfig config = JsonConvert.DeserializeObject<RaftBootstrapConfig>(json);
-            //while (true)
-            //{
-            //    node = new RaftConsensus<string, string>(servername, serverport);
-            //    AddPeers(config);
-            //    Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
-            //    joinTask.Wait();
-            //    EJoinClusterResponse result = joinTask.Result;
-            //    if (result == EJoinClusterResponse.ACCEPT)
-            //    {
-            //        break;
-            //    }
-            //    else
-            //    {
-            //        if (MessageBox.Show("Failed to join cluster, do you want to retry?", "Error " + servername, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error) == DialogResult.Retry)
-            //        {
-            //            node.Dispose();
-            //            continue;
-            //        }
-            //        else
-            //        {
-            //            return;
-            //        }
-            //    }
-            //}
-
-            //string json = File.ReadAllText(configurationFile);
-            //RaftBootstrapConfig config = JsonConvert.DeserializeObject<RaftBootstrapConfig>(json);
-
-            //if (!node.IsUASRunning())
-            //{
-            //    if (node == null)
-            //    {
-            //        while (true)
-            //        {
-            //            node = new RaftConsensus<string, string>(servername, serverport);
-            //            AddPeers(config);
-            //            Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
-            //            joinTask.Wait();
-            //            EJoinClusterResponse result = joinTask.Result;
-            //            if (result == EJoinClusterResponse.ACCEPT)
-            //            {
-            //                break;
-            //            }
-            //            else
-            //            {
-            //                if (MessageBox.Show("Failed to join cluster, do you want to retry?", "Error " + servername, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error) == DialogResult.Retry)
-            //                {
-            //                    node.Dispose();
-            //                    continue;
-            //                }
-            //                else
-            //                {
-            //                    return;
-            //                }
-            //            }
-            //        }
-            //    }
-
-            //    //run the configuration setup on background thread stop GUI from blocking
-            //    Task task = new TaskFactory().StartNew(new Action<object>((test) =>
-            //    {
-            //        //LoadConfig(serverName, configFile);
-            //    }), TaskCreationOptions.None);
-            //    //UpdateNodeWindow();
-                //}
-            }
-
+            //TODO: This is where we'll send a message using IConsensus member.
 
         }
-    
+        
+        #endregion
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            tabControl1.Select();
+            //just making sure the logging event stops before trying to close the form
+            //may have been blocking the close
+            cbDebug.Checked = false;
+            Thread.Sleep(500);// seemed to without this sleep, perhaps the log is still being written to 
+            RaftLogging.Instance.OnNewLineInfo -= HandleInfoLogUpdate;
+            base.OnFormClosed(e);
+            node.Dispose();
+        }
+    }
 }
 
