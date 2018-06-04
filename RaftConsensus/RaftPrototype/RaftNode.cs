@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -14,7 +15,7 @@ using TeamDecided.RaftConsensus.Interfaces;
 
 namespace RaftPrototype
 {
-    public partial class RaftNode2 : Form
+    public partial class RaftNode : Form
     {
         private IConsensus<string, string> node;
         private StringBuilder debugLog = new StringBuilder();
@@ -29,7 +30,7 @@ namespace RaftPrototype
         private string configurationFile;
         private string logfile;
 
-        public RaftNode2(string serverName, string configFile, string logFile)
+        public RaftNode(string serverName, string configFile, string logFile)
         {
             //set local attributes
             this.servername = serverName;
@@ -147,7 +148,7 @@ namespace RaftPrototype
             AddPeers(config, index);
             //Subscribe to logging event
             RaftLogging.Instance.OnNewLineInfo += HandleInfoLogUpdate;
-            
+
             //RaftLogging.Instance.Info("Cluster created by {0}", config.nodeNames[0]);
 
             //Subscribe to the node stop event
@@ -167,6 +168,7 @@ namespace RaftPrototype
             //string debug = Path.Combine("C:\\Users\\Tori\\Downloads\\debug.log");
 
             RaftLogging.Instance.OverwriteLoggingFile(logFile);
+            RaftLogging.Instance.EnableBuffer(50);
             //RaftLogging.Instance.DeleteExistingLogFile();
             RaftLogging.Instance.SetDoInfo(true);
             RaftLogging.Instance.SetDoDebug(true);
@@ -288,19 +290,39 @@ namespace RaftPrototype
             //TODO: This is where we'll send a message using IConsensus member.
 
         }
-        
+
         #endregion
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            base.OnClosing(e);
+            cbDebug.Checked = false;
+
+            try
+            {
+                node.Dispose();
+            }
+            catch (Exception ex)
+            {
+                ex.ToString();
+            }
+        }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
-            tabControl1.Select();
-            //just making sure the logging event stops before trying to close the form
-            //may have been blocking the close
-            cbDebug.Checked = false;
-            Thread.Sleep(500);// seemed to without this sleep, perhaps the log is still being written to 
-            RaftLogging.Instance.OnNewLineInfo -= HandleInfoLogUpdate;
             base.OnFormClosed(e);
-            node.Dispose();
+            //RaftLogging.Instance.OnNewLineInfo -= HandleInfoLogUpdate;
+
+            //cbDebug.Checked = false;
+
+            //try
+            //{
+            //    node.Dispose();
+            //}
+            //catch (Exception ex)
+            //{
+            //    ex.ToString();
+            //}
         }
     }
 }
