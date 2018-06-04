@@ -28,7 +28,7 @@ namespace RaftPrototype
                     string configFile = args[1];
                     string logFile = args[2];
                     //Application.Run(new RaftNode(serverName, configFile, logFile));
-                    Application.Run(new RaftNode2(serverName, configFile, logFile));
+                    Application.Run(new RaftNode(serverName, configFile, logFile));
                 }
             }
             catch(Exception e)

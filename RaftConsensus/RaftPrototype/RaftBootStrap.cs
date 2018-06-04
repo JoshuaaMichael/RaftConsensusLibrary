@@ -28,7 +28,7 @@ namespace RaftPrototype
 
         private List<Tuple<string, string, int>> cluster_peer_list = new List<Tuple<string, string, int>>();
         //private RaftNode[] nodes;
-        private RaftNode2[] nodes;
+        private RaftNode[] nodes;
 
         protected StatusBar mainStatusBar = new StatusBar();
         protected StatusBarPanel statusPanel = new StatusBarPanel();
@@ -174,12 +174,12 @@ namespace RaftPrototype
                 RaftLogging.Instance.DeleteExistingLogFile();
                 //create array of RaftNode
                 //nodes = new RaftNode[maxNodes];
-                nodes = new RaftNode2[maxNodes];
+                nodes = new RaftNode[maxNodes];
 
                 for (int i = 0; i < rbsc.nodeNames.Count; i++)
                 {
                     //nodes[i] = new RaftNode(rbsc.nodeNames[i], CONFIG_FILE, LOGFILE);
-                    nodes[i] = new RaftNode2(rbsc.nodeNames[i], CONFIG_FILE, LOGFILE);
+                    nodes[i] = new RaftNode(rbsc.nodeNames[i], CONFIG_FILE, LOGFILE);
                     nodes[i].FormClosed += new FormClosedEventHandler(RaftNodeClosure);
                     nodes[i].Show();
                     this.Enabled = false;
@@ -339,7 +339,7 @@ namespace RaftPrototype
             //this is the leader window
             //node.Show();
 
-            RaftNode2[] nodes = new RaftNode2[maxNodes];
+            RaftNode[] nodes = new RaftNode[maxNodes];
 
             //string s = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), string.Format("{0}-debug.log", rbsc.nodeNames[i]));
 
@@ -352,7 +352,7 @@ namespace RaftPrototype
                 //}
 
                 //nodes[i] = new RaftNode(rbsc.nodeNames[i], configFile, Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), string.Format("{0}-debug.log", rbsc.nodeNames[i])));
-                nodes[i] = new RaftNode2(rbsc.nodeNames[i], CONFIG_FILE, string.Format("{0}-debug.log", rbsc.nodeNames[i]));
+                nodes[i] = new RaftNode(rbsc.nodeNames[i], CONFIG_FILE, string.Format("{0}-debug.log", rbsc.nodeNames[i]));
                 nodes[i].Show();
                 /// seems to perform better with this sleep on all Process.Start() calls. 
                 /// This value increases to 1750ms when we re enable the JoinCluster call 
@@ -449,11 +449,11 @@ namespace RaftPrototype
             if (cbInstantiate.Checked)
             {
                 //create array of RaftNode
-                RaftNode2[] nodes = new RaftNode2[maxNodes];
+                RaftNode[] nodes = new RaftNode[maxNodes];
 
                 for (int i = 0; i < rbsc.nodeNames.Count; i++)
                 {
-                    nodes[i] = new RaftNode2(rbsc.nodeNames[i], CONFIG_FILE, LOGFILE);
+                    nodes[i] = new RaftNode(rbsc.nodeNames[i], CONFIG_FILE, LOGFILE);
                     nodes[i].Show();
                     Thread.Sleep(500);
                 }
