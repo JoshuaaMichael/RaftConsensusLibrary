@@ -38,14 +38,14 @@
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.btStop = new System.Windows.Forms.Button();
             this.btStart = new System.Windows.Forms.Button();
-            this.dataGridView1 = new System.Windows.Forms.DataGridView();
+            this.logDataGrid = new System.Windows.Forms.DataGridView();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.gbAppendEntry = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
-            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.tbKey = new System.Windows.Forms.TextBox();
             this.bSendMsg = new System.Windows.Forms.Button();
-            this.textBox2 = new System.Windows.Forms.TextBox();
+            this.tbValue = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.tabPage2 = new System.Windows.Forms.TabPage();
@@ -54,7 +54,7 @@
             this.groupBox2.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.groupBox3.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.logDataGrid)).BeginInit();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.gbAppendEntry.SuspendLayout();
@@ -135,7 +135,7 @@
             // 
             this.groupBox3.Controls.Add(this.btStop);
             this.groupBox3.Controls.Add(this.btStart);
-            this.groupBox3.Controls.Add(this.dataGridView1);
+            this.groupBox3.Controls.Add(this.logDataGrid);
             this.groupBox3.Location = new System.Drawing.Point(6, 97);
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Size = new System.Drawing.Size(343, 351);
@@ -162,13 +162,13 @@
             this.btStart.Text = "Start";
             this.btStart.UseVisualStyleBackColor = true;
             // 
-            // dataGridView1
+            // logDataGrid
             // 
-            this.dataGridView1.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGridView1.Location = new System.Drawing.Point(6, 19);
-            this.dataGridView1.Name = "dataGridView1";
-            this.dataGridView1.Size = new System.Drawing.Size(331, 297);
-            this.dataGridView1.TabIndex = 1;
+            this.logDataGrid.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.logDataGrid.Location = new System.Drawing.Point(6, 19);
+            this.logDataGrid.Name = "logDataGrid";
+            this.logDataGrid.Size = new System.Drawing.Size(331, 297);
+            this.logDataGrid.TabIndex = 1;
             // 
             // tabControl1
             // 
@@ -209,9 +209,9 @@
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
-            this.tableLayoutPanel2.Controls.Add(this.textBox1, 1, 0);
+            this.tableLayoutPanel2.Controls.Add(this.tbKey, 1, 0);
             this.tableLayoutPanel2.Controls.Add(this.bSendMsg, 2, 0);
-            this.tableLayoutPanel2.Controls.Add(this.textBox2, 1, 1);
+            this.tableLayoutPanel2.Controls.Add(this.tbValue, 1, 1);
             this.tableLayoutPanel2.Controls.Add(this.label3, 0, 0);
             this.tableLayoutPanel2.Controls.Add(this.label4, 0, 1);
             this.tableLayoutPanel2.Location = new System.Drawing.Point(6, 19);
@@ -222,12 +222,12 @@
             this.tableLayoutPanel2.Size = new System.Drawing.Size(334, 61);
             this.tableLayoutPanel2.TabIndex = 0;
             // 
-            // textBox1
+            // tbKey
             // 
-            this.textBox1.Location = new System.Drawing.Point(46, 3);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(204, 20);
-            this.textBox1.TabIndex = 6;
+            this.tbKey.Location = new System.Drawing.Point(46, 3);
+            this.tbKey.Name = "tbKey";
+            this.tbKey.Size = new System.Drawing.Size(204, 20);
+            this.tbKey.TabIndex = 6;
             // 
             // bSendMsg
             // 
@@ -239,13 +239,15 @@
             this.bSendMsg.TabIndex = 2;
             this.bSendMsg.Text = "Append";
             this.bSendMsg.UseVisualStyleBackColor = true;
+            this.bSendMsg.Click += new System.EventHandler(this.AppendMessage_Click);
             // 
-            // textBox2
+            // tbValue
             // 
-            this.textBox2.Location = new System.Drawing.Point(46, 29);
-            this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(204, 20);
-            this.textBox2.TabIndex = 7;
+            this.tbValue.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.tbValue.Location = new System.Drawing.Point(46, 33);
+            this.tbValue.Name = "tbValue";
+            this.tbValue.Size = new System.Drawing.Size(204, 20);
+            this.tbValue.TabIndex = 7;
             // 
             // label3
             // 
@@ -313,7 +315,7 @@
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel1.PerformLayout();
             this.groupBox3.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.logDataGrid)).EndInit();
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.gbAppendEntry.ResumeLayout(false);
@@ -334,16 +336,16 @@
         private System.Windows.Forms.Label lbServerState;
         private System.Windows.Forms.Label lbNodeName;
         private System.Windows.Forms.GroupBox groupBox3;
-        private System.Windows.Forms.DataGridView dataGridView1;
+        private System.Windows.Forms.DataGridView logDataGrid;
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tabPage1;
         private System.Windows.Forms.Button btStop;
         private System.Windows.Forms.Button btStart;
         private System.Windows.Forms.GroupBox gbAppendEntry;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
-        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.TextBox tbKey;
         private System.Windows.Forms.Button bSendMsg;
-        private System.Windows.Forms.TextBox textBox2;
+        private System.Windows.Forms.TextBox tbValue;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.TabPage tabPage2;

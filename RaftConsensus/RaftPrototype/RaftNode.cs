@@ -18,11 +18,10 @@ namespace RaftPrototype
     public partial class RaftNode : Form
     {
         private IConsensus<string, string> node;
-        private StringBuilder debugLog = new StringBuilder();
         private SynchronizationContext mainThread;
-        private Queue<string> queue;
 
-        private StringBuilder log;
+        private List<Tuple<string, string>> log;
+        private static object updateWindowLockObject = new object();
 
         private string servername;
         private string serverip;
@@ -39,8 +38,7 @@ namespace RaftPrototype
             this.servername = serverName;
             this.configurationFile = configFile;
             this.logfile = logFile;
-            queue = new Queue<string>(1000);
-            this.log = new StringBuilder(20000,50000);//capacity in character, maximum characters
+            this.log = new List<Tuple<string, string>>();
 
             mainThread = SynchronizationContext.Current;
             if (mainThread == null) { mainThread = new SynchronizationContext(); }
@@ -131,8 +129,12 @@ namespace RaftPrototype
                 }
 
                 //update the main UI
-                mainThread.Send((object state) => {
-                    UpdateNodeWindow();
+                mainThread.Send((object state) =>
+                {
+                    lock (updateWindowLockObject)
+                    {
+                        UpdateNodeWindow();
+                    }
                 }, null);
             }
             catch (Exception e)
@@ -152,16 +154,14 @@ namespace RaftPrototype
             node = new RaftConsensus<string, string>(config.nodeNames[index], config.nodePorts[index]);
             //Add peer to the node
             AddPeers(config, index);
-            //Subscribe to logging event
-            //RaftLogging.Instance.OnNewLineInfo += HandleInfoLogUpdate;
 
-            //RaftLogging.Instance.Info("Cluster created by {0}", config.nodeNames[0]);
-
-            //Subscribe to the node stop event
-            //node.StopUAS += HandleUASStop;
-            //node.StartUAS += HandleUASStart;
-
+            //Subscribe to the node UAS start/stop event
+            node.StopUAS += HandleUASStop;
+            node.StartUAS += HandleUASStart;
+            node.OnNewCommitedEntry += HandleNewCommitEntry;
         }
+
+        
 
         /// <summary>
         /// Setup logging
@@ -186,7 +186,6 @@ namespace RaftPrototype
         /// </summary>
         private void UpdateNodeWindow()
         {
-            //bool isUas = node.IsUASRunning();
             lbNodeName.Text = servername;
             if (node != null && node.IsUASRunning())
             {
@@ -200,15 +199,17 @@ namespace RaftPrototype
                 this.gbAppendEntry.Enabled = false;
                 //this.btStop.Enabled = false;
             }
-            
+
+            logDataGrid.DataSource = null;
+            logDataGrid.DataSource = log;
         }
         #endregion
 
-        #region Event methods
+        #region event methods
 
         private void HandleUASStart(object sender, EventArgs e)
         {
-            mainThread.Send((object state) =>
+            mainThread.Post((object state) =>
             {
                 UpdateNodeWindow();
             }, null);
@@ -216,7 +217,10 @@ namespace RaftPrototype
 
         private void HandleUASStop(object sender, EStopUASReason e)
         {
-            UpdateNodeWindow();
+            mainThread.Post((object state) =>
+            {
+                UpdateNodeWindow();
+            }, null);
         }
 
         private void HandleInfoLogUpdate(object sender, string e)
@@ -249,6 +253,61 @@ namespace RaftPrototype
                 mutex.ReleaseMutex();
             }
         }
+
+        private void HandleNewCommitEntry(object sender, Tuple<string, string> e)
+        {
+            string n = servername;
+            log.Add(e);
+            mainThread.Post((object state) =>
+            {
+                UpdateNodeWindow();
+            }, null);
+        }
+
+        private void Stop_Click(object sender, EventArgs e)
+        {
+            if (node.IsUASRunning())
+            {
+                node.Dispose();
+                lock (updateWindowLockObject)
+                {
+                    UpdateNodeWindow();
+                }
+            }
+        }
+
+        private void AppendMessage_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                node.AppendEntry(tbKey.Text, tbValue.Text);
+                // really need some sort of check here to ensure append entry was successfull
+                bool ifAppendEntryIsSuccess = true;
+                if (ifAppendEntryIsSuccess)
+                {
+                    tbKey.Clear();
+                    tbValue.Clear();
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                RaftLogging.Instance.Debug(string.Format("{0} {1}", servername, ex.ToString()));
+            }
+        }
+
+        private void cbDebug_CheckedChanged(object sender, EventArgs e)
+        {
+            if (cbDebug.Checked)
+            {
+                RaftLogging.Instance.OnNewLineInfo += HandleInfoLogUpdate;
+            }
+            else
+            {
+                RaftLogging.Instance.OnNewLineInfo -= HandleInfoLogUpdate;
+            }
+        }
+
+
 
         #endregion
 
@@ -297,24 +356,9 @@ namespace RaftPrototype
         
         #endregion
 
-        #region button clickers
 
-        private void Stop_Click(object sender, EventArgs e)
-        {
-            if ( node.IsUASRunning() )
-            {
-                node.Dispose();
-                UpdateNodeWindow();
-            }
-        }
 
-        private void SendMsg_Click(object sender, EventArgs e)
-        {
-            //TODO: This is where we'll send a message using IConsensus member.
-
-        }
-
-        #endregion
+        #region closing
 
         protected override void OnClosing(CancelEventArgs e)
         {
@@ -337,17 +381,8 @@ namespace RaftPrototype
             base.OnFormClosed(e);
         }
 
-        private void cbDebug_CheckedChanged(object sender, EventArgs e)
-        {
-            if(cbDebug.Checked)
-            {
-                RaftLogging.Instance.OnNewLineInfo += HandleInfoLogUpdate;
-            }
-            else
-            {
-                RaftLogging.Instance.OnNewLineInfo -= HandleInfoLogUpdate;
-            }
-        }
+        #endregion
+
     }
 }
 
