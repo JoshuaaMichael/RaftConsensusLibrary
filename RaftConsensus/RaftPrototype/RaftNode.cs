@@ -65,7 +65,8 @@ namespace RaftPrototype
                     //create cluster
                     node = new RaftConsensus<string, string>(config.nodeNames[index], config.nodePorts[index]);
                     AddPeers(config, index);
-                    node.CreateCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+                    //node.CreateCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+                    throw new Exception("Opps");
                     RaftLogging.Instance.Info("Cluster created by {0}", config.nodeNames[0]);
                 }
                 else
