@@ -85,6 +85,7 @@ namespace TeamDecided.RaftConsensus
         public event EventHandler StartUAS;
         public event EventHandler<EStopUASReason> StopUAS;
         public event EventHandler<Tuple<TKey, TValue>> OnNewCommitedEntry;
+        private int onNewCommitedEntryNotifed;
 
         private bool disposedValue = false; // To detect redundant calls
 
@@ -119,6 +120,7 @@ namespace TeamDecided.RaftConsensus
             appendEntryTasksLockObject = new object();
 
             manuallyAddedClients = new List<Tuple<string, string, int>>();
+            onNewCommitedEntryNotifed = -1;
         }
 
         public Task<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword, int maxNodes)
@@ -325,7 +327,7 @@ namespace TeamDecided.RaftConsensus
                     lock (distributedLogLockObject)
                     {
                         prevIndex = distributedLog.GetLastIndex();
-                        prevTerm = distributedLog.GetTermOfLastCommit();
+                        prevTerm = distributedLog.GetTermOfLastIndex();
                         commitIndex = distributedLog.CommitIndex;
                         distributedLog.AppendEntry(entry, distributedLog.GetLastIndex()); //TODO: Clean up this append
                         waitEvent = new ManualResetEvent(false);
@@ -343,23 +345,6 @@ namespace TeamDecided.RaftConsensus
                         waitEvent.WaitOne();
                         return ERaftAppendEntryState.COMMITED;
                     });
-
-                    lock (nodesInfoLockObject)
-                    {
-                        foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
-                        {
-                            RaftAppendEntry<TKey, TValue> message =
-                                new RaftAppendEntry<TKey, TValue>(node.Key,
-                                                                        nodeName,
-                                                                        ELogName.UAS_LOG,
-                                                                        currentTerm,
-                                                                        prevIndex,
-                                                                        prevTerm,
-                                                                        commitIndex,
-                                                                        entry);
-                            SendMessage(message);
-                        }
-                    }
 
                     return task;
                 }
@@ -420,7 +405,8 @@ namespace TeamDecided.RaftConsensus
             while (true)
             {
                 //TODO: Do the math to figure out the next heartbeatTime, technically this way it'll be offset at like every timeout-1ms or something due to the effort when it goes in... technically
-                if (WaitHandle.WaitAny(waitHandles, heartbeatInterval) == WaitHandle.WaitTimeout)
+                int index = WaitHandle.WaitAny(waitHandles, heartbeatInterval);
+                if (index == WaitHandle.WaitTimeout)
                 {
                     Log("It's time to send out heartbeats.");
                     //Time to send heart beats
@@ -433,7 +419,7 @@ namespace TeamDecided.RaftConsensus
                                 foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
                                 {
                                     RaftAppendEntry<TKey, TValue> heartbeatMessage;
-                                    if (distributedLog.GetLastIndex() > node.Value.NextIndex)
+                                    if (distributedLog.GetLastIndex() >= node.Value.NextIndex)
                                     {
                                         int prevIndex = node.Value.NextIndex - 1;
                                         int prevTerm = distributedLog.GetTermOfIndex(prevIndex);
@@ -837,12 +823,13 @@ namespace TeamDecided.RaftConsensus
             //TODO: If we're recieved this from a node which is out of date, respond with another RaftAppendEntry to keep going until done
             lock (currentStateLockObject)
             {
+                //TODO: Whitelist states
                 lock (currentTermLockObject)
                 {
                     //Are we behind, and we've now got a new leader?
-                    Log("Heard from a node ({0}) with greater term({1}) than ours({2}). Changing to follower", message.From, message.Term, currentTerm);
                     if (message.Term > currentTerm)
                     {
+                        Log("Heard from a node ({0}) with greater term({1}) than ours({2}). Changing to follower", message.From, message.Term, currentTerm);
                         UpdateTerm(message.Term);
                         leaderName = message.From;
                         ChangeStateToFollower();
@@ -870,7 +857,7 @@ namespace TeamDecided.RaftConsensus
                             Log("It was just a heartbeat.");
                             return; //Heart beat, nothing more we need to do
                         }
-                        Log("Setting match index to {0} from {1}.", message.MatchIndex, nodeInfo.MatchIndex);
+                        Log("Setting {0}'s match index to {1} from {2}.", message.From, message.MatchIndex, nodeInfo.MatchIndex);
                         nodeInfo.MatchIndex = message.MatchIndex;
                         nodeInfo.NextIndex = message.MatchIndex + 1;
 
@@ -892,6 +879,7 @@ namespace TeamDecided.RaftConsensus
                                             distributedLog.CommitUpToIndex(message.MatchIndex);
                                             appendEntryTasks[message.MatchIndex].Set();
                                             appendEntryTasks.Remove(message.MatchIndex);
+
                                             foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
                                             {
                                                 RaftAppendEntry<TKey, TValue> updateMessage =
@@ -902,6 +890,11 @@ namespace TeamDecided.RaftConsensus
                                                                                             distributedLog.CommitIndex);
                                                 SendMessage(updateMessage);
                                             }
+                                            for (int i = onNewCommitedEntryNotifed + 1; i <= message.MatchIndex; i++)
+                                            {
+                                                OnNewCommitedEntry?.Invoke(this, distributedLog[i].GetTuple());
+                                            }
+                                            onNewCommitedEntryNotifed = message.MatchIndex;
                                         }
                                     }
                                     else
@@ -916,6 +909,7 @@ namespace TeamDecided.RaftConsensus
                             Log("This follower failed to append entry. Stepping back their next index");
                             //If a follower fails to insert into log, it means that the prev check failed, so we need to step backwards
                             nodesInfo[message.From].NextIndex--;
+                            //Background thread
                         }
                     }
                 }
@@ -1055,7 +1049,7 @@ namespace TeamDecided.RaftConsensus
             int total = 1; //Initialised to 1 as leader counts
             foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
             {
-                if (node.Value.MatchIndex == index)
+                if (node.Value.MatchIndex >= index)
                 {
                     total += 1;
                 }
@@ -1141,7 +1135,7 @@ namespace TeamDecided.RaftConsensus
 
             for (int i = 0; i < count; i++)
             {
-                nodes[i] = new RaftConsensus<TKey, TValue>(Guid.NewGuid().ToString(), startPort + i);
+                nodes[i] = new RaftConsensus<TKey, TValue>("Node" + (i + 1), startPort + i);
             }
 
             return nodes;

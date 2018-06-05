@@ -37,5 +37,10 @@ namespace TeamDecided.RaftConsensus
         {
             return string.Format("Key:{0}, Value: {1}, Term: {2}", Key, Value, Term);
         }
+
+        public Tuple<TKey, TValue> GetTuple()
+        {
+            return new Tuple<TKey, TValue>(Key, Value);
+        }
     }
 }

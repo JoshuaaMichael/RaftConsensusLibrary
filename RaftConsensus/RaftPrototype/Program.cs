@@ -20,7 +20,7 @@ namespace RaftPrototype
             //Application.Run(new RaftNode("Node2", "config.json", "debug.log"));
             try
             {
-                RaftLogging.Instance.EnableBuffer(500);
+                RaftLogging.Instance.EnableBuffer(50);
                 if (args.Length == 0) //Running the program to bootstrap
                 {
                     Application.Run(new RaftBootStrap());
@@ -35,7 +35,7 @@ namespace RaftPrototype
             }
             catch(Exception e)
             {
-
+                throw e;
             }
             finally
             {
