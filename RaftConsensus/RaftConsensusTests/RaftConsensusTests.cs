@@ -291,6 +291,7 @@ namespace TeamDecided.RaftConsensus.Tests
             Assert.AreEqual(entriesToCommit, entries.Count);
         }
 
+        [Test]
         public void IT_TwoNodesCommitManyEntries()
         {
             int maxNodes = 3;
@@ -340,8 +341,70 @@ namespace TeamDecided.RaftConsensus.Tests
             Assert.AreEqual(entriesToCommit, entries.Count);
         }
 
+        [Test]
+        public void IT_ThreeNodesCommitManyEntries()
+        {
+            int maxNodes = 3;
+            int entriesToCommit = 20;
+
+            nodes = RaftConsensus<string, string>.MakeNodesForTest(maxNodes, START_PORT);
+            InformOfIPs(nodes);
+
+            RaftConsensus<string, string> leader = (RaftConsensus<string, string>)nodes[0];
+            RaftConsensus<string, string> follower1 = (RaftConsensus<string, string>)nodes[1];
+            RaftConsensus<string, string> follower2 = (RaftConsensus<string, string>)nodes[2];
+
+            leader.SetHeartbeatInterval(50);
+            follower1.SetHeartbeatInterval(50);
+            follower2.SetHeartbeatInterval(50);
+
+            // create a cluster
+            leader.CreateCluster(clusterName, clusterPassword, maxNodes);
+
+            leader.OnNewCommitedEntry += OnNewCommitedEntry;
+            follower1.OnNewCommitedEntry += OnNewCommitedEntry;
+            follower2.OnNewCommitedEntry += OnNewCommitedEntry;
+
+            Task<EJoinClusterResponse> follower1JoinTask = follower1.JoinCluster(clusterName, clusterPassword, maxNodes);
+            follower1JoinTask.Wait();
+
+            Task<EJoinClusterResponse> follower2JoinTask = follower2.JoinCluster(clusterName, clusterPassword, maxNodes);
+            follower2JoinTask.Wait();
+
+            Task[] appendTasks = new Task[entriesToCommit];
+
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                if (nodes[i].IsUASRunning())
+                {
+                    for (int j = 0; j < entriesToCommit; j++)
+                    {
+                        appendTasks[j] = leader.AppendEntry("Hello" + (j + 1), "World" + (j + 1));
+                    }
+                }
+            }
+
+            for (int i = 0; i < appendTasks.Length; i++)
+            {
+                appendTasks[i].Wait();
+            }
+
+            leader.Dispose();
+            follower1.Dispose();
+            follower2.Dispose();
+
+            Assert.AreEqual(entriesToCommit, entries.Count);
+        }
+
         private void OnNewCommitedEntry(object sender, Tuple<string, string> e)
         {
+            for(int i = 0; i < entries.Count; i++)
+            {
+                if(entries[i].Item1 == e.Item1 && entries[i].Item2 == e.Item2)
+                {
+                    return;
+                }
+            }
             entries.Add(e);
         }
 
