@@ -169,6 +169,7 @@
             this.logDataGrid.Name = "logDataGrid";
             this.logDataGrid.Size = new System.Drawing.Size(331, 297);
             this.logDataGrid.TabIndex = 1;
+            this.logDataGrid.TabStop = false;
             // 
             // tabControl1
             // 
@@ -178,7 +179,7 @@
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
             this.tabControl1.Size = new System.Drawing.Size(363, 566);
-            this.tabControl1.TabIndex = 12;
+            this.tabControl1.TabIndex = 1;
             // 
             // tabPage1
             // 
@@ -227,7 +228,7 @@
             this.tbKey.Location = new System.Drawing.Point(46, 3);
             this.tbKey.Name = "tbKey";
             this.tbKey.Size = new System.Drawing.Size(204, 20);
-            this.tbKey.TabIndex = 6;
+            this.tbKey.TabIndex = 4;
             // 
             // bSendMsg
             // 
@@ -236,7 +237,7 @@
             this.bSendMsg.Name = "bSendMsg";
             this.tableLayoutPanel2.SetRowSpan(this.bSendMsg, 2);
             this.bSendMsg.Size = new System.Drawing.Size(75, 23);
-            this.bSendMsg.TabIndex = 2;
+            this.bSendMsg.TabIndex = 6;
             this.bSendMsg.Text = "Append";
             this.bSendMsg.UseVisualStyleBackColor = true;
             this.bSendMsg.Click += new System.EventHandler(this.AppendMessage_Click);
@@ -247,7 +248,7 @@
             this.tbValue.Location = new System.Drawing.Point(46, 33);
             this.tbValue.Name = "tbValue";
             this.tbValue.Size = new System.Drawing.Size(204, 20);
-            this.tbValue.TabIndex = 7;
+            this.tbValue.TabIndex = 5;
             // 
             // label3
             // 
@@ -300,6 +301,7 @@
             this.tbLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.tbLog.Size = new System.Drawing.Size(343, 504);
             this.tbLog.TabIndex = 0;
+            this.tbLog.TabStop = false;
             // 
             // RaftNode
             // 

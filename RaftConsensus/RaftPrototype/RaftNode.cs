@@ -86,17 +86,27 @@ namespace RaftPrototype
                 serverip = config.nodeIPAddresses[index];
                 
                 //always making the first entry the cluster manager (Leader)
-                if (config.nodeNames[0] == servername)
-                {
-                    //Instantiate node and set up peer information
-                    //subscribe to RaftLogging Log Info event
-                    CreateNode(config, 0);
+//                if (config.nodeNames[0] == servername)
+//                {
+////<<<<<<< HEAD
+//                    //Instantiate node and set up peer information
+//                    //subscribe to RaftLogging Log Info event
+//                    CreateNode(config, 0);
 
-                    //As this is the leader set up the cluster
-                    node.CreateCluster(config.clusterName, config.clusterPassword, config.maxNodes);
-                }
-                else
-                {
+//                    //As this is the leader set up the cluster
+//                    //node.CreateCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+//                    node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+////=======
+////                    //create cluster
+////                    node = new RaftConsensus<string, string>(config.nodeNames[index], config.nodePorts[index]);
+////                    AddPeers(config, index);
+////                    //node.CreateCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+////                    throw new Exception("Opps");
+////                    RaftLogging.Instance.Info("Cluster created by {0}", config.nodeNames[0]);
+////>>>>>>> master
+//                }
+//                else
+//                {
                     while (true)
                     {
                         //Instantiate node and set up peer information
@@ -126,7 +136,7 @@ namespace RaftPrototype
                             }
                         }
                     }
-                }
+                //}
 
                 //update the main UI
                 mainThread.Send((object state) =>
@@ -200,6 +210,8 @@ namespace RaftPrototype
                 //this.btStop.Enabled = false;
             }
 
+            this.tbKey.Clear();
+            this.tbValue.Clear();
             logDataGrid.DataSource = null;
             logDataGrid.DataSource = log;
         }
@@ -280,13 +292,18 @@ namespace RaftPrototype
         {
             try
             {
-                node.AppendEntry(tbKey.Text, tbValue.Text);
+                Task<ERaftAppendEntryState> append = node.AppendEntry(tbKey.Text, tbValue.Text);
+                append.Wait();
                 // really need some sort of check here to ensure append entry was successfull
-                bool ifAppendEntryIsSuccess = true;
-                if (ifAppendEntryIsSuccess)
+                ERaftAppendEntryState appendResult = append.Result;
+                if (appendResult == ERaftAppendEntryState.COMMITED)
                 {
                     tbKey.Clear();
                     tbValue.Clear();
+                }
+                else
+                {
+                    MessageBox.Show("Append Failed...", "Result", MessageBoxButtons.OK);
                 }
             }
             catch (InvalidOperationException ex)

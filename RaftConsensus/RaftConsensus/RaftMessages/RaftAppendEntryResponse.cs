@@ -11,8 +11,8 @@ namespace TeamDecided.RaftConsensus.RaftMessages
 
         public RaftAppendEntryResponse() { }
 
-        public RaftAppendEntryResponse(string to, string from, ELogName logName, int term, bool success, int matchIndex)
-            : base(to, from)
+        public RaftAppendEntryResponse(string to, string from, string clusterName, ELogName logName, int term, bool success, int matchIndex)
+            : base(to, from, clusterName)
         {
             LogName = logName;
             Term = term;

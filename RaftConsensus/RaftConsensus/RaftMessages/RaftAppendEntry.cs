@@ -14,8 +14,8 @@ namespace TeamDecided.RaftConsensus.RaftMessages
 
         public RaftAppendEntry() { }
 
-        public RaftAppendEntry(string to, string from, ELogName logName, int term, int prevIndex, int prevTerm, int leaderCommitIndex, RaftLogEntry<TKey, TValue> entry)
-            : base(to, from)
+        public RaftAppendEntry(string to, string from, string clusterName, ELogName logName, int term, int prevIndex, int prevTerm, int leaderCommitIndex, RaftLogEntry<TKey, TValue> entry)
+            : base(to, from, clusterName)
         {
             LogName = logName;
             Term = term;
@@ -25,8 +25,8 @@ namespace TeamDecided.RaftConsensus.RaftMessages
             Entry = entry;
         }
 
-        public RaftAppendEntry(string to, string from, ELogName logName, int term, int leaderCommitIndex)
-            : base(to, from)
+        public RaftAppendEntry(string to, string from, string clusterName, ELogName logName, int term, int leaderCommitIndex)
+            : base(to, from, clusterName)
         {
             LogName = logName;
             Term = term;
