@@ -288,6 +288,7 @@
             this.cbDebug.TabIndex = 1;
             this.cbDebug.Text = "Debug Log Active";
             this.cbDebug.UseVisualStyleBackColor = true;
+            this.cbDebug.CheckedChanged += new System.EventHandler(this.cbDebug_CheckedChanged);
             // 
             // tbLog
             // 
@@ -298,7 +299,7 @@
             this.tbLog.Size = new System.Drawing.Size(343, 504);
             this.tbLog.TabIndex = 0;
             // 
-            // RaftNode2
+            // RaftNode
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -306,7 +307,7 @@
             this.Controls.Add(this.tabControl1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
-            this.Name = "RaftNode2";
+            this.Name = "RaftNode";
             this.Text = "RaftNode2";
             this.groupBox2.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);

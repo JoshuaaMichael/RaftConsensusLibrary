@@ -27,7 +27,6 @@ namespace RaftPrototype
         private string LOGFILE = Path.Combine(Environment.CurrentDirectory, "debug.log");
 
         private List<Tuple<string, string, int>> cluster_peer_list = new List<Tuple<string, string, int>>();
-        //private RaftNode[] nodes;
         private RaftNode[] nodes;
 
         protected StatusBar mainStatusBar = new StatusBar();
@@ -190,7 +189,7 @@ namespace RaftPrototype
                 }
 
                 this.Enabled = false;
-                //Hide();
+                Hide();
             }
             else
             {
@@ -201,6 +200,7 @@ namespace RaftPrototype
                     WorkingDirectory = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location),
                     UseShellExecute = false,
                     WindowStyle = ProcessWindowStyle.Normal
+
                 };
 
                 //Clean out old log
@@ -219,7 +219,6 @@ namespace RaftPrototype
                     Process.Start(startInfo);
                     Thread.Sleep(200);
                 }
-
                 Close();
             }
         }
@@ -227,18 +226,18 @@ namespace RaftPrototype
         private void RaftNodeClosure(object sender, FormClosedEventArgs e)
         {
             int index = int.Parse(sender.ToString().Substring(sender.ToString().Length - 1)) - 1;
-
+            int count = 0;
             nodes[index] = null;
-
-            //MessageBox.Show(sender.ToString() + "\n" + index);
             for (int i = 0; i < nodes.Length; i++)
             {
                 if (nodes[i] != null)
                 {
                     break;
                 }
-                this.Enabled = true;
+                count++;
+                //this.Enabled = true;
             }
+            if (count == nodes.Length) this.Close();
         }
 
         #region old methods to cleanout

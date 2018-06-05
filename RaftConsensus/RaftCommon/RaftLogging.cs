@@ -8,8 +8,8 @@ namespace TeamDecided.RaftCommon.Logging
     {
         private static RaftLogging instance = null;
         private static readonly object instanceLock = new object();
-        private readonly object methodLock = new object();
-        private readonly object verbositySelection = new object();
+        private static readonly object methodLock = new object();
+        private static readonly object verbositySelection = new object();
         private const string defaultFilename = "debug.log";
         private string loggingFileName = defaultFilename;
 
@@ -32,34 +32,31 @@ namespace TeamDecided.RaftCommon.Logging
 
         public void EnableBuffer(int linesToBufferCount)
         {
-            lock(methodLock)
-            {
-                this.linesToBufferCount = linesToBufferCount;
-                buffer = new List<string>(linesToBufferCount);
-            }
+            this.linesToBufferCount = linesToBufferCount;
+            buffer = new List<string>(linesToBufferCount);
         }
 
         private void WriteToLog(bool doLogLevel, EventHandler<string> onNewLineEvent, string format, params object[] args)
         {
-            lock (methodLock)
+            if(doLogLevel)
             {
-                lock (verbositySelection)
+                string message = string.Format(GetTimestampString() + format + Environment.NewLine, args);
+                onNewLineEvent?.Invoke(this, message);
+                if (buffer == null)
                 {
-                    if(doLogLevel)
+                    lock (this)
                     {
-                        string message = string.Format(GetTimestampString() + format + Environment.NewLine, args);
-                        onNewLineEvent?.Invoke(this, message);
-                        if (buffer == null)
+                        File.AppendAllText(loggingFileName, message);
+                    }
+                }
+                else
+                {
+                    lock (this)
+                    {
+                        buffer.Add(message.TrimEnd());
+                        if (buffer.Count == linesToBufferCount)
                         {
-                            File.AppendAllText(loggingFileName, message);
-                        }
-                        else
-                        {
-                            buffer.Add(message.TrimEnd());
-                            if(buffer.Count == linesToBufferCount)
-                            {
-                                FlushBuffer();
-                            }
+                            FlushBuffer();
                         }
                     }
                 }

@@ -30,6 +30,9 @@ namespace RaftPrototype
         private string configurationFile;
         private string logfile;
 
+        private static Mutex mutex = new Mutex();
+        private bool onClosing;
+
         public RaftNode(string serverName, string configFile, string logFile)
         {
             //set local attributes
@@ -39,9 +42,12 @@ namespace RaftPrototype
             queue = new Queue<string>(1000);
             this.log = new StringBuilder(20000,50000);//capacity in character, maximum characters
 
-            
             mainThread = SynchronizationContext.Current;
             if (mainThread == null) { mainThread = new SynchronizationContext(); }
+
+
+            onClosing = false;
+
             InitializeComponent();
             Initialize();
         }
@@ -147,7 +153,7 @@ namespace RaftPrototype
             //Add peer to the node
             AddPeers(config, index);
             //Subscribe to logging event
-            RaftLogging.Instance.OnNewLineInfo += HandleInfoLogUpdate;
+            //RaftLogging.Instance.OnNewLineInfo += HandleInfoLogUpdate;
 
             //RaftLogging.Instance.Info("Cluster created by {0}", config.nodeNames[0]);
 
@@ -215,15 +221,32 @@ namespace RaftPrototype
 
         private void HandleInfoLogUpdate(object sender, string e)
         {
-            if ( cbDebug.Checked )
+            try
             {
-                mainThread.Send((object state) =>
+                if (mutex.WaitOne())
                 {
-                    if (CheckLogEntry(e))
-                    {
-                        tbLog.AppendText(e);
+                    if (!onClosing)
+                    { 
+                        mainThread.Post((object state) =>
+                        {
+                            if (CheckLogEntry(e))
+                            {
+                                try
+                                {
+                                    tbLog.AppendText(e);
+                                }
+                                catch
+                                {
+                                    Console.WriteLine("bad shit happened");
+                                }
+                            }
+                        }, null);
                     }
-                }, null);
+                }
+            }
+            finally
+            {
+                mutex.ReleaseMutex();
             }
         }
 
@@ -295,15 +318,35 @@ namespace RaftPrototype
 
         protected override void OnClosing(CancelEventArgs e)
         {
+            try
+            {
+                mutex.WaitOne();
+                onClosing = true;
+                RaftLogging.Instance.OnNewLineInfo -= HandleInfoLogUpdate;
+            }
+            finally
+            {
+                mutex.ReleaseMutex();
+            }
             base.OnClosing(e);
-            cbDebug.Checked = false;
-            RaftLogging.Instance.OnNewLineInfo -= HandleInfoLogUpdate;
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
-            base.OnFormClosed(e);
             node.Dispose();
+            base.OnFormClosed(e);
+        }
+
+        private void cbDebug_CheckedChanged(object sender, EventArgs e)
+        {
+            if(cbDebug.Checked)
+            {
+                RaftLogging.Instance.OnNewLineInfo += HandleInfoLogUpdate;
+            }
+            else
+            {
+                RaftLogging.Instance.OnNewLineInfo -= HandleInfoLogUpdate;
+            }
         }
     }
 }
