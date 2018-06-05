@@ -297,32 +297,13 @@ namespace RaftPrototype
         {
             base.OnClosing(e);
             cbDebug.Checked = false;
-
-            try
-            {
-                node.Dispose();
-            }
-            catch (Exception ex)
-            {
-                ex.ToString();
-            }
+            RaftLogging.Instance.OnNewLineInfo -= HandleInfoLogUpdate;
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             base.OnFormClosed(e);
-            //RaftLogging.Instance.OnNewLineInfo -= HandleInfoLogUpdate;
-
-            //cbDebug.Checked = false;
-
-            //try
-            //{
-            //    node.Dispose();
-            //}
-            //catch (Exception ex)
-            //{
-            //    ex.ToString();
-            //}
+            node.Dispose();
         }
     }
 }
