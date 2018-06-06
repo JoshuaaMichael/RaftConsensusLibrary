@@ -535,6 +535,62 @@ namespace TeamDecided.RaftConsensus.Tests
             Assert.AreEqual(entriesToCommit * (maxNodes - 1), entries.Count);
         }
 
+        [Test]
+        public void IT_ThreeNodesJoinClusterRebuildAfterLeaderLoss()
+        {
+            int maxNodes = 3;
+
+            nodes = RaftConsensus<string, string>.MakeNodesForTest(maxNodes, START_PORT);
+            InformOfIPs(nodes);
+
+            Task<EJoinClusterResponse>[] joinClusterResponses = new Task<EJoinClusterResponse>[maxNodes];
+            for (int i = 0; i < joinClusterResponses.Length; i++)
+            {
+                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes);
+            }
+
+            for (int i = 0; i < joinClusterResponses.Length; i++)
+            {
+                joinClusterResponses[i].Wait();
+                Assert.True(joinClusterResponses[i].Result == EJoinClusterResponse.ACCEPT);
+            }
+
+            Thread.Sleep(1000); //Let's see if we can keep this thing alive for a bit
+
+            bool foundLeader = false;
+            while (!foundLeader)
+            {
+                for (int i = 0; i < nodes.Length; i++)
+                {
+                    if (nodes[i].IsUASRunning())
+                    {
+                        nodes[i].Dispose();
+                        foundLeader = true;
+                        break;
+                    }
+                }
+            }
+
+            Thread.Sleep(2000);
+
+            foundLeader = false;
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                if (nodes[i].IsUASRunning())
+                {
+                    foundLeader = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(foundLeader);
+
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                nodes[i].Dispose();
+            }
+        }
+
         private void OnNewCommitedEntry(object sender, Tuple<string, string> e)
         {
             for(int i = 0; i < entries.Count; i++)
