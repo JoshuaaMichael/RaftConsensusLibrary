@@ -85,58 +85,35 @@ namespace RaftPrototype
                 serverport = config.nodePorts[index];
                 serverip = config.nodeIPAddresses[index];
                 
-                //always making the first entry the cluster manager (Leader)
-//                if (config.nodeNames[0] == servername)
-//                {
-////<<<<<<< HEAD
-//                    //Instantiate node and set up peer information
-//                    //subscribe to RaftLogging Log Info event
-//                    CreateNode(config, 0);
+                while (true)
+                {
+                    //Instantiate node and set up peer information
+                    //subscribe to RaftLogging Log Info event
+                    CreateNode(config, index);
 
-//                    //As this is the leader set up the cluster
-//                    //node.CreateCluster(config.clusterName, config.clusterPassword, config.maxNodes);
-//                    node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
-////=======
-////                    //create cluster
-////                    node = new RaftConsensus<string, string>(config.nodeNames[index], config.nodePorts[index]);
-////                    AddPeers(config, index);
-////                    //node.CreateCluster(config.clusterName, config.clusterPassword, config.maxNodes);
-////                    throw new Exception("Opps");
-////                    RaftLogging.Instance.Info("Cluster created by {0}", config.nodeNames[0]);
-////>>>>>>> master
-//                }
-//                else
-//                {
-                    while (true)
+                    //call the leader to join cluster
+                    Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+                    joinTask.Wait();
+
+                    //check the result of the attempt to join the cluster
+                    EJoinClusterResponse result = joinTask.Result;
+                    if (result == EJoinClusterResponse.ACCEPT)
                     {
-                        //Instantiate node and set up peer information
-                        //subscribe to RaftLogging Log Info event
-                        CreateNode(config, index);
-
-                        //call the leader to join cluster
-                        Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
-                        joinTask.Wait();
-
-                        //check the result of the attempt to join the cluster
-                        EJoinClusterResponse result = joinTask.Result;
-                        if (result == EJoinClusterResponse.ACCEPT)
+                        break;
+                    }
+                    else
+                    {
+                        if (MessageBox.Show("Failed to join cluster, do you want to retry?", "Error " + servername, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error) == DialogResult.Retry)
                         {
-                            break;
+                            node.Dispose();
+                            continue;
                         }
                         else
                         {
-                            if (MessageBox.Show("Failed to join cluster, do you want to retry?", "Error " + servername, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error) == DialogResult.Retry)
-                            {
-                                node.Dispose();
-                                continue;
-                            }
-                            else
-                            {
-                                return;
-                            }
+                            return;
                         }
                     }
-                //}
+                }
 
                 //update the main UI
                 mainThread.Send((object state) =>
@@ -293,18 +270,8 @@ namespace RaftPrototype
             try
             {
                 Task<ERaftAppendEntryState> append = node.AppendEntry(tbKey.Text, tbValue.Text);
-                append.Wait();
-                // really need some sort of check here to ensure append entry was successfull
-                ERaftAppendEntryState appendResult = append.Result;
-                if (appendResult == ERaftAppendEntryState.COMMITED)
-                {
-                    tbKey.Clear();
-                    tbValue.Clear();
-                }
-                else
-                {
-                    MessageBox.Show("Append Failed...", "Result", MessageBoxButtons.OK);
-                }
+                tbKey.Clear();
+                tbValue.Clear();
             }
             catch (InvalidOperationException ex)
             {
