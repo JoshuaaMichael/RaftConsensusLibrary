@@ -15,30 +15,35 @@ namespace RaftPrototype
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            //Application.Run(new RaftNode("Node2", "config.json", "debug.log"));
             try
             {
-                if (File.Exists("./config.json"))
-                {
-                    DialogResult ans = MessageBox.Show("A configuration file has been detected. \nDo you want to start up and existing node?", "Config File Exists", MessageBoxButtons.YesNo);
-
-                    if (ans == DialogResult.Yes)
-                    {
-                        Application.Run(new RaftStartNode());
-                    }
-                }
-
                 RaftLogging.Instance.EnableBuffer(50);
                 if (args.Length == 0) //Running the program to bootstrap
                 {
-                    Application.Run(new RaftBootStrap());
+                    if (File.Exists("./config.json"))
+                    {
+                        DialogResult ans = MessageBox.Show("Existing configuration file has been " +
+                            "\ndetected in application root. " +
+                            "\n\nDo you want to restart existing " +
+                            "\nnode from this configuration?", 
+                            "Existing Configuration File...", MessageBoxButtons.YesNo);
+
+                        if (ans == DialogResult.Yes)
+                        {
+                            Application.Run(new RaftStartNode());
+                        }
+                        else
+                        {
+                            Application.Run(new RaftBootStrap());
+                        }
+                    }
+
                 }
                 else
                 {
                     string serverName = args[0];
                     string configFile = args[1];
                     string logFile = args[2];
-                    //Application.Run(new RaftNode(serverName, configFile, logFile));
                     Application.Run(new RaftNode(serverName, configFile, logFile));
                 }
             }
