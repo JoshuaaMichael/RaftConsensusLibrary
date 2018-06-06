@@ -481,6 +481,60 @@ namespace TeamDecided.RaftConsensus.Tests
             Assert.AreEqual(entriesToCommit, entries.Count);
         }
 
+        [Test]
+        public void IT_TwoNodesJoinClusterCommitEntryCLientEventAppend()
+        {
+            int maxNodes = 3;
+            int entriesToCommit = 3;
+
+            nodes = RaftConsensus<string, string>.MakeNodesForTest(maxNodes, START_PORT);
+            InformOfIPs(nodes);
+
+            Task<EJoinClusterResponse>[] joinClusterResponses = new Task<EJoinClusterResponse>[maxNodes - 1]; //This is we go down to 2 nodes
+            for (int i = 0; i < joinClusterResponses.Length; i++)
+            {
+                nodes[i].OnNewCommitedEntry += OnNewCommitedEntryClient;
+                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes);
+            }
+
+            for (int i = 0; i < joinClusterResponses.Length; i++)
+            {
+                joinClusterResponses[i].Wait();
+                Assert.True(joinClusterResponses[i].Result == EJoinClusterResponse.ACCEPT);
+            }
+
+            Thread.Sleep(1000); //Let's see if we can keep this thing alive for a bit
+
+            Task[] appendTasks = new Task[entriesToCommit];
+
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                if (nodes[i].IsUASRunning())
+                {
+                    for (int j = 0; j < entriesToCommit; j++)
+                    {
+                        appendTasks[j] = nodes[i].AppendEntry("Hello" + (j + 1), "World" + (j + 1));
+                    }
+                    break;
+                }
+            }
+
+            for (int i = 0; i < appendTasks.Length; i++)
+            {
+                appendTasks[i].Wait();
+            }
+
+            Thread.Sleep(1000);
+
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                nodes[i].Dispose();
+            }
+
+            // check if message committed
+            Assert.AreEqual(entriesToCommit * (maxNodes - 1), entries.Count);
+        }
+
         private void OnNewCommitedEntry(object sender, Tuple<string, string> e)
         {
             for(int i = 0; i < entries.Count; i++)
@@ -490,6 +544,11 @@ namespace TeamDecided.RaftConsensus.Tests
                     return;
                 }
             }
+            entries.Add(e);
+        }
+
+        private void OnNewCommitedEntryClient(object sender, Tuple<string, string> e)
+        {
             entries.Add(e);
         }
 

@@ -621,9 +621,14 @@ namespace TeamDecided.RaftConsensus
                             if (message.LeaderCommitIndex > distributedLog.CommitIndex)
                             {
                                 Log("Heartbeat contained a request to update out commit index");
+                                int oldCommitIndex = distributedLog.CommitIndex;
                                 int newCommitIndex = Math.Min(message.LeaderCommitIndex, distributedLog.GetLastIndex());
                                 Log("Updated commit index to {0}, leader's is {1}", newCommitIndex, message.LeaderCommitIndex);
                                 distributedLog.CommitUpToIndex(newCommitIndex);
+                                for(int i = oldCommitIndex + 1; i <= newCommitIndex; i++)
+                                {
+                                    OnNewCommitedEntry?.Invoke(this, distributedLog[i].GetTuple());
+                                }
                             }
                             responseMessage = new RaftAppendEntryResponse(message.From, nodeName, clusterName, message.LogName, currentTerm, true, distributedLog.GetLastIndex());
                             SendMessage(responseMessage);
@@ -640,7 +645,12 @@ namespace TeamDecided.RaftConsensus
                                 {
                                     int newCommitIndex = Math.Min(message.LeaderCommitIndex, distributedLog.GetLastIndex());
                                     Log("Updated commit index to {0}, leader's is {1}", newCommitIndex, message.LeaderCommitIndex);
+                                    int oldCommitIndex = distributedLog.CommitIndex;
                                     distributedLog.CommitUpToIndex(newCommitIndex);
+                                    for (int i = oldCommitIndex + 1; i <= newCommitIndex; i++)
+                                    {
+                                        OnNewCommitedEntry?.Invoke(this, distributedLog[i].GetTuple());
+                                    }
                                 }
                                 Log("Responding to leader with the success of our append");
                                 responseMessage = new RaftAppendEntryResponse(message.From, nodeName, clusterName, message.LogName, currentTerm, true, distributedLog.GetLastIndex());
