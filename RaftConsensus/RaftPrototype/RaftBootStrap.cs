@@ -488,5 +488,11 @@ namespace RaftPrototype
             }
         }
         #endregion
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            RaftStartNode frm = new RaftStartNode();
+            frm.Show();
+        }
     }
 }

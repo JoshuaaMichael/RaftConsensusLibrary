@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Windows.Forms;
 using TeamDecided.RaftCommon.Logging;
 
@@ -17,6 +18,16 @@ namespace RaftPrototype
             //Application.Run(new RaftNode("Node2", "config.json", "debug.log"));
             try
             {
+                if (File.Exists("./config.json"))
+                {
+                    DialogResult ans = MessageBox.Show("A configuration file has been detected. \nDo you want to start up and existing node?", "Config File Exists", MessageBoxButtons.YesNo);
+
+                    if (ans == DialogResult.Yes)
+                    {
+                        Application.Run(new RaftStartNode());
+                    }
+                }
+
                 RaftLogging.Instance.EnableBuffer(50);
                 if (args.Length == 0) //Running the program to bootstrap
                 {
@@ -31,7 +42,7 @@ namespace RaftPrototype
                     Application.Run(new RaftNode(serverName, configFile, logFile));
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 throw e;
             }

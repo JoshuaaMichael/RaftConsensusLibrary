@@ -198,6 +198,7 @@ namespace RaftPrototype
 
         private void HandleUASStart(object sender, EventArgs e)
         {
+            //this.log.Clear();
             mainThread.Post((object state) =>
             {
                 UpdateNodeWindow();
