@@ -773,9 +773,10 @@ namespace TeamDecided.RaftConsensus
                         else
                         {
                             Log("This follower failed to append entry. Stepping back their next index");
-                            //If a follower fails to insert into log, it means that the prev check failed, so we need to step backwards
-                            nodesInfo[message.From].NextIndex--;
-                            //Background thread
+                            if(nodesInfo[message.From].NextIndex > -1)
+                            {
+                                nodesInfo[message.From].NextIndex--;
+                            }
                         }
                     }
                 }
