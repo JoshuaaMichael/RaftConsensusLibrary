@@ -190,7 +190,7 @@ namespace RaftPrototype
             {
                 lbServerState.Text = "UAS running.";
                 gbAppendEntry.Enabled = true;
-                btStop.Enabled = true;
+                //btStop.Enabled = true;
                 btStart.Enabled = false;
             }
             else
@@ -207,7 +207,7 @@ namespace RaftPrototype
                 }
 
                 gbAppendEntry.Enabled = false;
-                btStop.Enabled = false;
+                btStop.Enabled = true;
             }
 
             tbKey.Clear();
@@ -294,7 +294,8 @@ namespace RaftPrototype
 
         private void Start_Click(object sender, EventArgs e)
         {
-            this.isStopped = false;
+            isStopped = false;
+            log.Clear();
 
             //run the configuration setup on background thread stop GUI from blocking
             Task task = new TaskFactory().StartNew(new Action<object>((test) =>
