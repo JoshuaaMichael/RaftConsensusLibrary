@@ -161,6 +161,7 @@
             this.btStart.TabIndex = 2;
             this.btStart.Text = "Start";
             this.btStart.UseVisualStyleBackColor = true;
+            this.btStart.Click += new System.EventHandler(this.Start_Click);
             // 
             // logDataGrid
             // 

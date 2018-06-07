@@ -23,22 +23,26 @@ namespace RaftPrototype
         private List<Tuple<string, string>> log;
         private static object updateWindowLockObject = new object();
 
+        private RaftBootstrapConfig config;
         private string servername;
         private string serverip;
         private int serverport;
+        private int index;
         private string configurationFile;
         private string logfile;
 
         private static Mutex mutex = new Mutex();
         private bool onClosing;
+        private bool isStopped;
 
         public RaftNode(string serverName, string configFile, string logFile)
         {
             //set local attributes
-            this.servername = serverName;
-            this.configurationFile = configFile;
-            this.logfile = logFile;
-            this.log = new List<Tuple<string, string>>();
+            servername = serverName;
+            configurationFile = configFile;
+            logfile = logFile;
+            log = new List<Tuple<string, string>>();
+            isStopped = false;
 
             mainThread = SynchronizationContext.Current;
             if (mainThread == null) { mainThread = new SynchronizationContext(); }
@@ -51,13 +55,15 @@ namespace RaftPrototype
         }
 
         #region Setup Node
+
         private void Initialize()
         {
             //TODO: This is where we need to get the current IConsensus log
-            this.Text = string.Format("{0} - {1}", this.Text, servername);//append servername in title bar of window
-            this.btStop.Enabled = false;//disable user action
-            this.btStart.Enabled = false;//disable user action
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;// disable resizing of window
+            Text = string.Format("{0} - {1}", this.Text, servername);//append servername in title bar of window
+            //this.btStop.Enabled = false;//disable user action
+            btStart.Enabled = false;//disable user action
+            FormBorderStyle = FormBorderStyle.FixedDialog;// disable resizing of window
+
 
             SetupLogging(logfile);
 
@@ -67,29 +73,37 @@ namespace RaftPrototype
                 LoadConfig();
             }), TaskCreationOptions.None);
         }
-        
+
         /// <summary>
         /// Loads configuration file, instantiate node and update the UI
         /// </summary>
         public void LoadConfig()
         {
+            string json = File.ReadAllText(configurationFile);
+            config = JsonConvert.DeserializeObject<RaftBootstrapConfig>(json);
+            //Get the node id from the node name string
+            index = int.Parse(servername.Substring(servername.Length - 1)) - 1;
+            //populate the peer information
+            RaftLogging.Instance.Info("{0} is adding peers", config.nodeNames[index]);
+
+            serverport = config.nodePorts[index];
+            serverip = config.nodeIPAddresses[index];
+
+            StartNode();
+        }
+
+        /// <summary>
+        /// Creates and starts nodes
+        /// </summary>
+        private void StartNode()
+        {
             try
             {
-                string json = File.ReadAllText(configurationFile);
-                RaftBootstrapConfig config = JsonConvert.DeserializeObject<RaftBootstrapConfig>(json);
-                //Get the node id from the node name string
-                int index = int.Parse(servername.Substring(servername.Length - 1)) - 1;
-                //populate the peer information
-                RaftLogging.Instance.Info("{0} is adding peers", config.nodeNames[index]);
-
-                serverport = config.nodePorts[index];
-                serverip = config.nodeIPAddresses[index];
-                
                 while (true)
                 {
                     //Instantiate node and set up peer information
                     //subscribe to RaftLogging Log Info event
-                    CreateNode(config, index);
+                    CreateNode();
 
                     //call the leader to join cluster
                     Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
@@ -135,7 +149,7 @@ namespace RaftPrototype
         /// </summary>
         /// <param name="config">Configuration object containing the details of cluster membership</param>
         /// <param name="index">The index of the node within the configuration object</param>
-        private void CreateNode(RaftBootstrapConfig config, int index)
+        private void CreateNode()
         {
             //Instantiate node
             node = new RaftConsensus<string, string>(config.nodeNames[index], config.nodePorts[index]);
@@ -147,8 +161,6 @@ namespace RaftPrototype
             node.StartUAS += HandleUASStart;
             node.OnNewCommitedEntry += HandleNewCommitEntry;
         }
-
-        
 
         /// <summary>
         /// Setup logging
@@ -176,21 +188,34 @@ namespace RaftPrototype
             lbNodeName.Text = servername;
             if (node != null && node.IsUASRunning())
             {
-                this.lbServerState.Text = "UAS running.";
-                this.gbAppendEntry.Enabled = true;
-                //this.btStop.Enabled = false;
+                lbServerState.Text = "UAS running.";
+                gbAppendEntry.Enabled = true;
+                btStop.Enabled = true;
+                btStart.Enabled = false;
             }
             else
             {
-                this.lbServerState.Text = "UAS not running.";
-                this.gbAppendEntry.Enabled = false;
-                //this.btStop.Enabled = false;
+                if (isStopped)
+                {
+                    lbServerState.Text = "Offline";
+                    btStart.Enabled = true;
+                }
+                else
+                {
+                    lbServerState.Text = "UAS not running.";
+                    btStart.Enabled = false;
+                }
+
+                gbAppendEntry.Enabled = false;
+                btStop.Enabled = false;
             }
 
-            this.tbKey.Clear();
-            this.tbValue.Clear();
+            tbKey.Clear();
+            tbValue.Clear();
             logDataGrid.DataSource = null;
             logDataGrid.DataSource = log;
+            logDataGrid.Columns[0].HeaderText = "Key";
+            logDataGrid.Columns[1].HeaderText = "Value";
         }
         #endregion
 
@@ -256,6 +281,7 @@ namespace RaftPrototype
 
         private void Stop_Click(object sender, EventArgs e)
         {
+            this.isStopped = true;
             if (node.IsUASRunning())
             {
                 node.Dispose();
@@ -264,6 +290,17 @@ namespace RaftPrototype
                     UpdateNodeWindow();
                 }
             }
+        }
+
+        private void Start_Click(object sender, EventArgs e)
+        {
+            this.isStopped = false;
+
+            //run the configuration setup on background thread stop GUI from blocking
+            Task task = new TaskFactory().StartNew(new Action<object>((test) =>
+            {
+                StartNode();
+            }), TaskCreationOptions.None);
         }
 
         private void AppendMessage_Click(object sender, EventArgs e)
