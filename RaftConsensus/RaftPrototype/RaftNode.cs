@@ -188,10 +188,11 @@ namespace RaftPrototype
             lbNodeName.Text = servername;
             if (node != null && node.IsUASRunning())
             {
-                lbServerState.Text = "UAS running.";
+                lbServerState.Text = "Leader";
                 gbAppendEntry.Enabled = true;
                 //btStop.Enabled = true;
                 btStart.Enabled = false;
+                btStop.Enabled = true;
             }
             else
             {
@@ -199,15 +200,16 @@ namespace RaftPrototype
                 {
                     lbServerState.Text = "Offline";
                     btStart.Enabled = true;
+                    btStop.Enabled = false;
                 }
                 else
                 {
-                    lbServerState.Text = "UAS not running.";
+                    lbServerState.Text = "Follower";
                     btStart.Enabled = false;
+                    btStop.Enabled = true;
                 }
 
                 gbAppendEntry.Enabled = false;
-                btStop.Enabled = true;
             }
 
             tbKey.Clear();

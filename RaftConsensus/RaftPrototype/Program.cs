@@ -20,24 +20,7 @@ namespace RaftPrototype
                 RaftLogging.Instance.EnableBuffer(50);
                 if (args.Length == 0) //Running the program to bootstrap
                 {
-                    if (File.Exists("./config.json"))
-                    {
-                        DialogResult ans = MessageBox.Show("Existing configuration file has been " +
-                            "\ndetected in application root. " +
-                            "\n\nDo you want to restart existing " +
-                            "\nnode from this configuration?", 
-                            "Existing Configuration File...", MessageBoxButtons.YesNo);
-
-                        if (ans == DialogResult.Yes)
-                        {
-                            Application.Run(new RaftStartNode());
-                        }
-                        else
-                        {
-                            Application.Run(new RaftBootStrap());
-                        }
-                    }
-
+                    Application.Run(new RaftBootStrap());
                 }
                 else
                 {
