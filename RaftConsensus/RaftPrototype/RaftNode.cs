@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -58,43 +57,29 @@ namespace RaftPrototype
 
         private void Initialize()
         {
-            //TODO: This is where we need to get the current IConsensus log
-            Text = string.Format("{0} - {1}", this.Text, servername);//append servername in title bar of window
-            //this.btStop.Enabled = false;//disable user action
-            btStart.Enabled = false;//disable user action
-            FormBorderStyle = FormBorderStyle.FixedDialog;// disable resizing of window
+            Text = string.Format("{0} - {1}", this.Text, servername);
+            btStart.Enabled = false;
+            FormBorderStyle = FormBorderStyle.FixedDialog;
 
+            SetupLogging();
+            LoadConfig();
 
-            SetupLogging(logfile);
-
-            //run the configuration setup on background thread stop GUI from blocking
             Task task = new TaskFactory().StartNew(new Action<object>((test) =>
             {
-                LoadConfig();
+                StartNode();
             }), TaskCreationOptions.None);
         }
 
-        /// <summary>
-        /// Loads configuration file, instantiate node and update the UI
-        /// </summary>
         public void LoadConfig()
         {
             string json = File.ReadAllText(configurationFile);
             config = JsonConvert.DeserializeObject<RaftBootstrapConfig>(json);
-            //Get the node id from the node name string
             index = int.Parse(servername.Substring(servername.Length - 1)) - 1;
-            //populate the peer information
-            RaftLogging.Instance.Info("{0} is adding peers", config.nodeNames[index]);
-
             serverport = config.nodePorts[index];
             serverip = config.nodeIPAddresses[index];
-
-            StartNode();
+            //RaftLogging.Instance.Info("{0} is adding peers", config.nodeNames[index]);
         }
 
-        /// <summary>
-        /// Creates and starts nodes
-        /// </summary>
         private void StartNode()
         {
             try
@@ -144,11 +129,6 @@ namespace RaftPrototype
             }
         }
 
-        /// <summary>
-        /// Instantiates the node
-        /// </summary>
-        /// <param name="config">Configuration object containing the details of cluster membership</param>
-        /// <param name="index">The index of the node within the configuration object</param>
         private void CreateNode()
         {
             //Instantiate node
@@ -162,27 +142,21 @@ namespace RaftPrototype
             node.OnNewCommitedEntry += HandleNewCommitEntry;
         }
 
-        /// <summary>
-        /// Setup logging
-        /// </summary>
-        /// <param name="logFile">Logfile where to post and read infromation from</param>
-        private void SetupLogging(string logFile)
+        private void SetupLogging()
         {
             //string path = string.Format(@"{0}", Environment.CurrentDirectory);
             //string debug = Path.Combine(Environment.CurrentDirectory, "debug.log");
             //string debug = Path.Combine("C:\\Users\\Tori\\Downloads\\debug.log");
 
-            RaftLogging.Instance.OverwriteLoggingFile(logFile);
+            RaftLogging.Instance.OverwriteLoggingFile(logfile);
             RaftLogging.Instance.EnableBuffer(50);
-            //RaftLogging.Instance.DeleteExistingLogFile();
             RaftLogging.Instance.SetDoInfo(true);
             RaftLogging.Instance.SetDoDebug(true);
 
         }
 
-        /// <summary>
-        /// Updates the UI
-        /// </summary>
+        #endregion
+
         private void UpdateNodeWindow()
         {
             lbNodeName.Text = servername;
@@ -190,7 +164,6 @@ namespace RaftPrototype
             {
                 lbServerState.Text = "Leader";
                 gbAppendEntry.Enabled = true;
-                //btStop.Enabled = true;
                 btStart.Enabled = false;
                 btStop.Enabled = true;
             }
@@ -219,7 +192,6 @@ namespace RaftPrototype
             logDataGrid.Columns[0].HeaderText = "Key";
             logDataGrid.Columns[1].HeaderText = "Value";
         }
-        #endregion
 
         #region event methods
 
@@ -284,13 +256,11 @@ namespace RaftPrototype
         private void Stop_Click(object sender, EventArgs e)
         {
             this.isStopped = true;
-            if (node.IsUASRunning())
+
+            node.Dispose();
+            lock (updateWindowLockObject)
             {
-                node.Dispose();
-                lock (updateWindowLockObject)
-                {
-                    UpdateNodeWindow();
-                }
+                UpdateNodeWindow();
             }
         }
 
@@ -320,7 +290,7 @@ namespace RaftPrototype
             }
         }
 
-        private void cbDebug_CheckedChanged(object sender, EventArgs e)
+        private void Debug_CheckedChanged(object sender, EventArgs e)
         {
             if (cbDebug.Checked)
             {
@@ -331,8 +301,6 @@ namespace RaftPrototype
                 RaftLogging.Instance.OnNewLineInfo -= HandleInfoLogUpdate;
             }
         }
-
-
 
         #endregion
 
@@ -381,8 +349,6 @@ namespace RaftPrototype
         
         #endregion
 
-
-
         #region closing
 
         protected override void OnClosing(CancelEventArgs e)
@@ -407,7 +373,6 @@ namespace RaftPrototype
         }
 
         #endregion
-
     }
 }
 

@@ -292,7 +292,7 @@
             this.cbDebug.TabIndex = 1;
             this.cbDebug.Text = "Debug Log Active";
             this.cbDebug.UseVisualStyleBackColor = true;
-            this.cbDebug.CheckedChanged += new System.EventHandler(this.cbDebug_CheckedChanged);
+            this.cbDebug.CheckedChanged += new System.EventHandler(this.Debug_CheckedChanged);
             // 
             // tbLog
             // 
