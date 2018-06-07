@@ -45,6 +45,8 @@ namespace TeamDecided.RaftConsensus.Tests
 
         List<Tuple<string, string>> entries;
 
+        ManualResetEvent onStartUAS;
+
         [SetUp]
         public void BeforeTest()
         {
@@ -54,6 +56,7 @@ namespace TeamDecided.RaftConsensus.Tests
             RaftLogging.Instance.SetDoDebug(true);
 
             entries = new List<Tuple<string, string>>();
+            onStartUAS = new ManualResetEvent(false);
         }
 
         private void InformOfIPs(params IConsensus<string, string>[] nodes)
@@ -589,6 +592,89 @@ namespace TeamDecided.RaftConsensus.Tests
             {
                 nodes[i].Dispose();
             }
+        }
+
+        [Test]
+        public void IT_ThreeNodeClusterCommitEntryDontRecommitAfterRecover()
+        {
+            int maxNodes = 3;
+            int entriesToCommit = 3;
+
+            nodes = RaftConsensus<string, string>.MakeNodesForTest(maxNodes, START_PORT);
+            InformOfIPs(nodes);
+
+            Task<EJoinClusterResponse>[] joinClusterResponses = new Task<EJoinClusterResponse>[maxNodes];
+            for (int i = 0; i < joinClusterResponses.Length; i++)
+            {
+                nodes[i].OnNewCommitedEntry += OnNewCommitedEntryClient;
+                nodes[i].StartUAS += RaftConsensusTest_StartUAS;
+                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes);
+            }
+
+            for (int i = 0; i < joinClusterResponses.Length; i++)
+            {
+                joinClusterResponses[i].Wait();
+                Assert.True(joinClusterResponses[i].Result == EJoinClusterResponse.ACCEPT);
+            }
+
+            Thread.Sleep(1000); //Let's see if we can keep this thing alive for a bit
+
+            Task[] appendTasks = new Task[entriesToCommit];
+
+            IConsensus<string, string> leader = FindLeader(nodes);
+            for (int j = 0; j < entriesToCommit; j++)
+            {
+                appendTasks[j] = leader.AppendEntry("Hello" + (j + 1), "World" + (j + 1));
+            }
+
+            for (int i = 0; i < appendTasks.Length; i++)
+            {
+                appendTasks[i].Wait();
+            }
+
+            Thread.Sleep(1000);
+
+            FindLeader(nodes).Dispose();
+
+            leader = FindLeader(nodes);
+            for (int j = 0; j < entriesToCommit; j++)
+            {
+                appendTasks[j] = leader.AppendEntry("Hello" + (j + 1 + entriesToCommit), "World" + (j + 1 + entriesToCommit));
+            }
+
+            for (int i = 0; i < appendTasks.Length; i++)
+            {
+                appendTasks[i].Wait();
+            }
+
+            Thread.Sleep(1000);
+
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                nodes[i].Dispose();
+            }
+
+            // check if message committed
+            Assert.AreEqual((entriesToCommit * 3) + (entriesToCommit * 2), entries.Count);
+        }
+
+        private IConsensus<string, string> FindLeader(IConsensus<string, string>[] nodes)
+        {
+            while (true)
+            {
+                for (int i = 0; i < nodes.Length; i++)
+                {
+                    if (nodes[i].IsUASRunning())
+                    {
+                        return nodes[i];
+                    }
+                }
+            }
+        }
+
+        private void RaftConsensusTest_StartUAS(object sender, EventArgs e)
+        {
+            onStartUAS.Set();
         }
 
         private void OnNewCommitedEntry(object sender, Tuple<string, string> e)

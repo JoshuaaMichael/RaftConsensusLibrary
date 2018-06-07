@@ -85,7 +85,6 @@ namespace TeamDecided.RaftConsensus
         public event EventHandler StartUAS;
         public event EventHandler<EStopUASReason> StopUAS;
         public event EventHandler<Tuple<TKey, TValue>> OnNewCommitedEntry;
-        private int onNewCommitedEntryNotifed;
 
         private bool disposedValue = false; // To detect redundant calls
 
@@ -120,7 +119,6 @@ namespace TeamDecided.RaftConsensus
             appendEntryTasksLockObject = new object();
 
             manuallyAddedClients = new List<Tuple<string, string, int>>();
-            onNewCommitedEntryNotifed = -1;
         }
 
         public Task<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword, int maxNodes)
@@ -625,7 +623,8 @@ namespace TeamDecided.RaftConsensus
                                 int newCommitIndex = Math.Min(message.LeaderCommitIndex, distributedLog.GetLastIndex());
                                 Log("Updated commit index to {0}, leader's is {1}", newCommitIndex, message.LeaderCommitIndex);
                                 distributedLog.CommitUpToIndex(newCommitIndex);
-                                for(int i = oldCommitIndex + 1; i <= newCommitIndex; i++)
+                                Log("Running OnNewCommitedEntry. Starting from {0}, going to and including {1}", oldCommitIndex + 1, newCommitIndex);
+                                for (int i = oldCommitIndex + 1; i <= newCommitIndex; i++)
                                 {
                                     OnNewCommitedEntry?.Invoke(this, distributedLog[i].GetTuple());
                                 }
@@ -647,6 +646,7 @@ namespace TeamDecided.RaftConsensus
                                     Log("Updated commit index to {0}, leader's is {1}", newCommitIndex, message.LeaderCommitIndex);
                                     int oldCommitIndex = distributedLog.CommitIndex;
                                     distributedLog.CommitUpToIndex(newCommitIndex);
+                                    Log("Running OnNewCommitedEntry. Starting from {0}, going to and including {1}", oldCommitIndex + 1, newCommitIndex);
                                     for (int i = oldCommitIndex + 1; i <= newCommitIndex; i++)
                                     {
                                         OnNewCommitedEntry?.Invoke(this, distributedLog[i].GetTuple());
@@ -710,7 +710,7 @@ namespace TeamDecided.RaftConsensus
                     {
                         NodeInfo nodeInfo = nodesInfo[message.From];
                         nodeInfo.UpdateLastReceived();
-                        if (message.MatchIndex == nodeInfo.MatchIndex)
+                        if (message.MatchIndex == nodeInfo.MatchIndex && message.Success)
                         {
                             Log("It was just a heartbeat.");
                             return; //Heart beat, nothing more we need to do
@@ -734,6 +734,7 @@ namespace TeamDecided.RaftConsensus
                                         //We have! Update our log. Notify everyone to update their logs
                                         lock (appendEntryTasksLockObject)
                                         {
+                                            int oldCommitIndex = distributedLog.CommitIndex;
                                             distributedLog.CommitUpToIndex(message.MatchIndex);
                                             appendEntryTasks[message.MatchIndex].Set();
                                             appendEntryTasks.Remove(message.MatchIndex);
@@ -749,11 +750,11 @@ namespace TeamDecided.RaftConsensus
                                                                                             distributedLog.CommitIndex);
                                                 SendMessage(updateMessage);
                                             }
-                                            for (int i = onNewCommitedEntryNotifed + 1; i <= message.MatchIndex; i++)
+                                            Log("Running OnNewCommitedEntry. Starting from {0}, going to and including {1}", oldCommitIndex + 1, message.MatchIndex);
+                                            for (int i = oldCommitIndex + 1; i <= message.MatchIndex; i++)
                                             {
                                                 OnNewCommitedEntry?.Invoke(this, distributedLog[i].GetTuple());
                                             }
-                                            onNewCommitedEntryNotifed = message.MatchIndex;
                                         }
                                     }
                                     else
