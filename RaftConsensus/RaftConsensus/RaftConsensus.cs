@@ -619,15 +619,7 @@ namespace TeamDecided.RaftConsensus
                             if (message.LeaderCommitIndex > distributedLog.CommitIndex)
                             {
                                 Log("Heartbeat contained a request to update out commit index");
-                                int oldCommitIndex = distributedLog.CommitIndex;
-                                int newCommitIndex = Math.Min(message.LeaderCommitIndex, distributedLog.GetLastIndex());
-                                Log("Updated commit index to {0}, leader's is {1}", newCommitIndex, message.LeaderCommitIndex);
-                                distributedLog.CommitUpToIndex(newCommitIndex);
-                                Log("Running OnNewCommitedEntry. Starting from {0}, going to and including {1}", oldCommitIndex + 1, newCommitIndex);
-                                for (int i = oldCommitIndex + 1; i <= newCommitIndex; i++)
-                                {
-                                    OnNewCommitedEntry?.Invoke(this, distributedLog[i].GetTuple());
-                                }
+                                FollowerUpdateCommitIndex(message.LeaderCommitIndex); ;
                             }
                             responseMessage = new RaftAppendEntryResponse(message.From, nodeName, clusterName, message.LogName, currentTerm, true, distributedLog.GetLastIndex());
                             SendMessage(responseMessage);
@@ -636,39 +628,53 @@ namespace TeamDecided.RaftConsensus
                         else
                         {
                             Log("This is a AppendEntry message from {0} has new entries to commit", message.From);
-                            if (distributedLog.ConfirmPreviousIndex(message.PrevIndex, message.PrevTerm))
+
+                            if (distributedLog.GetLastIndex() > message.PrevIndex)
                             {
-                                distributedLog.AppendEntry(message.Entry, message.PrevIndex);
-                                Log("Confirmed previous index. Appended message");
-                                if (message.LeaderCommitIndex > distributedLog.CommitIndex)
-                                {
-                                    int newCommitIndex = Math.Min(message.LeaderCommitIndex, distributedLog.GetLastIndex());
-                                    Log("Updated commit index to {0}, leader's is {1}", newCommitIndex, message.LeaderCommitIndex);
-                                    int oldCommitIndex = distributedLog.CommitIndex;
-                                    distributedLog.CommitUpToIndex(newCommitIndex);
-                                    Log("Running OnNewCommitedEntry. Starting from {0}, going to and including {1}", oldCommitIndex + 1, newCommitIndex);
-                                    for (int i = oldCommitIndex + 1; i <= newCommitIndex; i++)
-                                    {
-                                        OnNewCommitedEntry?.Invoke(this, distributedLog[i].GetTuple());
-                                    }
-                                }
-                                Log("Responding to leader with the success of our append");
-                                responseMessage = new RaftAppendEntryResponse(message.From, nodeName, clusterName, message.LogName, currentTerm, true, distributedLog.GetLastIndex());
-                                SendMessage(responseMessage);
-                                return;
+                                Log("We received a message but our latestIndex ({0}) was greater than their PrevIndex ({0}). Truncating the rest of the log forward for safety", distributedLog.GetLastIndex(), message.PrevIndex);
+                                distributedLog.TruncateLog(message.PrevIndex + 1);
                             }
-                            else
+
+                            if (distributedLog.GetLastIndex() == message.PrevIndex)
                             {
-                                Log("Failed to add new entries because confirming previous index/term failed. Ours ({0}. {1}). Theirs ({2}, {3})", distributedLog.GetLastIndex(), distributedLog.GetTermOfLastIndex(), message.PrevIndex, message.PrevTerm);
+                                if (distributedLog.ConfirmPreviousIndex(message.PrevIndex, message.PrevTerm))
+                                {
+                                    distributedLog.AppendEntry(message.Entry, message.PrevIndex);
+                                    Log("Confirmed previous index. Appended message");
+                                    if (message.LeaderCommitIndex > distributedLog.CommitIndex)
+                                    {
+                                        FollowerUpdateCommitIndex(message.LeaderCommitIndex);
+                                    }
+                                    Log("Responding to leader with the success of our append");
+                                    responseMessage = new RaftAppendEntryResponse(message.From, nodeName, clusterName, message.LogName, currentTerm, true, distributedLog.GetLastIndex());
+                                    SendMessage(responseMessage);
+                                }
+                            }
+                            else if (distributedLog.GetLastIndex() < message.PrevIndex)
+                            {
+                                Log("Got entry we weren't ready for, replying with false. Our previous index {0}, their previous index {1}", distributedLog.GetLastIndex(), message.PrevIndex);
                                 responseMessage = new RaftAppendEntryResponse(message.From, nodeName, clusterName, message.LogName, currentTerm, false, distributedLog.GetLastIndex());
                                 SendMessage(responseMessage);
-                                return;
                             }
                         }
                     }
                 }
             }
         }
+
+        private void FollowerUpdateCommitIndex(int leaderCommitIndex)
+        {
+            int newCommitIndex = Math.Min(leaderCommitIndex, distributedLog.GetLastIndex());
+            Log("Updating commit index to {0}, leader's is {1}", newCommitIndex, newCommitIndex);
+            int oldCommitIndex = distributedLog.CommitIndex;
+            distributedLog.CommitUpToIndex(newCommitIndex);
+            Log("Running OnNewCommitedEntry. Starting from {0}, going to and including {1}", oldCommitIndex + 1, newCommitIndex);
+            for (int i = oldCommitIndex + 1; i <= newCommitIndex; i++)
+            {
+                OnNewCommitedEntry?.Invoke(this, distributedLog[i].GetTuple());
+            }
+        }
+
         private void HandleAppendEntryResponse(RaftAppendEntryResponse message)
         {
             //TODO: If we're recieved this from a node which is out of date, respond with another RaftAppendEntry to keep going until done

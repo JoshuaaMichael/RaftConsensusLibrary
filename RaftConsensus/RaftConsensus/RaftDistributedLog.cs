@@ -120,7 +120,7 @@ namespace TeamDecided.RaftConsensus
             commitIndexLookup.Add(new Tuple<TKey, int>(entry.Key, log[entry.Key].Count - 1));
         }
 
-        private void TruncateLog(int index)
+        public void TruncateLog(int index)
         {
             //Drops forward and inclusive of the index given
             int lastLogEntry = commitIndexLookup.Count - 1;
