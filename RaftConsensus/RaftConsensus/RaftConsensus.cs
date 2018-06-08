@@ -143,6 +143,8 @@ namespace TeamDecided.RaftConsensus
                 networking.OnMessageReceived += OnMessageReceive;
                 FlushNetworkPeerBuffer();
 
+                this.maxNodes = maxNodes;
+
                 Log("Trying to join cluster - {0}", clusterName);
                 foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
                 {
@@ -176,6 +178,7 @@ namespace TeamDecided.RaftConsensus
                             currentState = ERaftState.INITIALIZING;
                         }
                         networking.Dispose();
+                        this.maxNodes = 0;
                         return EJoinClusterResponse.NO_RESPONSE;
                     }
                     else
@@ -392,13 +395,15 @@ namespace TeamDecided.RaftConsensus
                 }
                 else //We've been signaled. Told to shutdown or we've stopped being leader
                 {
+                    Log("Leader thread has been signaled, {0}", index);
                     return;
                 }
             }
         }
         private void BackgroundThread_Candidate(WaitHandle[] waitHandles)
         {
-            if (WaitHandle.WaitAny(waitHandles, timeoutValue) == WaitHandle.WaitTimeout)
+            int index = WaitHandle.WaitAny(waitHandles, timeoutValue);
+            if (index == WaitHandle.WaitTimeout)
             {
                 //We didn't hear from anyone, so we've got to go candidate again to try be leader... again
                 Log("We didn't get voted in to be leader, time to try again");
@@ -407,6 +412,7 @@ namespace TeamDecided.RaftConsensus
             }
             else //We've been signaled. Told to shutdown or we're no longer candidate
             {
+                Log("Candidate thread has been signaled, {0}", index);
                 return;
             }
         }
@@ -433,6 +439,7 @@ namespace TeamDecided.RaftConsensus
                 }
                 else //We've been signaled. Told to shutdown, onNotifyBackgroundThread doesn't impact us really
                 {
+                    Log("We've been signaled. {0}", indexInner);
                     return;
                 }
             }
@@ -493,6 +500,7 @@ namespace TeamDecided.RaftConsensus
                 {
                     foreach (KeyValuePair<string, NodeInfo> node in nodesInfo)
                     {
+                        node.Value.VoteGranted = false;
                         RaftRequestVote message = new RaftRequestVote(node.Key, nodeName, clusterName, currentTerm, distributedLog.GetLastIndex(), distributedLog.GetTermOfLastIndex());
                         SendMessage(message);
                     }
@@ -713,10 +721,21 @@ namespace TeamDecided.RaftConsensus
                     {
                         NodeInfo nodeInfo = nodesInfo[message.From];
                         nodeInfo.UpdateLastReceived();
+
+
                         if (message.MatchIndex == nodeInfo.MatchIndex && message.Success)
                         {
-                            Log("It was just a heartbeat.");
-                            return; //Heart beat, nothing more we need to do
+                            if (message.MatchIndex != nodeInfo.NextIndex - 1)
+                            {
+                                nodeInfo.MatchIndex = message.MatchIndex;
+                                nodeInfo.NextIndex = message.MatchIndex + 1;
+                                Log("We've been told to step back their log. Their match is {0}, their new NextIndex is {1}", nodeInfo.MatchIndex, nodeInfo.NextIndex);
+                            }
+                            else
+                            {
+                                Log("It was just a heartbeat");
+                            }
+                            return;
                         }
                         Log("Setting {0}'s match index to {1} from {2}.", message.From, message.MatchIndex, nodeInfo.MatchIndex);
                         nodeInfo.MatchIndex = message.MatchIndex;
@@ -908,7 +927,7 @@ namespace TeamDecided.RaftConsensus
         private void FollowerUpdateCommitIndex(int leaderCommitIndex)
         {
             int newCommitIndex = Math.Min(leaderCommitIndex, distributedLog.GetLastIndex());
-            Log("Updating commit index to {0}, leader's is {1}", newCommitIndex, newCommitIndex);
+            Log("Updating commit index to {0}, leader's is {1}", newCommitIndex, leaderCommitIndex);
             int oldCommitIndex = distributedLog.CommitIndex;
             distributedLog.CommitUpToIndex(newCommitIndex);
             Log("Running OnNewCommitedEntry. Starting from {0}, going to and including {1}", oldCommitIndex + 1, newCommitIndex);
@@ -1079,20 +1098,28 @@ namespace TeamDecided.RaftConsensus
                     {
                         previousStatus = currentState;
                         currentState = ERaftState.STOPPED;
+                        Log("Disposing {0}, previous status: {1}", nodeName, previousStatus);
                     }
                     if (previousStatus != ERaftState.INITIALIZING)
                     {
+                        Log("We've also got to do some cleanup");
                         if (previousStatus == ERaftState.LEADER)
                         {
+                            Log("We were leader, sending message out to stop UAS");
                             StopUAS?.Invoke(this, EStopUASReason.CLUSTER_STOP);
                         }
+                        Log("Shutting down background thread");
                         onShutdown.Set();
                         backgroundThread.Wait();
+                        Log("Background thread completed shutdown. Disposing network.");
                         networking.Dispose();
+                        Log("Network disposed");
                     }
                     else if (previousStatus == ERaftState.INITIALIZING && joiningClusterAttemptNumber > 0)
                     {
+                        Log("Just had to dispose the network");
                         networking.Dispose();
+                        Log("Network disposed");
                     }
                 }
                 disposedValue = true;
