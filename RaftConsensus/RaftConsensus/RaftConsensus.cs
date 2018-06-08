@@ -356,8 +356,19 @@ namespace TeamDecided.RaftConsensus
                                     RaftAppendEntry<TKey, TValue> heartbeatMessage;
                                     if (distributedLog.GetLastIndex() >= node.Value.NextIndex)
                                     {
-                                        int prevIndex = node.Value.NextIndex - 1;
-                                        int prevTerm = distributedLog.GetTermOfIndex(prevIndex);
+                                        int prevIndex;
+                                        int prevTerm;
+                                        if (node.Value.NextIndex == 0) //No prev index
+                                        {
+                                            prevIndex = -1;
+                                            prevTerm = -1;
+                                        }
+                                        else //Get prev index
+                                        {
+                                            prevIndex = node.Value.NextIndex - 1;
+                                            prevTerm = distributedLog.GetTermOfIndex(prevIndex);
+                                        }
+
                                         heartbeatMessage =
                                             new RaftAppendEntry<TKey, TValue>(node.Key,
                                                                                     nodeName,
@@ -661,20 +672,6 @@ namespace TeamDecided.RaftConsensus
                 }
             }
         }
-
-        private void FollowerUpdateCommitIndex(int leaderCommitIndex)
-        {
-            int newCommitIndex = Math.Min(leaderCommitIndex, distributedLog.GetLastIndex());
-            Log("Updating commit index to {0}, leader's is {1}", newCommitIndex, newCommitIndex);
-            int oldCommitIndex = distributedLog.CommitIndex;
-            distributedLog.CommitUpToIndex(newCommitIndex);
-            Log("Running OnNewCommitedEntry. Starting from {0}, going to and including {1}", oldCommitIndex + 1, newCommitIndex);
-            for (int i = oldCommitIndex + 1; i <= newCommitIndex; i++)
-            {
-                OnNewCommitedEntry?.Invoke(this, distributedLog[i].GetTuple());
-            }
-        }
-
         private void HandleAppendEntryResponse(RaftAppendEntryResponse message)
         {
             //TODO: If we're recieved this from a node which is out of date, respond with another RaftAppendEntry to keep going until done
@@ -773,7 +770,7 @@ namespace TeamDecided.RaftConsensus
                         else
                         {
                             Log("This follower failed to append entry. Stepping back their next index");
-                            if(nodesInfo[message.From].NextIndex > -1)
+                            if(nodesInfo[message.From].NextIndex > 0)
                             {
                                 nodesInfo[message.From].NextIndex--;
                             }
@@ -908,6 +905,18 @@ namespace TeamDecided.RaftConsensus
             }
         }
 
+        private void FollowerUpdateCommitIndex(int leaderCommitIndex)
+        {
+            int newCommitIndex = Math.Min(leaderCommitIndex, distributedLog.GetLastIndex());
+            Log("Updating commit index to {0}, leader's is {1}", newCommitIndex, newCommitIndex);
+            int oldCommitIndex = distributedLog.CommitIndex;
+            distributedLog.CommitUpToIndex(newCommitIndex);
+            Log("Running OnNewCommitedEntry. Starting from {0}, going to and including {1}", oldCommitIndex + 1, newCommitIndex);
+            for (int i = oldCommitIndex + 1; i <= newCommitIndex; i++)
+            {
+                OnNewCommitedEntry?.Invoke(this, distributedLog[i].GetTuple());
+            }
+        }
         private void FoundCluster(string leader, int term)
         {
             Log("We've found the cluster! It's node {0} on term {1}", leader, term);
