@@ -163,6 +163,7 @@ namespace RaftPrototype
             if (node != null && node.IsUASRunning())
             {
                 lbServerState.Text = "Leader";
+                lbServerState.ForeColor = System.Drawing.Color.Green;
                 gbAppendEntry.Enabled = true;
                 btStart.Enabled = false;
                 btStop.Enabled = true;
@@ -172,12 +173,14 @@ namespace RaftPrototype
                 if (isStopped)
                 {
                     lbServerState.Text = "Offline";
+                    lbServerState.ForeColor = System.Drawing.Color.Red;
                     btStart.Enabled = true;
                     btStop.Enabled = false;
                 }
                 else
                 {
                     lbServerState.Text = "Follower";
+                    lbServerState.ForeColor = System.Drawing.Color.Orange;
                     btStart.Enabled = false;
                     btStop.Enabled = true;
                 }
