@@ -85,7 +85,7 @@ namespace TeamDecided.RaftConsensus.Tests
             Task<EJoinClusterResponse>[] joinClusterResponses = new Task<EJoinClusterResponse>[maxNodes - 1]; //This is where we don't do that last one
             for (int i = 0; i < joinClusterResponses.Length; i++)
             {
-                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes);
+                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes, true);
             }
 
             for (int i = 0; i < joinClusterResponses.Length; i++)
@@ -101,7 +101,36 @@ namespace TeamDecided.RaftConsensus.Tests
                 nodes[i].Dispose();
             }
         }
-        
+
+        [Test]
+        public void IT_TwoNodesJoinClusterSecure()
+        {
+            //This will only test 1 leader node, and 1 peers coming to join the cluster
+            int maxNodes = 3;
+
+            nodes = RaftConsensus<string, string>.MakeNodesForTest(maxNodes, START_PORT);
+            InformOfIPs(nodes);
+
+            Task<EJoinClusterResponse>[] joinClusterResponses = new Task<EJoinClusterResponse>[maxNodes - 1]; //This is where we don't do that last one
+            for (int i = 0; i < joinClusterResponses.Length; i++)
+            {
+                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes, true);
+            }
+
+            for (int i = 0; i < joinClusterResponses.Length; i++)
+            {
+                joinClusterResponses[i].Wait();
+                Assert.True(joinClusterResponses[i].Result == EJoinClusterResponse.ACCEPT);
+            }
+
+            Thread.Sleep(1000); //Let's see if we can keep this thing alive for a bit
+
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                nodes[i].Dispose();
+            }
+        }
+
         [Test]
         public void IT_ThreeNodesJoinCluster()
         {
@@ -113,7 +142,7 @@ namespace TeamDecided.RaftConsensus.Tests
             Task<EJoinClusterResponse>[] joinClusterResponses = new Task<EJoinClusterResponse>[maxNodes];
             for (int i = 0; i < joinClusterResponses.Length; i++)
             {
-                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes);
+                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes, true);
             }
 
             for (int i = 0; i < joinClusterResponses.Length; i++)
@@ -141,7 +170,7 @@ namespace TeamDecided.RaftConsensus.Tests
             Task<EJoinClusterResponse>[] joinClusterResponses = new Task<EJoinClusterResponse>[maxNodes];
             for (int i = 0; i < joinClusterResponses.Length; i++)
             {
-                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes);
+                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes, true);
             }
 
             for (int i = 0; i < joinClusterResponses.Length; i++)
@@ -166,14 +195,15 @@ namespace TeamDecided.RaftConsensus.Tests
             nodes = RaftConsensus<string, string>.MakeNodesForTest(maxNodes, START_PORT);
             InformOfIPs(nodes);
 
+            //There is a timing issue in this test
             Task<EJoinClusterResponse>[] joinClusterResponses = new Task<EJoinClusterResponse>[maxNodes];
             for (int i = 0; i < joinClusterResponses.Length; i++)
             {
-                if(i == 2)
+                if(i <= 2)
                 {
                     Thread.Sleep(1500);
                 }
-                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes);
+                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes, true);
             }
 
             for (int i = 0; i < joinClusterResponses.Length; i++)
@@ -203,7 +233,7 @@ namespace TeamDecided.RaftConsensus.Tests
             for (int i = 0; i < joinClusterResponses.Length; i++)
             {
                 nodes[i].OnNewCommitedEntry += OnNewCommitedEntry;
-                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes);
+                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes, true);
             }
 
             for (int i = 0; i < joinClusterResponses.Length; i++)
@@ -255,7 +285,7 @@ namespace TeamDecided.RaftConsensus.Tests
             for (int i = 0; i < joinClusterResponses.Length; i++)
             {
                 nodes[i].OnNewCommitedEntry += OnNewCommitedEntry;
-                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes);
+                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes, true);
             }
 
             for (int i = 0; i < joinClusterResponses.Length; i++)
@@ -307,7 +337,7 @@ namespace TeamDecided.RaftConsensus.Tests
             for (int i = 0; i < joinClusterResponses.Length; i++)
             {
                 nodes[i].OnNewCommitedEntry += OnNewCommitedEntry;
-                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes);
+                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes, true);
             }
 
             for (int i = 0; i < joinClusterResponses.Length; i++)
@@ -359,7 +389,7 @@ namespace TeamDecided.RaftConsensus.Tests
             for (int i = 0; i < joinClusterResponses.Length; i++)
             {
                 nodes[i].OnNewCommitedEntry += OnNewCommitedEntry;
-                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes);
+                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes, true);
             }
 
             for (int i = 0; i < joinClusterResponses.Length; i++)
@@ -409,7 +439,7 @@ namespace TeamDecided.RaftConsensus.Tests
             Task<EJoinClusterResponse>[] joinClusterResponses = new Task<EJoinClusterResponse>[maxNodes];
             for (int i = 0; i < nodes.Length; i++)
             {
-                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes);
+                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes, true);
             }
 
             for (int i = 0; i < joinClusterResponses.Length; i++)
@@ -432,6 +462,7 @@ namespace TeamDecided.RaftConsensus.Tests
             int maxNodes = 9;
             int entriesToCommit = 5;
 
+            //There is a timing issue in this test
             nodes = RaftConsensus<string, string>.MakeNodesForTest(maxNodes, START_PORT);
             InformOfIPs(nodes);
 
@@ -440,7 +471,7 @@ namespace TeamDecided.RaftConsensus.Tests
             {
                 nodes[i].OnNewCommitedEntry += OnNewCommitedEntry;
                 ((RaftConsensus<string, string>)nodes[i]).SetWaitingForJoinClusterTimeout(10000);
-                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes);
+                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes, true);
             }
 
             for (int i = 0; i < joinClusterResponses.Length; i++)
@@ -496,7 +527,7 @@ namespace TeamDecided.RaftConsensus.Tests
             for (int i = 0; i < joinClusterResponses.Length; i++)
             {
                 nodes[i].OnNewCommitedEntry += OnNewCommitedEntryClient;
-                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes);
+                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes, true);
             }
 
             for (int i = 0; i < joinClusterResponses.Length; i++)
@@ -548,7 +579,7 @@ namespace TeamDecided.RaftConsensus.Tests
             Task<EJoinClusterResponse>[] joinClusterResponses = new Task<EJoinClusterResponse>[maxNodes];
             for (int i = 0; i < joinClusterResponses.Length; i++)
             {
-                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes);
+                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes, true);
             }
 
             for (int i = 0; i < joinClusterResponses.Length; i++)
@@ -607,7 +638,7 @@ namespace TeamDecided.RaftConsensus.Tests
             {
                 nodes[i].OnNewCommitedEntry += OnNewCommitedEntryClient;
                 nodes[i].StartUAS += RaftConsensusTest_StartUAS;
-                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes);
+                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes, true);
             }
 
             for (int i = 0; i < joinClusterResponses.Length; i++)

@@ -12,5 +12,6 @@ namespace RaftPrototype
         public List<string> nodeIPAddresses = new List<string>();
         public List<int> nodePorts = new List<int>();
         public ERaftLogType logLevel;
+        public bool useEncryption;
     }
 }

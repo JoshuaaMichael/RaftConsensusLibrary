@@ -164,6 +164,7 @@ namespace RaftPrototype
                 clusterPassword = tbClusterPasswd.Text,//should this really be plain text!
                 maxNodes = maxNodes, //set max nodes, generic for all
                 logLevel = (ERaftLogType) cbDebugLevel.SelectedIndex
+                //Sean add use encryption
             };
 
             foreach (var peer in cluster_peer_list)
