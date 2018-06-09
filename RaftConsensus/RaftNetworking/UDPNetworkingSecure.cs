@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
+using TeamDecided.RaftCommon;
 using TeamDecided.RaftNetworking.Enums;
 using TeamDecided.RaftNetworking.Helpers;
 using TeamDecided.RaftNetworking.Messages;
@@ -67,9 +68,12 @@ namespace TeamDecided.RaftNetworking
 
             if (!clientToSessionContainsKey)
             {
+                Log(ERaftLogType.DEBUG, "Trying to send message to someone we haven't talked to yet ({0}). Need to establish secure session.", message.To);
                 SendSecureClientHello(message); //We need to setup a secure session
                 return;
             }
+
+            Log(ERaftLogType.TRACE, "Sending message to someone we've got a secure session with, {0}", message.To);
 
             byte[] symetricKey;
             bool sessionToSymetricKeyContainKey;
@@ -87,6 +91,7 @@ namespace TeamDecided.RaftNetworking
 
             if (!sessionToSymetricKeyContainKey || !sessionToHMACSecretContainKey)
             {
+                Log(ERaftLogType.WARN, "Failed to locate required encryption information to send message: {0}", message);
                 GenerateSendFailureException("Failed to locate required encryption information to send message", message);
                 return;
             }
@@ -99,6 +104,8 @@ namespace TeamDecided.RaftNetworking
 
             SecureMessage secureMessage = new SecureMessage(ipEndPoint, session, encryptedMessage, hmacOfEncryptedMessage);
 
+            Log(ERaftLogType.TRACE, "Sending encrypted message");
+
             base.SendMessage(secureMessage);
         }
 
@@ -110,6 +117,7 @@ namespace TeamDecided.RaftNetworking
                 BaseMessage decryptedMessage = null;
                 if (message.GetType() == typeof(SecureMessage)) //AES Encrypted
                 {
+                    Log(ERaftLogType.TRACE, "Got an encrypted message. Decrypting");
                     decryptedMessage = HandleSecureMessage((SecureMessage)message);
                 }
                 //Non-AES Encrypted hankshaking messages
@@ -146,11 +154,13 @@ namespace TeamDecided.RaftNetworking
                 }
                 else
                 {
+                    Log(ERaftLogType.TRACE, "This message was not one of the protocol messages, forward to user");
                     return decryptedMessage; //It was something to user sent, not an internal message.
                 }
             }
             else
             {
+                Log(ERaftLogType.TRACE, "Unencrypted message recieved, this is unsupported");
                 GenerateReceiveFailureException("Unencrypted message recieved, this is unsupported", null);
             }
             return null;

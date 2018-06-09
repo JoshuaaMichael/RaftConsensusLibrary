@@ -362,7 +362,16 @@ namespace TeamDecided.RaftConsensus
             ERaftState threadState = ERaftState.INITIALIZING;
             while (true)
             {
-                int indexOuter = WaitHandle.WaitAny(waitHandles);
+                int indexOuter = 0;
+                try
+                {
+                    indexOuter = WaitHandle.WaitAny(waitHandles);
+                }
+                catch(Exception e)
+                {
+                    Log(ERaftLogType.FATAL, "Threw exception when waiting for events", e.ToString());
+                }
+
                 if (indexOuter == 0)
                 {
                     Log(ERaftLogType.INFO, "Background thread has been told to shutdown");
@@ -1125,6 +1134,18 @@ namespace TeamDecided.RaftConsensus
             }
 
             return nodes;
+        }
+        public static IConsensus<TKey, TValue> RemakeDisposedNode(IConsensus<TKey, TValue>[] nodes, IConsensus<TKey, TValue> node, int startPort)
+        {
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                if(nodes[i].GetNodeName() == node.GetNodeName())
+                {
+                    node = new RaftConsensus<TKey, TValue>("Node" + (i + 1), startPort + i);
+                    return node;
+                }
+            }
+            return null;
         }
         #endregion
 

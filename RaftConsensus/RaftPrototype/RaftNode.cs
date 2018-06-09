@@ -153,11 +153,6 @@ namespace RaftPrototype
 
         private void CreateNode()
         {
-            if(node != null)
-            {
-                node.Dispose();
-            }
-
             //Instantiate node
             node = new RaftConsensus<string, string>(config.nodeNames[index], config.nodePorts[index]);
             //Add peer to the node

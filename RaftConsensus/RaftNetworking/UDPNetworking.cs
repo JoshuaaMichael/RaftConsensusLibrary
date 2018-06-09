@@ -396,7 +396,7 @@ namespace TeamDecided.RaftNetworking
             }
         }
 
-        private void Log(ERaftLogType logType, string format, params object[] args)
+        protected void Log(ERaftLogType logType, string format, params object[] args)
         {
             string messagePrepend = string.Format("{0} (Method={1}) - ", clientName, new StackFrame(1).GetMethod().Name);
             RaftLogging.Instance.Log(logType, messagePrepend + format, args);

@@ -50,7 +50,7 @@ namespace TeamDecided.RaftConsensus.Tests
         [SetUp]
         public void BeforeTest()
         {
-            RaftLogging.Instance.OverwriteLoggingFile(@"C:\Users\admin\Downloads\debug.log");
+            RaftLogging.Instance.OverwriteLoggingFile(@"C:\Users\Tori\Downloads\debug.log");
             RaftLogging.Instance.DeleteExistingLogFile();
             RaftLogging.Instance.SetLogLevel(RaftCommon.ERaftLogType.DEBUG);
 
@@ -70,6 +70,18 @@ namespace TeamDecided.RaftConsensus.Tests
                     }
                     nodes[i].ManualAddPeer(nodes[j].GetNodeName(), new IPEndPoint(IPAddress.Parse(IP_TO_BIND), START_PORT + j));
                 }
+            }
+        }
+
+        private void InformOfIPs(IConsensus<string, string> node)
+        {
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                if(nodes[i].GetNodeName() == node.GetNodeName())
+                {
+                    continue;
+                }
+                node.ManualAddPeer(nodes[i].GetNodeName(), new IPEndPoint(IPAddress.Parse(IP_TO_BIND), START_PORT + i));
             }
         }
 
@@ -515,7 +527,7 @@ namespace TeamDecided.RaftConsensus.Tests
         }
 
         [Test]
-        public void IT_TwoNodesJoinClusterCommitEntryCLientEventAppend()
+        public void IT_TwoNodesJoinClusterCommitEntryClientEventAppend()
         {
             int maxNodes = 3;
             int entriesToCommit = 3;
@@ -686,6 +698,46 @@ namespace TeamDecided.RaftConsensus.Tests
 
             // check if message committed
             Assert.AreEqual((entriesToCommit * 3) + (entriesToCommit * 2), entries.Count);
+        }
+
+        [Test]
+        public void IT_ThreeNodeClusterRejoinAfterNodeFailure()
+        {
+            int maxNodes = 3;
+
+            nodes = RaftConsensus<string, string>.MakeNodesForTest(maxNodes, START_PORT);
+            InformOfIPs(nodes);
+
+            Task<EJoinClusterResponse>[] joinClusterResponses = new Task<EJoinClusterResponse>[maxNodes];
+            for (int i = 0; i < joinClusterResponses.Length; i++)
+            {
+                nodes[i].StartUAS += RaftConsensusTest_StartUAS;
+                joinClusterResponses[i] = nodes[i].JoinCluster(clusterName, clusterPassword, maxNodes, true);
+            }
+
+            for (int i = 0; i < joinClusterResponses.Length; i++)
+            {
+                joinClusterResponses[i].Wait();
+                Assert.True(joinClusterResponses[i].Result == EJoinClusterResponse.ACCEPT);
+            }
+
+            Thread.Sleep(1000); //Let's see if we can keep this thing alive for a bit
+
+            IConsensus<string, string> disposedNode = FindLeader(nodes);
+            disposedNode.Dispose();
+
+            FindLeader(nodes);
+
+            disposedNode = RaftConsensus<string, string>.RemakeDisposedNode(nodes, disposedNode, START_PORT);
+            InformOfIPs(disposedNode);
+            Task<EJoinClusterResponse> rejoin = disposedNode.JoinCluster(clusterName, clusterPassword, maxNodes, true);
+
+            rejoin.Wait();
+
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                nodes[i].Dispose();
+            }
         }
 
         private IConsensus<string, string> FindLeader(IConsensus<string, string>[] nodes)
