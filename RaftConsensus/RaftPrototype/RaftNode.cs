@@ -159,41 +159,48 @@ namespace RaftPrototype
 
         private void UpdateNodeWindow()
         {
-            lbNodeName.Text = servername;
-            if (node != null && node.IsUASRunning())
+            try
             {
-                lbServerState.Text = "Leader";
-                lbServerState.ForeColor = System.Drawing.Color.Green;
-                gbAppendEntry.Enabled = true;
-                btStart.Enabled = false;
-                btStop.Enabled = true;
-            }
-            else
-            {
-                if (isStopped)
+                lbNodeName.Text = servername;
+                if (node != null && node.IsUASRunning())
                 {
-                    lbServerState.Text = "Offline";
-                    lbServerState.ForeColor = System.Drawing.Color.Red;
-                    btStart.Enabled = true;
-                    btStop.Enabled = false;
-                }
-                else
-                {
-                    lbServerState.Text = "Follower";
-                    lbServerState.ForeColor = System.Drawing.Color.Orange;
+                    lbServerState.Text = "Active";
+                    lbServerState.ForeColor = System.Drawing.Color.Green;
+                    gbAppendEntry.Enabled = true;
                     btStart.Enabled = false;
                     btStop.Enabled = true;
                 }
+                else
+                {
+                    if (isStopped)
+                    {
+                        lbServerState.Text = "Offline";
+                        lbServerState.ForeColor = System.Drawing.Color.Red;
+                        btStart.Enabled = true;
+                        btStop.Enabled = false;
+                    }
+                    else
+                    {
+                        lbServerState.Text = "Inactive";
+                        lbServerState.ForeColor = System.Drawing.Color.Orange;
+                        btStart.Enabled = false;
+                        btStop.Enabled = true;
+                    }
 
-                gbAppendEntry.Enabled = false;
+                    gbAppendEntry.Enabled = false;
+                }
+
+                tbKey.Clear();
+                tbValue.Clear();
+                logDataGrid.DataSource = null;
+                logDataGrid.DataSource = log;
+                logDataGrid.Columns[0].HeaderText = "Key";
+                logDataGrid.Columns[1].HeaderText = "Value";
             }
-
-            tbKey.Clear();
-            tbValue.Clear();
-            logDataGrid.DataSource = null;
-            logDataGrid.DataSource = log;
-            logDataGrid.Columns[0].HeaderText = "Key";
-            logDataGrid.Columns[1].HeaderText = "Value";
+            catch 
+            {
+                Console.WriteLine("There was a problem updating the form, probably closing the form.");
+            }
         }
 
         #region event methods
@@ -372,6 +379,7 @@ namespace RaftPrototype
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             node.Dispose();
+            mainThread = null;
             base.OnFormClosed(e);
         }
 

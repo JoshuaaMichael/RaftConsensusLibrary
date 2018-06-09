@@ -105,16 +105,16 @@
             this.label2.AutoSize = true;
             this.label2.Location = new System.Drawing.Point(3, 39);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(69, 13);
+            this.label2.Size = new System.Drawing.Size(121, 13);
             this.label2.TabIndex = 9;
-            this.label2.Text = "Server State:";
+            this.label2.Text = "User Application Server:";
             // 
             // lbServerState
             // 
             this.lbServerState.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lbServerState.AutoSize = true;
             this.lbServerState.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lbServerState.Location = new System.Drawing.Point(78, 39);
+            this.lbServerState.Location = new System.Drawing.Point(130, 39);
             this.lbServerState.Name = "lbServerState";
             this.lbServerState.Size = new System.Drawing.Size(63, 13);
             this.lbServerState.TabIndex = 5;
@@ -125,7 +125,7 @@
             this.lbNodeName.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lbNodeName.AutoSize = true;
             this.lbNodeName.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lbNodeName.Location = new System.Drawing.Point(78, 8);
+            this.lbNodeName.Location = new System.Drawing.Point(130, 8);
             this.lbNodeName.Name = "lbNodeName";
             this.lbNodeName.Size = new System.Drawing.Size(61, 13);
             this.lbNodeName.TabIndex = 0;
