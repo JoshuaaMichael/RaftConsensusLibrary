@@ -125,6 +125,7 @@ namespace RaftPrototype
                     else
                     {
                         node.Dispose();
+                        log.Clear();
                         if (MessageBox.Show("Failed to join cluster, do you want to retry?", "Error " + servername, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error) == DialogResult.Retry)
                         {
                             continue;
@@ -260,8 +261,11 @@ namespace RaftPrototype
                 tbValue.Clear();
                 logDataGrid.DataSource = null;
                 logDataGrid.DataSource = log;
-                logDataGrid.Columns[0].HeaderText = "Key";
-                logDataGrid.Columns[1].HeaderText = "Value";
+                if (log.Count() != 0)
+                {
+                    logDataGrid.Columns[0].HeaderText = "Key";
+                    logDataGrid.Columns[1].HeaderText = "Value";
+                }
             }
             catch 
             {
@@ -273,7 +277,6 @@ namespace RaftPrototype
 
         private void HandleUASStart(object sender, EventArgs e)
         {
-            //this.log.Clear();
             mainThread.Post((object state) =>
             {
                 UpdateNodeWindow();
