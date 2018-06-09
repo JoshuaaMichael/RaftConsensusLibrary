@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Net;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -27,6 +28,7 @@ namespace RaftPrototype
         private string servername;
         private string serverip;
         private int serverport;
+        private ERaftLogType logLevel;
         private int index;
         private string configurationFile;
         private string logfile;
@@ -35,7 +37,7 @@ namespace RaftPrototype
         private bool onClosing;
         private bool isStopped;
 
-        public RaftNode(string serverName, string configFile, string logFile)
+        public RaftNode(string serverName, string configFile, string logFile, bool isInstansiated = false)
         {
             //set local attributes
             servername = serverName;
@@ -52,6 +54,11 @@ namespace RaftPrototype
 
             InitializeComponent();
             Initialize();
+
+            if(isInstansiated)
+            {
+                cbDebugLevel.Enabled = false;
+            }
         }
 
         #region Setup Node
@@ -63,6 +70,17 @@ namespace RaftPrototype
             FormBorderStyle = FormBorderStyle.FixedDialog;
 
             LoadConfig();
+
+            ERaftLogType[] logLevels = Enum.GetValues(typeof(ERaftLogType)).Cast<ERaftLogType>().ToArray();
+            string[] logLevelStrings = new string[logLevels.Length];
+            for (int i = 0; i < logLevels.Count(); i++)
+            {
+                string temp = logLevels[i].ToString().ToLower();
+                logLevelStrings[i] = (temp[0] + "").ToUpper() + temp.Substring(1);
+            }
+            cbDebugLevel.DataSource = logLevelStrings;
+            cbDebugLevel.SelectedIndex = (int) logLevel;
+
             SetupLogging();
 
             Task task = new TaskFactory().StartNew(new Action<object>((test) =>
@@ -79,6 +97,7 @@ namespace RaftPrototype
             index = int.Parse(servername.Replace("Node", ""))-1;
             serverport = config.nodePorts[index];
             serverip = config.nodeIPAddresses[index];
+            logLevel = config.logLevel;
             //RaftLogging.Instance.Info("{0} is adding peers", config.nodeNames[index]);
         }
 
@@ -157,7 +176,7 @@ namespace RaftPrototype
 
             RaftLogging.Instance.OverwriteLoggingFile(logfile);
             RaftLogging.Instance.EnableBuffer(50);
-            RaftLogging.Instance.SetLogLevel(ERaftLogType.INFO);
+            RaftLogging.Instance.SetLogLevel(logLevel);
             RaftLogging.Instance.OnNewLogEntry += HandleInfoLogUpdate;
         }
 
@@ -315,6 +334,11 @@ namespace RaftPrototype
             tbValue.Clear();
         }
 
+        private void cbDebugLevel_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            RaftLogging.Instance.SetLogLevel((ERaftLogType)cbDebugLevel.SelectedIndex);
+        }
+
         #endregion
 
         #region utilities
@@ -397,6 +421,8 @@ namespace RaftPrototype
         }
 
         #endregion
+
+
     }
 }
 

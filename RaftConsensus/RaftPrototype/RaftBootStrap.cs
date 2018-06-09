@@ -8,6 +8,7 @@ using System.Threading;
 using System.Windows.Forms;
 using TeamDecided.RaftCommon.Logging;
 using TeamDecided.RaftCommon;
+using System.Linq;
 
 namespace RaftPrototype
 {
@@ -28,6 +29,7 @@ namespace RaftPrototype
         private string LOGFILE = Path.Combine(Environment.CurrentDirectory, "debug.log");
 
         private List<Tuple<string, string, int>> cluster_peer_list = new List<Tuple<string, string, int>>();
+        private List<string> debug_level = new List<string>();
         private RaftNode[] nodes;
 
         protected StatusBar mainStatusBar = new StatusBar();
@@ -50,6 +52,15 @@ namespace RaftPrototype
             tbIPAddress.Text = IP_TO_BIND;
             tbIPAddress.Enabled = false;//don't want the user to change this at the moment
             cbInstantiate.Checked = true;//set to instantiate by default
+            ERaftLogType[] logLevels = Enum.GetValues(typeof(ERaftLogType)).Cast<ERaftLogType>().ToArray();
+            string[] logLevelStrings = new string[logLevels.Length];
+            for (int i = 0; i < logLevels.Count(); i++)
+            {
+                string temp = logLevels[i].ToString().ToLower();
+                logLevelStrings[i] = (temp[0] + "").ToUpper() + temp.Substring(1);
+            }
+            cbDebugLevel.DataSource = logLevelStrings;
+            cbDebugLevel.SelectedIndex = 2;
 
             SetNodeCountSelector();// setup node numeric up down UI
 
@@ -145,13 +156,14 @@ namespace RaftPrototype
             ///Information for config file is represented by information in GUI
             int maxNodes = (int)nNodes.Value;
 
+
             //create a config file structure
             RaftBootstrapConfig rbsc = new RaftBootstrapConfig
             {
                 clusterName = tbClusterName.Text,
                 clusterPassword = tbClusterPasswd.Text,//should this really be plain text!
                 maxNodes = maxNodes, //set max nodes, generic for all
-                //logLevel = ERaftLogType.INFO - Sean to update to combobox
+                logLevel = (ERaftLogType) cbDebugLevel.SelectedIndex
             };
 
             foreach (var peer in cluster_peer_list)
@@ -179,7 +191,7 @@ namespace RaftPrototype
                 for (int i = 0; i < rbsc.nodeNames.Count; i++)
                 {
                     //nodes[i] = new RaftNode(rbsc.nodeNames[i], CONFIG_FILE, LOGFILE);
-                    nodes[i] = new RaftNode(rbsc.nodeNames[i], CONFIG_FILE, LOGFILE);
+                    nodes[i] = new RaftNode(rbsc.nodeNames[i], CONFIG_FILE, LOGFILE, true);
                     nodes[i].FormClosed += new FormClosedEventHandler(RaftNodeClosure);
                     nodes[i].Show();
                     this.Enabled = false;
