@@ -49,7 +49,12 @@
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.btStartNode = new System.Windows.Forms.Button();
+            this.btStopNode = new System.Windows.Forms.Button();
+            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.cbDebug = new System.Windows.Forms.CheckBox();
+            this.tbServerStatus = new System.Windows.Forms.TextBox();
+            this.label5 = new System.Windows.Forms.Label();
             this.tbLog = new System.Windows.Forms.TextBox();
             this.groupBox2.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -60,6 +65,7 @@
             this.gbAppendEntry.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             this.tabPage2.SuspendLayout();
+            this.tableLayoutPanel3.SuspendLayout();
             this.SuspendLayout();
             // 
             // groupBox2
@@ -273,7 +279,9 @@
             // 
             // tabPage2
             // 
-            this.tabPage2.Controls.Add(this.cbDebug);
+            this.tabPage2.Controls.Add(this.btStartNode);
+            this.tabPage2.Controls.Add(this.btStopNode);
+            this.tabPage2.Controls.Add(this.tableLayoutPanel3);
             this.tabPage2.Controls.Add(this.tbLog);
             this.tabPage2.Location = new System.Drawing.Point(4, 22);
             this.tabPage2.Name = "tabPage2";
@@ -283,26 +291,82 @@
             this.tabPage2.Text = "Debug Log";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
+            // btStartNode
+            // 
+            this.btStartNode.Location = new System.Drawing.Point(190, 514);
+            this.btStartNode.Name = "btStartNode";
+            this.btStartNode.Size = new System.Drawing.Size(75, 23);
+            this.btStartNode.TabIndex = 6;
+            this.btStartNode.Text = "Start Node";
+            this.btStartNode.UseVisualStyleBackColor = true;
+            this.btStartNode.Click += new System.EventHandler(this.Start_Click);
+            // 
+            // btStopNode
+            // 
+            this.btStopNode.Location = new System.Drawing.Point(271, 514);
+            this.btStopNode.Name = "btStopNode";
+            this.btStopNode.Size = new System.Drawing.Size(75, 23);
+            this.btStopNode.TabIndex = 5;
+            this.btStopNode.Text = "Stop Node";
+            this.btStopNode.UseVisualStyleBackColor = true;
+            this.btStopNode.Click += new System.EventHandler(this.Stop_Click);
+            // 
+            // tableLayoutPanel3
+            // 
+            this.tableLayoutPanel3.ColumnCount = 2;
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel3.Controls.Add(this.cbDebug, 0, 0);
+            this.tableLayoutPanel3.Controls.Add(this.tbServerStatus, 1, 1);
+            this.tableLayoutPanel3.Controls.Add(this.label5, 0, 1);
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(6, 6);
+            this.tableLayoutPanel3.Name = "tableLayoutPanel3";
+            this.tableLayoutPanel3.RowCount = 2;
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(343, 50);
+            this.tableLayoutPanel3.TabIndex = 4;
+            // 
             // cbDebug
             // 
             this.cbDebug.AutoSize = true;
-            this.cbDebug.Location = new System.Drawing.Point(6, 6);
+            this.tableLayoutPanel3.SetColumnSpan(this.cbDebug, 2);
+            this.cbDebug.Location = new System.Drawing.Point(3, 3);
             this.cbDebug.Name = "cbDebug";
             this.cbDebug.Size = new System.Drawing.Size(112, 17);
             this.cbDebug.TabIndex = 1;
             this.cbDebug.Text = "Debug Log Active";
             this.cbDebug.UseVisualStyleBackColor = true;
-            this.cbDebug.CheckedChanged += new System.EventHandler(this.Debug_CheckedChanged);
+            // 
+            // tbServerStatus
+            // 
+            this.tbServerStatus.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.tbServerStatus.Enabled = false;
+            this.tbServerStatus.Location = new System.Drawing.Point(83, 26);
+            this.tbServerStatus.Name = "tbServerStatus";
+            this.tbServerStatus.Size = new System.Drawing.Size(257, 20);
+            this.tbServerStatus.TabIndex = 3;
+            // 
+            // label5
+            // 
+            this.label5.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(3, 30);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(74, 13);
+            this.label5.TabIndex = 2;
+            this.label5.Text = "Server Status:";
             // 
             // tbLog
             // 
-            this.tbLog.Location = new System.Drawing.Point(6, 30);
+            this.tbLog.Location = new System.Drawing.Point(6, 58);
             this.tbLog.Multiline = true;
             this.tbLog.Name = "tbLog";
             this.tbLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.tbLog.Size = new System.Drawing.Size(343, 504);
+            this.tbLog.Size = new System.Drawing.Size(343, 450);
             this.tbLog.TabIndex = 0;
             this.tbLog.TabStop = false;
+            this.tbLog.Click += new System.EventHandler(this.Stop_Click);
             // 
             // RaftNode
             // 
@@ -326,6 +390,8 @@
             this.tableLayoutPanel2.PerformLayout();
             this.tabPage2.ResumeLayout(false);
             this.tabPage2.PerformLayout();
+            this.tableLayoutPanel3.ResumeLayout(false);
+            this.tableLayoutPanel3.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -354,5 +420,10 @@
         private System.Windows.Forms.TabPage tabPage2;
         private System.Windows.Forms.TextBox tbLog;
         private System.Windows.Forms.CheckBox cbDebug;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
+        private System.Windows.Forms.TextBox tbServerStatus;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.Button btStartNode;
+        private System.Windows.Forms.Button btStopNode;
     }
 }

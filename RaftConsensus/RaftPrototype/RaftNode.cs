@@ -152,7 +152,7 @@ namespace RaftPrototype
             RaftLogging.Instance.EnableBuffer(50);
             RaftLogging.Instance.SetDoInfo(true);
             RaftLogging.Instance.SetDoDebug(true);
-
+            RaftLogging.Instance.OnNewLineInfo += HandleInfoLogUpdate;
         }
 
         #endregion
@@ -168,7 +168,9 @@ namespace RaftPrototype
                     lbServerState.ForeColor = System.Drawing.Color.Green;
                     gbAppendEntry.Enabled = true;
                     btStart.Enabled = false;
+                    btStartNode.Enabled = false;
                     btStop.Enabled = true;
+                    btStopNode.Enabled = true;
                 }
                 else
                 {
@@ -177,14 +179,18 @@ namespace RaftPrototype
                         lbServerState.Text = "Offline";
                         lbServerState.ForeColor = System.Drawing.Color.Red;
                         btStart.Enabled = true;
+                        btStartNode.Enabled = true;
                         btStop.Enabled = false;
+                        btStopNode.Enabled = false;
                     }
                     else
                     {
                         lbServerState.Text = "Inactive";
                         lbServerState.ForeColor = System.Drawing.Color.Orange;
                         btStart.Enabled = false;
+                        btStartNode.Enabled = false;
                         btStop.Enabled = true;
+                        btStopNode.Enabled = true;
                     }
 
                     gbAppendEntry.Enabled = false;
@@ -236,11 +242,15 @@ namespace RaftPrototype
                             {
                                 try
                                 {
-                                    tbLog.AppendText(e);
+                                    if (cbDebug.Checked)
+                                    {
+                                        tbLog.AppendText(e);
+                                    }
+                                    SetNodeStatus(e);
                                 }
-                                catch
+                                catch (Exception ex)
                                 {
-                                    Console.WriteLine("bad shit happened");
+                                    Console.WriteLine("Exception was thrown during async Post() update of GUI\n{0}", ex);
                                 }
                             }
                         }, null);
@@ -300,18 +310,6 @@ namespace RaftPrototype
             }
         }
 
-        private void Debug_CheckedChanged(object sender, EventArgs e)
-        {
-            if (cbDebug.Checked)
-            {
-                RaftLogging.Instance.OnNewLineInfo += HandleInfoLogUpdate;
-            }
-            else
-            {
-                RaftLogging.Instance.OnNewLineInfo -= HandleInfoLogUpdate;
-            }
-        }
-
         #endregion
 
         #region utilities
@@ -323,6 +321,16 @@ namespace RaftPrototype
                 return true;
             }
             return false;
+        }
+
+        private void SetNodeStatus(string logentry)
+        {
+            string str1 = logentry.Substring(29, logentry.IndexOf(')') - 29);//read log entry to get the status == 'FOLLOWER"
+
+            if (tbServerStatus.Text != str1)
+            {
+                tbServerStatus.Text = str1;
+            }
         }
 
         #endregion
