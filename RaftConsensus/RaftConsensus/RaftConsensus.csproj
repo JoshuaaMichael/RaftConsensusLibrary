@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>TeamDecided.RaftConsensus</RootNamespace>
-    <Version>0.0.1</Version>
+    <Version>0.1.0</Version>
     <Authors>Joshua, Sean</Authors>
     <Company>Team Decided</Company>
     <PackageId>TeamDecided.RaftConsensus</PackageId>
