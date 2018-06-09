@@ -54,6 +54,8 @@
             this.gbTitle = new System.Windows.Forms.GroupBox();
             this.label5 = new System.Windows.Forms.Label();
             this.gbConfigDetails = new System.Windows.Forms.GroupBox();
+            this.label7 = new System.Windows.Forms.Label();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.nNodes)).BeginInit();
             this.tableLayoutPanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nodeConfigDataView)).BeginInit();
@@ -67,7 +69,7 @@
             // 
             this.label1.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(3, 110);
+            this.label1.Location = new System.Drawing.Point(3, 130);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(191, 13);
             this.label1.TabIndex = 0;
@@ -80,7 +82,7 @@
             0,
             0,
             0});
-            this.nNodes.Location = new System.Drawing.Point(254, 107);
+            this.nNodes.Location = new System.Drawing.Point(254, 127);
             this.nNodes.Name = "nNodes";
             this.nNodes.Size = new System.Drawing.Size(120, 20);
             this.nNodes.TabIndex = 1;
@@ -88,7 +90,7 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(440, 20);
+            this.button1.Location = new System.Drawing.Point(447, 13);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 2;
@@ -125,19 +127,21 @@
             this.tableLayoutPanel1.Controls.Add(this.tbClusterName, 1, 1);
             this.tableLayoutPanel1.Controls.Add(this.lClusterPasswd, 0, 2);
             this.tableLayoutPanel1.Controls.Add(this.tbClusterPasswd, 1, 2);
-            this.tableLayoutPanel1.Controls.Add(this.label3, 0, 4);
-            this.tableLayoutPanel1.Controls.Add(this.tbIPAddress, 1, 4);
-            this.tableLayoutPanel1.Controls.Add(this.label4, 0, 3);
-            this.tableLayoutPanel1.Controls.Add(this.label1, 0, 5);
-            this.tableLayoutPanel1.Controls.Add(this.tbPort, 1, 3);
-            this.tableLayoutPanel1.Controls.Add(this.nNodes, 1, 5);
-            this.tableLayoutPanel1.Controls.Add(this.lWarningNodesNumber, 2, 5);
             this.tableLayoutPanel1.Controls.Add(this.label2, 0, 1);
-            this.tableLayoutPanel1.Controls.Add(this.label6, 0, 6);
-            this.tableLayoutPanel1.Controls.Add(this.cbDebugLevel, 1, 6);
+            this.tableLayoutPanel1.Controls.Add(this.label6, 0, 7);
+            this.tableLayoutPanel1.Controls.Add(this.label1, 0, 6);
+            this.tableLayoutPanel1.Controls.Add(this.label3, 0, 5);
+            this.tableLayoutPanel1.Controls.Add(this.label4, 0, 4);
+            this.tableLayoutPanel1.Controls.Add(this.label7, 0, 3);
+            this.tableLayoutPanel1.Controls.Add(this.cbDebugLevel, 1, 7);
+            this.tableLayoutPanel1.Controls.Add(this.nNodes, 1, 6);
+            this.tableLayoutPanel1.Controls.Add(this.lWarningNodesNumber, 2, 6);
+            this.tableLayoutPanel1.Controls.Add(this.tbIPAddress, 1, 5);
+            this.tableLayoutPanel1.Controls.Add(this.tbPort, 1, 4);
+            this.tableLayoutPanel1.Controls.Add(this.checkBox1, 1, 3);
             this.tableLayoutPanel1.Location = new System.Drawing.Point(6, 19);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-            this.tableLayoutPanel1.RowCount = 7;
+            this.tableLayoutPanel1.RowCount = 8;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -145,7 +149,8 @@
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(519, 155);
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(519, 180);
             this.tableLayoutPanel1.TabIndex = 10;
             // 
             // lClusterPasswd
@@ -171,7 +176,7 @@
             // 
             this.label3.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(3, 84);
+            this.label3.Location = new System.Drawing.Point(3, 104);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(161, 13);
             this.label3.TabIndex = 13;
@@ -181,7 +186,7 @@
             // 
             this.tableLayoutPanel1.SetColumnSpan(this.tbIPAddress, 2);
             this.tbIPAddress.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tbIPAddress.Location = new System.Drawing.Point(254, 81);
+            this.tbIPAddress.Location = new System.Drawing.Point(254, 101);
             this.tbIPAddress.Name = "tbIPAddress";
             this.tbIPAddress.Size = new System.Drawing.Size(262, 20);
             this.tbIPAddress.TabIndex = 14;
@@ -190,7 +195,7 @@
             // 
             this.label4.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(3, 58);
+            this.label4.Location = new System.Drawing.Point(3, 78);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(85, 13);
             this.label4.TabIndex = 16;
@@ -198,9 +203,10 @@
             // 
             // tbPort
             // 
-            this.tbPort.Location = new System.Drawing.Point(254, 55);
+            this.tbPort.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tbPort.Location = new System.Drawing.Point(254, 75);
             this.tbPort.Name = "tbPort";
-            this.tbPort.Size = new System.Drawing.Size(100, 20);
+            this.tbPort.Size = new System.Drawing.Size(127, 20);
             this.tbPort.TabIndex = 15;
             this.tbPort.TextChanged += new System.EventHandler(this.TbPort_textChangedEventHandler);
             // 
@@ -208,7 +214,7 @@
             // 
             this.lWarningNodesNumber.Anchor = System.Windows.Forms.AnchorStyles.Top;
             this.lWarningNodesNumber.AutoSize = true;
-            this.lWarningNodesNumber.Location = new System.Drawing.Point(393, 104);
+            this.lWarningNodesNumber.Location = new System.Drawing.Point(393, 124);
             this.lWarningNodesNumber.Name = "lWarningNodesNumber";
             this.lWarningNodesNumber.Size = new System.Drawing.Size(117, 13);
             this.lWarningNodesNumber.TabIndex = 10;
@@ -218,7 +224,7 @@
             // 
             this.label6.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(3, 137);
+            this.label6.Location = new System.Drawing.Point(3, 158);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(71, 13);
             this.label6.TabIndex = 17;
@@ -229,16 +235,16 @@
             this.tableLayoutPanel1.SetColumnSpan(this.cbDebugLevel, 2);
             this.cbDebugLevel.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cbDebugLevel.FormattingEnabled = true;
-            this.cbDebugLevel.Location = new System.Drawing.Point(254, 133);
+            this.cbDebugLevel.Location = new System.Drawing.Point(254, 153);
             this.cbDebugLevel.Name = "cbDebugLevel";
             this.cbDebugLevel.Size = new System.Drawing.Size(121, 21);
             this.cbDebugLevel.TabIndex = 18;
             // 
             // btnCreate
             // 
-            this.btnCreate.Location = new System.Drawing.Point(351, 20);
+            this.btnCreate.Location = new System.Drawing.Point(366, 13);
             this.btnCreate.Name = "btnCreate";
-            this.btnCreate.Size = new System.Drawing.Size(83, 23);
+            this.btnCreate.Size = new System.Drawing.Size(75, 23);
             this.btnCreate.TabIndex = 11;
             this.btnCreate.Text = "Create";
             this.btnCreate.UseVisualStyleBackColor = true;
@@ -251,7 +257,7 @@
             this.nodeConfigDataView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.nodeConfigDataView.Location = new System.Drawing.Point(6, 19);
             this.nodeConfigDataView.Name = "nodeConfigDataView";
-            this.nodeConfigDataView.Size = new System.Drawing.Size(516, 259);
+            this.nodeConfigDataView.Size = new System.Drawing.Size(516, 222);
             this.nodeConfigDataView.TabIndex = 12;
             // 
             // gbButton
@@ -259,16 +265,16 @@
             this.gbButton.Controls.Add(this.cbInstantiate);
             this.gbButton.Controls.Add(this.btnCreate);
             this.gbButton.Controls.Add(this.button1);
-            this.gbButton.Location = new System.Drawing.Point(12, 532);
+            this.gbButton.Location = new System.Drawing.Point(12, 538);
             this.gbButton.Name = "gbButton";
-            this.gbButton.Size = new System.Drawing.Size(531, 49);
+            this.gbButton.Size = new System.Drawing.Size(531, 45);
             this.gbButton.TabIndex = 13;
             this.gbButton.TabStop = false;
             // 
             // cbInstantiate
             // 
             this.cbInstantiate.AutoSize = true;
-            this.cbInstantiate.Location = new System.Drawing.Point(0, 19);
+            this.cbInstantiate.Location = new System.Drawing.Point(12, 17);
             this.cbInstantiate.Name = "cbInstantiate";
             this.cbInstantiate.Size = new System.Drawing.Size(109, 17);
             this.cbInstantiate.TabIndex = 17;
@@ -280,7 +286,7 @@
             this.gbClusterInfo.Controls.Add(this.tableLayoutPanel1);
             this.gbClusterInfo.Location = new System.Drawing.Point(12, 80);
             this.gbClusterInfo.Name = "gbClusterInfo";
-            this.gbClusterInfo.Size = new System.Drawing.Size(531, 195);
+            this.gbClusterInfo.Size = new System.Drawing.Size(531, 205);
             this.gbClusterInfo.TabIndex = 14;
             this.gbClusterInfo.TabStop = false;
             this.gbClusterInfo.Text = "Cluster Information";
@@ -311,12 +317,33 @@
             // gbConfigDetails
             // 
             this.gbConfigDetails.Controls.Add(this.nodeConfigDataView);
-            this.gbConfigDetails.Location = new System.Drawing.Point(12, 281);
+            this.gbConfigDetails.Location = new System.Drawing.Point(12, 291);
             this.gbConfigDetails.Name = "gbConfigDetails";
-            this.gbConfigDetails.Size = new System.Drawing.Size(531, 251);
+            this.gbConfigDetails.Size = new System.Drawing.Size(531, 241);
             this.gbConfigDetails.TabIndex = 16;
             this.gbConfigDetails.TabStop = false;
             this.gbConfigDetails.Text = "Configuration Details";
+            // 
+            // label7
+            // 
+            this.label7.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(3, 55);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(82, 13);
+            this.label7.TabIndex = 19;
+            this.label7.Text = "Use Encryption:";
+            // 
+            // checkBox1
+            // 
+            this.checkBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Location = new System.Drawing.Point(254, 55);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
+            this.checkBox1.Size = new System.Drawing.Size(127, 14);
+            this.checkBox1.TabIndex = 20;
+            this.checkBox1.UseVisualStyleBackColor = true;
             // 
             // RaftBootStrap
             // 
@@ -324,7 +351,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ClientSize = new System.Drawing.Size(559, 589);
+            this.ClientSize = new System.Drawing.Size(559, 586);
             this.Controls.Add(this.gbConfigDetails);
             this.Controls.Add(this.gbTitle);
             this.Controls.Add(this.gbClusterInfo);
@@ -374,6 +401,8 @@
         private System.Windows.Forms.CheckBox cbInstantiate;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.ComboBox cbDebugLevel;
+        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.CheckBox checkBox1;
     }
 }
 
