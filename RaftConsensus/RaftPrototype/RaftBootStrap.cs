@@ -20,7 +20,7 @@ namespace RaftPrototype
         private const string MAX_NODES_WARNING = "Maximum nine (9) nodes supported in prototype";
         private const string MIN_NODES_WARNING = "Consensus requires minimum three (3) nodes";
         private const string CLUSTER_NAME = "Prototype Cluster";
-        private const string CLUSTER_PASSWD = "password";
+        private const string CLUSTER_PASSWD = "password123";
         private const string IP_TO_BIND = "127.0.0.1";
 
         private const string CONFIG_FILE = "./config.json";

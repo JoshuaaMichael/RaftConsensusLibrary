@@ -74,7 +74,8 @@ namespace RaftPrototype
         {
             string json = File.ReadAllText(configurationFile);
             config = JsonConvert.DeserializeObject<RaftBootstrapConfig>(json);
-            index = int.Parse(servername.Substring(servername.Length - 1)) - 1;
+
+            index = int.Parse(servername.Replace("Node", ""))-1;
             serverport = config.nodePorts[index];
             serverip = config.nodeIPAddresses[index];
             //RaftLogging.Instance.Info("{0} is adding peers", config.nodeNames[index]);
@@ -102,9 +103,9 @@ namespace RaftPrototype
                     }
                     else
                     {
+                        node.Dispose();
                         if (MessageBox.Show("Failed to join cluster, do you want to retry?", "Error " + servername, MessageBoxButtons.RetryCancel, MessageBoxIcon.Error) == DialogResult.Retry)
                         {
-                            node.Dispose();
                             continue;
                         }
                         else
@@ -131,6 +132,11 @@ namespace RaftPrototype
 
         private void CreateNode()
         {
+            if(node != null)
+            {
+                node.Dispose();
+            }
+
             //Instantiate node
             node = new RaftConsensus<string, string>(config.nodeNames[index], config.nodePorts[index]);
             //Add peer to the node
@@ -300,6 +306,12 @@ namespace RaftPrototype
         {
             try
             {
+                if (tbKey.Text == "" || tbValue.Text == "")
+                {
+                    MessageBox.Show("Key or Value should not be blank\n(not a limitation, it's just dumb, sorry :P)", "Warning - Blank key or value", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
                 Task<ERaftAppendEntryState> append = node.AppendEntry(tbKey.Text, tbValue.Text);
                 tbKey.Clear();
                 tbValue.Clear();

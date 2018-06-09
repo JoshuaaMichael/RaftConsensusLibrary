@@ -204,6 +204,7 @@
             // gbAppendEntry
             // 
             this.gbAppendEntry.Controls.Add(this.tableLayoutPanel2);
+            this.gbAppendEntry.Enabled = false;
             this.gbAppendEntry.Location = new System.Drawing.Point(2, 454);
             this.gbAppendEntry.Name = "gbAppendEntry";
             this.gbAppendEntry.Size = new System.Drawing.Size(350, 90);
