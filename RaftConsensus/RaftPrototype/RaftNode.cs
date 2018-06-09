@@ -7,6 +7,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using TeamDecided.RaftCommon;
 using TeamDecided.RaftCommon.Logging;
 using TeamDecided.RaftConsensus;
 using TeamDecided.RaftConsensus.Enums;
@@ -61,8 +62,8 @@ namespace RaftPrototype
             btStart.Enabled = false;
             FormBorderStyle = FormBorderStyle.FixedDialog;
 
-            SetupLogging();
             LoadConfig();
+            SetupLogging();
 
             Task task = new TaskFactory().StartNew(new Action<object>((test) =>
             {
@@ -156,9 +157,43 @@ namespace RaftPrototype
 
             RaftLogging.Instance.OverwriteLoggingFile(logfile);
             RaftLogging.Instance.EnableBuffer(50);
-            RaftLogging.Instance.SetDoInfo(true);
-            RaftLogging.Instance.SetDoDebug(true);
-            RaftLogging.Instance.OnNewLineInfo += HandleInfoLogUpdate;
+            RaftLogging.Instance.SetLogLevel(ERaftLogType.INFO);
+            RaftLogging.Instance.OnNewLogEntry += HandleInfoLogUpdate;
+        }
+
+        private void HandleInfoLogUpdate(object sender, Tuple<ERaftLogType, string> e)
+        {
+            try
+            {
+                if (mutex.WaitOne())
+                {
+                    if (!onClosing)
+                    {
+                        mainThread.Post((object state) =>
+                        {
+                            if (CheckLogEntry(e.Item2))
+                            {
+                                try
+                                {
+                                    if (cbDebug.Checked)
+                                    {
+                                        tbLog.AppendText(e.Item2);
+                                    }
+                                    SetNodeStatus(e.Item2);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine("Exception was thrown during async Post() update of GUI\n{0}", ex);
+                                }
+                            }
+                        }, null);
+                    }
+                }
+            }
+            finally
+            {
+                mutex.ReleaseMutex();
+            }
         }
 
         #endregion
@@ -234,41 +269,6 @@ namespace RaftPrototype
             }, null);
         }
 
-        private void HandleInfoLogUpdate(object sender, string e)
-        {
-            try
-            {
-                if (mutex.WaitOne())
-                {
-                    if (!onClosing)
-                    { 
-                        mainThread.Post((object state) =>
-                        {
-                            if (CheckLogEntry(e))
-                            {
-                                try
-                                {
-                                    if (cbDebug.Checked)
-                                    {
-                                        tbLog.AppendText(e);
-                                    }
-                                    SetNodeStatus(e);
-                                }
-                                catch (Exception ex)
-                                {
-                                    Console.WriteLine("Exception was thrown during async Post() update of GUI\n{0}", ex);
-                                }
-                            }
-                        }, null);
-                    }
-                }
-            }
-            finally
-            {
-                mutex.ReleaseMutex();
-            }
-        }
-
         private void HandleNewCommitEntry(object sender, Tuple<string, string> e)
         {
             string n = servername;
@@ -304,22 +304,15 @@ namespace RaftPrototype
 
         private void AppendMessage_Click(object sender, EventArgs e)
         {
-            try
+            if (tbKey.Text == "" || tbValue.Text == "")
             {
-                if (tbKey.Text == "" || tbValue.Text == "")
-                {
-                    MessageBox.Show("Key or Value should not be blank\n(not a limitation, it's just dumb, sorry :P)", "Warning - Blank key or value", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                MessageBox.Show("Key or Value should not be blank\n(not a limitation, it's just dumb, sorry :P)", "Warning - Blank key or value", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-                Task<ERaftAppendEntryState> append = node.AppendEntry(tbKey.Text, tbValue.Text);
-                tbKey.Clear();
-                tbValue.Clear();
-            }
-            catch (InvalidOperationException ex)
-            {
-                RaftLogging.Instance.Debug(string.Format("{0} {1}", servername, ex.ToString()));
-            }
+            Task<ERaftAppendEntryState> append = node.AppendEntry(tbKey.Text, tbValue.Text);
+            tbKey.Clear();
+            tbValue.Clear();
         }
 
         #endregion
@@ -387,7 +380,7 @@ namespace RaftPrototype
             {
                 mutex.WaitOne();
                 onClosing = true;
-                RaftLogging.Instance.OnNewLineInfo -= HandleInfoLogUpdate;
+                RaftLogging.Instance.OnNewLogEntry -= HandleInfoLogUpdate;
             }
             finally
             {

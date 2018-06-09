@@ -9,6 +9,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TeamDecided.RaftCommon;
 using TeamDecided.RaftCommon.Logging;
 using TeamDecided.RaftNetworking.Enums;
 using TeamDecided.RaftNetworking.Exceptions;
@@ -183,8 +184,7 @@ namespace TeamDecided.RaftNetworking
                     }
                     catch(Exception e)
                     {
-                        LogVerbose("Caught an exception, up with ReceiveAsync");
-                        LogVerbose("Dumping exception stirng: ", e.ToString());
+                        Log(ERaftLogType.DEBUG, "Caught exception. Dumping exception string: {0}", FlattenException(e));
                         RebuildUDPClient();
                         continue;
                     }
@@ -219,8 +219,7 @@ namespace TeamDecided.RaftNetworking
                 }
                 catch (Exception e)
                 {
-                    LogVerbose("Caught an exception");
-                    LogVerbose("Dumping exception string: {0}", FlattenException(e));
+                    Log(ERaftLogType.DEBUG, "Caught exception. Dumping exception string: {0}", FlattenException(e));
                     RebuildUDPClient();
                     continue;
                 }                
@@ -263,7 +262,7 @@ namespace TeamDecided.RaftNetworking
                     if (messageToSend.Length > 65507) //Max size of a packet supported
                     {
                         GenerateSendFailureException("Message is too large to send", message);
-                        LogVerbose("Message is too large to send", message);
+                        Log(ERaftLogType.WARN, "Message is too large to send", message);
                         continue;
                     }
 
@@ -273,7 +272,7 @@ namespace TeamDecided.RaftNetworking
                         if (message.IPEndPoint == null)
                         {
                             GenerateSendFailureException("Failed to convert recipient to IPAddress", message);
-                            LogVerbose("Failed to convert recipient to IPAddress", message);
+                            Log(ERaftLogType.WARN, "Failed to convert recipient to IPAddress", message);
                             continue;
                         }
                         recipient = message.IPEndPoint;
@@ -292,15 +291,14 @@ namespace TeamDecided.RaftNetworking
                         if (sendMessageTask.Result <= 0)
                         {
                             GenerateSendFailureException("Failed to send message", message);
-                            LogVerbose("Failed to send message", message);
+                            Log(ERaftLogType.WARN, "Failed to send message", message);
                             continue;
                         }
                         //else { sent succesfully }
                     }
                     catch (Exception e)
                     {
-                        LogVerbose("Caught an exception");
-                        LogVerbose("Dumping exception string: {0}", FlattenException(e));
+                        Log(ERaftLogType.DEBUG, "Caught exception. Dumping exception string: {0}", FlattenException(e));
                         RebuildUDPClient();
                         continue;
                     }                     
@@ -398,10 +396,10 @@ namespace TeamDecided.RaftNetworking
             }
         }
 
-        private void LogVerbose(string format, params object[] args)
+        private void Log(ERaftLogType logType, string format, params object[] args)
         {
             string messagePrepend = string.Format("{0} (Method={1}) - ", clientName, new StackFrame(1).GetMethod().Name);
-            RaftLogging.Instance.Debug(messagePrepend + format, args);
+            RaftLogging.Instance.Log(logType, messagePrepend + format, args);
         }
 
         public static string FlattenException(Exception exception)

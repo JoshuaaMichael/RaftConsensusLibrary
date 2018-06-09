@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using TeamDecided.RaftCommon;
 
 namespace RaftPrototype
 {
@@ -14,5 +11,6 @@ namespace RaftPrototype
         public List<string> nodeNames = new List<string>();
         public List<string> nodeIPAddresses = new List<string>();
         public List<int> nodePorts = new List<int>();
+        public ERaftLogType logLevel;
     }
 }

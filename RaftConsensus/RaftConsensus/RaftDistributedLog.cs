@@ -223,5 +223,13 @@ namespace TeamDecided.RaftConsensus
                 return GetEntry(index);
             }
         }
+
+        public RaftLogEntry<TKey, TValue> this[TKey key]
+        {
+            get
+            {
+                return GetEntry(key);
+            }
+        }
     }
 }

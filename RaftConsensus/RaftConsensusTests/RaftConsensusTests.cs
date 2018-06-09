@@ -52,8 +52,7 @@ namespace TeamDecided.RaftConsensus.Tests
         {
             RaftLogging.Instance.OverwriteLoggingFile(@"C:\Users\admin\Downloads\debug.log");
             RaftLogging.Instance.DeleteExistingLogFile();
-            RaftLogging.Instance.SetDoInfo(true);
-            RaftLogging.Instance.SetDoDebug(true);
+            RaftLogging.Instance.SetLogLevel(RaftCommon.ERaftLogType.DEBUG);
 
             entries = new List<Tuple<string, string>>();
             onStartUAS = new ManualResetEvent(false);

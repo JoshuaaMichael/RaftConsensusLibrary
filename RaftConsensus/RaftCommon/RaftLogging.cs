@@ -16,19 +16,8 @@ namespace TeamDecided.RaftCommon.Logging
         private int linesToBufferCount;
         private List<string> buffer;
 
-        private bool doDebug = false;
-        private bool doError = false;
-        private bool doFatal = false;
-        private bool doInfo = false;
-        private bool doTrace = false;
-        private bool doWarn = false;
-
-        public event EventHandler<string> OnNewLineTrace;
-        public event EventHandler<string> OnNewLineDebug;
-        public event EventHandler<string> OnNewLineInfo;
-        public event EventHandler<string> OnNewLineWarn;
-        public event EventHandler<string> OnNewLineError;
-        public event EventHandler<string> OnNewLineFatal;
+        ERaftLogType logLevel;
+        public event EventHandler<Tuple<ERaftLogType, string>> OnNewLogEntry;
 
         public void EnableBuffer(int linesToBufferCount)
         {
@@ -36,12 +25,18 @@ namespace TeamDecided.RaftCommon.Logging
             buffer = new List<string>(linesToBufferCount);
         }
 
-        private void WriteToLog(bool doLogLevel, EventHandler<string> onNewLineEvent, string format, params object[] args)
+        public void FlushBuffer()
         {
-            if(doLogLevel)
+            File.AppendAllLines(loggingFileName, buffer);
+            buffer.Clear();
+        }
+
+        public void Log(ERaftLogType logType, string format, params object[] args)
+        {
+            if(logType >= logLevel)
             {
                 string message = string.Format(GetTimestampString() + format + Environment.NewLine, args);
-                onNewLineEvent?.Invoke(this, message);
+                OnNewLogEntry?.Invoke(this, new Tuple<ERaftLogType, string>(logType, message));
                 if (buffer == null)
                 {
                     lock (this)
@@ -63,89 +58,11 @@ namespace TeamDecided.RaftCommon.Logging
             }
         }
 
-        public void FlushBuffer()
-        {
-            File.AppendAllLines(loggingFileName, buffer);
-            buffer.Clear();
-        }
-
-
-        public void Debug(string format, params object[] args)
-        {
-            WriteToLog(doDebug, OnNewLineDebug, format, args);
-        }
-
-        public void Error(string format, params object[] args)
-        {
-            WriteToLog(doError, OnNewLineError, format, args);
-        }
-
-        public void Fatal(string format, params object[] args)
-        {
-            WriteToLog(doFatal, OnNewLineFatal, format, args);
-        }
-
-        public void Info(string format, params object[] args)
-        {
-            WriteToLog(doInfo, OnNewLineInfo, format, args);
-        }
-
-        public void Trace(string format, params object[] args)
-        {
-            WriteToLog(doTrace, OnNewLineTrace, format, args);
-        }
-
-        public void Warn(string format, params object[] args)
-        {
-            WriteToLog(doWarn, OnNewLineWarn, format, args);
-        }
-
-        public void SetDoDebug(bool targetValue = true)
-        {
-            lock(verbositySelection)
-            {
-                doDebug = targetValue;
-            }
-        }
-
-        public void SetDoError(bool targetValue = true)
+        public void SetLogLevel(ERaftLogType logType)
         {
             lock (verbositySelection)
             {
-                doError = targetValue;
-            }
-        }
-
-        public void SetDoFatal(bool targetValue = true)
-        {
-            lock (verbositySelection)
-            {
-                doFatal = targetValue;
-            }
-        }
-
-        public void SetDoInfo(bool targetValue = true)
-        {
-            lock (verbositySelection)
-            {
-                doInfo = targetValue;
-
-            }
-        }
-
-        public void SetDoTrace(bool targetValue = true)
-        {
-            lock (verbositySelection)
-            {
-                doTrace = targetValue;
-            }
-        }
-
-        public void SetDoWarn(bool targetValue = true)
-        {
-            lock (verbositySelection)
-            {
-                doWarn = targetValue;
+                logLevel = logType;
             }
         }
 
@@ -179,6 +96,5 @@ namespace TeamDecided.RaftCommon.Logging
         {
             return DateTime.Now.ToString("HH:mm:ss.ffff") + ": ";
         }
-
     }
 }

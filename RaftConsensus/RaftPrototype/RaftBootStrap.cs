@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Windows.Forms;
 using TeamDecided.RaftCommon.Logging;
+using TeamDecided.RaftCommon;
 
 namespace RaftPrototype
 {
@@ -63,8 +64,7 @@ namespace RaftPrototype
 
             RaftLogging.Instance.OverwriteLoggingFile(LOGFILE);
             RaftLogging.Instance.DeleteExistingLogFile();
-            RaftLogging.Instance.SetDoInfo(true);
-            RaftLogging.Instance.SetDoDebug(true);
+            RaftLogging.Instance.SetLogLevel(ERaftLogType.INFO);
         }
 
         private void SetNodeCountSelector()
@@ -150,7 +150,8 @@ namespace RaftPrototype
             {
                 clusterName = tbClusterName.Text,
                 clusterPassword = tbClusterPasswd.Text,//should this really be plain text!
-                maxNodes = maxNodes//set max nodes, generic for all
+                maxNodes = maxNodes, //set max nodes, generic for all
+                //logLevel = ERaftLogType.INFO - Sean to update to combobox
             };
 
             foreach (var peer in cluster_peer_list)
