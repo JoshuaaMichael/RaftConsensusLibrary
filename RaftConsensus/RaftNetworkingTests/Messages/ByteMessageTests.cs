@@ -1,6 +1,6 @@
 ﻿using System;
 using NUnit.Framework;
-using TeamDecided.RaftNetworking.Messages;
+using TeamDecided.RaftConsensus.Networking.Messages;
 
 namespace TeamDecided.RaftNetworking.Tests.Messages
 {

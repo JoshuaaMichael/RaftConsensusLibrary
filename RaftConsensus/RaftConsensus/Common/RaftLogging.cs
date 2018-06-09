@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace TeamDecided.RaftCommon.Logging
+namespace TeamDecided.RaftConsensus.Common.Logging
 {
     public class RaftLogging : IRaftLogging
     {
@@ -79,7 +79,7 @@ namespace TeamDecided.RaftCommon.Logging
 
                     return instance;
                 }
-            }C:\Users\Tori\Nextcloud\itc303\repo\raftconsensuslibrary_joint\RaftConsensus\RaftCommon\RaftLogging.cs
+            }
         }
 
         public void OverwriteLoggingFile(string newFilename)

@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Net;
 using NUnit.Framework;
-using TeamDecided.RaftNetworking.Exceptions;
-using TeamDecided.RaftNetworking.Messages;
+using TeamDecided.RaftConsensus.Networking.Exceptions;
+using TeamDecided.RaftConsensus.Networking.Messages;
 
 /*
     TODO:
@@ -20,7 +20,7 @@ using TeamDecided.RaftNetworking.Messages;
         Server failed challenge
  */
 
-namespace TeamDecided.RaftNetworking.Tests
+namespace TeamDecided.RaftConsensus.Networking.Tests
 {
     [TestFixture]
     public class UDPNetworkingSecureTests : BaseUDPNetworkingTests

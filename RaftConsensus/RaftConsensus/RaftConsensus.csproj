@@ -3,15 +3,26 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>TeamDecided.RaftConsensus</RootNamespace>
+    <Version>0.0.1</Version>
+    <Authors>Joshua, Sean</Authors>
+    <Company>Team Decided</Company>
+    <PackageId>TeamDecided.RaftConsensus</PackageId>
+    <Description>This is a WIP consensus library based on the Raft algorithm built as a team for our BCompSc major project</Description>
+    <PackageReleaseNotes>Initial prototype nuget package</PackageReleaseNotes>
+    <PackageIconUrl>https://cdn.discordapp.com/attachments/428466046391812098/454957808992124928/raft.ico</PackageIconUrl>
+    <RepositoryUrl>https://bitbucket.org/teamdecided/raftconsensuslibrary/src/master/</RepositoryUrl>
+    <PackageTags>Raft Consensus</PackageTags>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RaftCommon\RaftCommon.csproj" />
-    <ProjectReference Include="..\RaftNetworking\RaftNetworking.csproj" />
+    <Compile Remove="Exceptions\**" />
+    <EmbeddedResource Remove="Exceptions\**" />
+    <None Remove="Exceptions\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Exceptions\" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
   </ItemGroup>
 
 </Project>

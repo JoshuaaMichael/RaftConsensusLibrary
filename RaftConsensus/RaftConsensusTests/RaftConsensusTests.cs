@@ -1,37 +1,15 @@
 ﻿using System;
 using System.Net;
 using System.Threading.Tasks;
-using Moq;
 using NUnit.Framework;
-using TeamDecided.RaftConsensus.Interfaces;
-using TeamDecided.RaftConsensus.Enums;
-using TeamDecided.RaftNetworking.Interfaces;
+using TeamDecided.RaftConsensus.Consensus.Interfaces;
+using TeamDecided.RaftConsensus.Consensus.Enums;
 using System.Collections.Generic;
 using System.Threading;
-using TeamDecided.RaftCommon.Logging;
-using System.IO;
+using TeamDecided.RaftConsensus.Common.Logging;
+using TeamDecided.RaftConsensus.Common;
 
-/*  TODO:
- *  
- *  - 
- *  - 
- */
-
-/* Tests TODO:
-* Have message reach consensus
-* Have stream of message reach consensus
-* Test all public members work
-* Confirm all state changes are occuring
-* Find a way to drop messages and ensure it recovers
-* Blow away multiple
-* Test all the edge cases of Raft we can think of
-* Test with encryption, and without it
-* Test trying to enter a cluster, but using the wrong cluster name
-* Show cluster built off of different knowledges of network, want to see someone pointed to the leader
-* Show cluster rebuild a node after it's left and come back
-*/
-
-namespace TeamDecided.RaftConsensus.Tests
+namespace TeamDecided.RaftConsensus.Consensus.Tests
 {
     [TestFixture]
     public class RaftConsensusTest
@@ -52,7 +30,7 @@ namespace TeamDecided.RaftConsensus.Tests
         {
             RaftLogging.Instance.OverwriteLoggingFile(@"C:\Users\Tori\Downloads\debug.log");
             RaftLogging.Instance.DeleteExistingLogFile();
-            RaftLogging.Instance.SetLogLevel(RaftCommon.ERaftLogType.DEBUG);
+            RaftLogging.Instance.SetLogLevel(ERaftLogType.DEBUG);
 
             entries = new List<Tuple<string, string>>();
             onStartUAS = new ManualResetEvent(false);

@@ -2,7 +2,7 @@
 using System.Threading;
 using NUnit.Framework;
 
-namespace TeamDecided.RaftConsensus.Tests
+namespace TeamDecided.RaftConsensus.Consensus.Tests
 {
     [TestFixture]
     public class RaftNodeInfoTests

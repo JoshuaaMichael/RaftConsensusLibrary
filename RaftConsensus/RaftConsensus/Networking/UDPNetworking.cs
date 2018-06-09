@@ -11,12 +11,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using TeamDecided.RaftConsensus.Common;
 using TeamDecided.RaftConsensus.Common.Logging;
-using TeamDecided.RaftNetworking.Enums;
-using TeamDecided.RaftNetworking.Exceptions;
-using TeamDecided.RaftNetworking.Interfaces;
-using TeamDecided.RaftNetworking.Messages;
+using TeamDecided.RaftConsensus.Networking.Enums;
+using TeamDecided.RaftConsensus.Networking.Exceptions;
+using TeamDecided.RaftConsensus.Networking.Interfaces;
+using TeamDecided.RaftConsensus.Networking.Messages;
 
-namespace TeamDecided.RaftNetworking
+namespace TeamDecided.RaftConsensus.Networking
 {
     public class UDPNetworking : IUDPNetworking
     {

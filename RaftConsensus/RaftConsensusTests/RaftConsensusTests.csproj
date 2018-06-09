@@ -79,17 +79,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\RaftCommon\RaftCommon.csproj">
-      <Project>{74aac36f-886f-45b0-a549-e6504e0e7d14}</Project>
-      <Name>RaftCommon</Name>
-    </ProjectReference>
     <ProjectReference Include="..\RaftConsensus\RaftConsensus.csproj">
       <Project>{f38a3f88-0ee7-4987-af7c-c9161de2585c}</Project>
       <Name>RaftConsensus</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\RaftNetworking\RaftNetworking.csproj">
-      <Project>{94b2cb16-e397-40c4-939f-d57ba54a6895}</Project>
-      <Name>RaftNetworking</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />

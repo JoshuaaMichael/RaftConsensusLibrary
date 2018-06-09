@@ -1,6 +1,6 @@
 ﻿using NUnit.Framework;
 
-namespace TeamDecided.RaftNetworking.Tests
+namespace TeamDecided.RaftConsensus.Networking.Tests
 {
     [TestFixture]
     public class UDPNetworkingTests : BaseUDPNetworkingTests

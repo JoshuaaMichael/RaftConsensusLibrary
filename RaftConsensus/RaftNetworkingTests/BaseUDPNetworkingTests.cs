@@ -3,15 +3,15 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using NUnit.Framework;
-using TeamDecided.RaftNetworking.Interfaces;
-using TeamDecided.RaftNetworking.Messages;
+using TeamDecided.RaftConsensus.Networking.Interfaces;
+using TeamDecided.RaftConsensus.Networking.Messages;
 
 /*
     TODO:
         Test for corrupted data
 */
 
-namespace TeamDecided.RaftNetworking.Tests
+namespace TeamDecided.RaftConsensus.Networking.Tests
 {
     public abstract class BaseUDPNetworkingTests
     {
