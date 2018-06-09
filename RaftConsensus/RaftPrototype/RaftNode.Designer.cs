@@ -52,12 +52,11 @@
             this.btStartNode = new System.Windows.Forms.Button();
             this.btStopNode = new System.Windows.Forms.Button();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
-            this.cbDebug = new System.Windows.Forms.CheckBox();
-            this.tbServerStatus = new System.Windows.Forms.TextBox();
             this.label5 = new System.Windows.Forms.Label();
             this.tbLog = new System.Windows.Forms.TextBox();
             this.cbDebugLevel = new System.Windows.Forms.ComboBox();
             this.label6 = new System.Windows.Forms.Label();
+            this.lServerStatus = new System.Windows.Forms.Label();
             this.groupBox2.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -282,7 +281,6 @@
             // 
             // tabPage2
             // 
-            this.tabPage2.Controls.Add(this.cbDebug);
             this.tabPage2.Controls.Add(this.btStartNode);
             this.tabPage2.Controls.Add(this.btStopNode);
             this.tabPage2.Controls.Add(this.tableLayoutPanel3);
@@ -320,10 +318,10 @@
             this.tableLayoutPanel3.ColumnCount = 2;
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel3.Controls.Add(this.tbServerStatus, 1, 1);
             this.tableLayoutPanel3.Controls.Add(this.label5, 0, 1);
             this.tableLayoutPanel3.Controls.Add(this.cbDebugLevel, 1, 0);
             this.tableLayoutPanel3.Controls.Add(this.label6, 0, 0);
+            this.tableLayoutPanel3.Controls.Add(this.lServerStatus, 1, 1);
             this.tableLayoutPanel3.Location = new System.Drawing.Point(6, 6);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
             this.tableLayoutPanel3.RowCount = 2;
@@ -332,30 +330,11 @@
             this.tableLayoutPanel3.Size = new System.Drawing.Size(343, 50);
             this.tableLayoutPanel3.TabIndex = 4;
             // 
-            // cbDebug
-            // 
-            this.cbDebug.AutoSize = true;
-            this.cbDebug.Location = new System.Drawing.Point(12, 514);
-            this.cbDebug.Name = "cbDebug";
-            this.cbDebug.Size = new System.Drawing.Size(112, 17);
-            this.cbDebug.TabIndex = 1;
-            this.cbDebug.Text = "Debug Log Active";
-            this.cbDebug.UseVisualStyleBackColor = true;
-            // 
-            // tbServerStatus
-            // 
-            this.tbServerStatus.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            this.tbServerStatus.Enabled = false;
-            this.tbServerStatus.Location = new System.Drawing.Point(83, 30);
-            this.tbServerStatus.Name = "tbServerStatus";
-            this.tbServerStatus.Size = new System.Drawing.Size(257, 20);
-            this.tbServerStatus.TabIndex = 3;
-            // 
             // label5
             // 
             this.label5.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(3, 33);
+            this.label5.Location = new System.Drawing.Point(3, 32);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(74, 13);
             this.label5.TabIndex = 2;
@@ -391,6 +370,16 @@
             this.label6.Size = new System.Drawing.Size(71, 13);
             this.label6.TabIndex = 5;
             this.label6.Text = "Debug Level:";
+            // 
+            // lServerStatus
+            // 
+            this.lServerStatus.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.lServerStatus.AutoSize = true;
+            this.lServerStatus.Location = new System.Drawing.Point(83, 32);
+            this.lServerStatus.Name = "lServerStatus";
+            this.lServerStatus.Size = new System.Drawing.Size(35, 13);
+            this.lServerStatus.TabIndex = 6;
+            this.lServerStatus.Text = "label7";
             // 
             // RaftNode
             // 
@@ -443,13 +432,12 @@
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.TabPage tabPage2;
         private System.Windows.Forms.TextBox tbLog;
-        private System.Windows.Forms.CheckBox cbDebug;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
-        private System.Windows.Forms.TextBox tbServerStatus;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Button btStartNode;
         private System.Windows.Forms.Button btStopNode;
         private System.Windows.Forms.ComboBox cbDebugLevel;
         private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.Label lServerStatus;
     }
 }

@@ -194,10 +194,7 @@ namespace RaftPrototype
                             {
                                 try
                                 {
-                                    if (cbDebug.Checked)
-                                    {
-                                        tbLog.AppendText(e.Item2);
-                                    }
+                                    tbLog.AppendText(e.Item2);
                                     SetNodeStatus(e.Item2);
                                 }
                                 catch (Exception ex)
@@ -356,9 +353,9 @@ namespace RaftPrototype
         {
             string str1 = logentry.Substring(29, logentry.IndexOf(')') - 29);//read log entry to get the status == 'FOLLOWER"
 
-            if (tbServerStatus.Text != str1)
+            if (lServerStatus.Text != str1)
             {
-                tbServerStatus.Text = str1;
+                lServerStatus.Text = str1;
             }
         }
 
