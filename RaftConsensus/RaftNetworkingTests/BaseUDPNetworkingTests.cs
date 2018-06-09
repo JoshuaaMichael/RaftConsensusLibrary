@@ -186,20 +186,6 @@ namespace TeamDecided.RaftNetworking.Tests
         }
 
         [Test]
-        public void UT_DisposedSendMessage_ThrowsException()
-        {
-            sut.ManualAddPeer(rut.GetClientName(), new IPEndPoint(IPAddress.Parse(IP_TO_BIND), SUT_PORT));
-            sut.Start(SUT_PORT);
-
-            sut.Dispose();
-
-            string randomStringMessage = Guid.NewGuid().ToString();
-            StringMessage message = new StringMessage(rut.GetClientName(), sut.GetClientName(), randomStringMessage);
-
-            Assert.Throws<InvalidOperationException>(() => { sut.SendMessage(message); });
-        }
-
-        [Test]
         public void UT_StartPort_FromInitializedToRunning()
         {
             Assert.True(sut.GetStatus() == Enums.EUDPNetworkingStatus.INITIALIZED);

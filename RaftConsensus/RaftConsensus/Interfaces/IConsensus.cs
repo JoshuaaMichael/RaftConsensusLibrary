@@ -7,8 +7,7 @@ namespace TeamDecided.RaftConsensus.Interfaces
 {
     public interface IConsensus<TKey, TValue> : IDisposable where TKey : ICloneable where TValue : ICloneable
     {
-        Task<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword, int maxNodes);
-        //void CreateCluster(string clusterName, string clusterPassword, int maxNodes);
+        Task<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword, int maxNodes, bool useEncryption);
         void ManualAddPeer(string name, IPEndPoint endPoint);
 
         string GetClusterName();

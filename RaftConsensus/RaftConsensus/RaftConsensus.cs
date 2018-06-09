@@ -112,7 +112,7 @@ namespace TeamDecided.RaftConsensus
             manuallyAddedClients = new List<Tuple<string, string, int>>();
         }
 
-        public Task<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword, int maxNodes)
+        public Task<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword, int maxNodes, bool useEncryption)
         {
             lock (currentStateLockObject)
             {
@@ -130,7 +130,16 @@ namespace TeamDecided.RaftConsensus
                 }
 
                 Log(ERaftLogType.INFO, "Starting networking stack");
-                networking = new UDPNetworking();
+
+                if(useEncryption)
+                {
+                    networking = new UDPNetworkingSecure(clusterPassword);
+                }
+                else
+                {
+                    networking = new UDPNetworking();
+                }
+
                 networking.SetClientName(nodeName);
                 networking.Start(listeningPort);
                 networking.OnMessageReceived += OnMessageReceive;

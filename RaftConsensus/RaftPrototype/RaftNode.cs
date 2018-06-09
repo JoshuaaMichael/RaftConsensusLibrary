@@ -29,6 +29,7 @@ namespace RaftPrototype
         private string serverip;
         private int serverport;
         private ERaftLogType logLevel;
+        private bool useEncryption;
         private int index;
         private string configurationFile;
         private string logfile;
@@ -98,8 +99,8 @@ namespace RaftPrototype
             serverport = config.nodePorts[index];
             serverip = config.nodeIPAddresses[index];
             logLevel = config.logLevel;
-            //RaftLogging.Instance.Info("{0} is adding peers", config.nodeNames[index]);
-        }
+            useEncryption = config.useEncryption;
+            }
 
         private void StartNode()
         {
@@ -112,7 +113,7 @@ namespace RaftPrototype
                     CreateNode();
 
                     //call the leader to join cluster
-                    Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes);
+                    Task<EJoinClusterResponse> joinTask = node.JoinCluster(config.clusterName, config.clusterPassword, config.maxNodes, useEncryption);
                     joinTask.Wait();
 
                     //check the result of the attempt to join the cluster
