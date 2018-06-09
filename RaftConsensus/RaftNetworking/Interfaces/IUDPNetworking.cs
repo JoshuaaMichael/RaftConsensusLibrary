@@ -19,6 +19,7 @@ namespace TeamDecided.RaftNetworking.Interfaces
         event EventHandler<string> OnNewConnectedPeer;
 
         string GetClientName();
+        void SetClientName(string clientName);
         string[] GetPeers();
         void ManualAddPeer(string peerName, IPEndPoint endPoint);
         IPEndPoint GetIPFromName(string peerName);

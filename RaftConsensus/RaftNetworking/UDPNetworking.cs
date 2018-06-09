@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TeamDecided.RaftCommon.Logging;
 using TeamDecided.RaftNetworking.Enums;
 using TeamDecided.RaftNetworking.Exceptions;
 using TeamDecided.RaftNetworking.Interfaces;
@@ -50,9 +53,9 @@ namespace TeamDecided.RaftNetworking
         private EUDPNetworkingStatus status;
         private object statusLockObject;
 
-        private Task listeningThread;
-        private Task sendingThread;
-        private Task processingThread;
+        private Thread listeningThread;
+        private Thread sendingThread;
+        private Thread processingThread;
         private CountdownEvent onThreadsStarted;
 
         private int clientPort;
@@ -94,9 +97,9 @@ namespace TeamDecided.RaftNetworking
             status = EUDPNetworkingStatus.INITIALIZED;
             statusLockObject = new object();
 
-            listeningThread = new Task(ListeningThread, TaskCreationOptions.LongRunning);
-            sendingThread = new Task(SendingThread, TaskCreationOptions.LongRunning);
-            processingThread = new Task(ProcessingThread, TaskCreationOptions.LongRunning);
+            listeningThread = new Thread(new ThreadStart(ListeningThread));
+            sendingThread = new Thread(new ThreadStart(SendingThread));
+            processingThread = new Thread(new ThreadStart(ProcessingThread));
 
             onThreadsStarted = new CountdownEvent(3);
 
@@ -119,6 +122,7 @@ namespace TeamDecided.RaftNetworking
             }
             clientPort = port;
             udpClient = new UdpClient(port);
+            DisableICMPUnreachable();
             StartThreads();
         }
 
@@ -134,6 +138,7 @@ namespace TeamDecided.RaftNetworking
             }
             clientIPEndPoint = endPoint;
             udpClient = new UdpClient(endPoint);
+            DisableICMPUnreachable();
             StartThreads();
         }
 
@@ -176,8 +181,10 @@ namespace TeamDecided.RaftNetworking
                         isSocketReady.WaitOne();
                         result = udpClient.ReceiveAsync();
                     }
-                    catch
+                    catch(Exception e)
                     {
+                        LogVerbose("Caught an exception, up with ReceiveAsync");
+                        LogVerbose("Dumping exception stirng: ", e.ToString());
                         RebuildUDPClient();
                         continue;
                     }
@@ -210,44 +217,13 @@ namespace TeamDecided.RaftNetworking
                         onMessageReceive.Set();
                     }
                 }
-                catch
+                catch (Exception e)
                 {
+                    LogVerbose("Caught an exception");
+                    LogVerbose("Dumping exception string: {0}", FlattenException(e));
                     RebuildUDPClient();
                     continue;
                 }                
-            }
-        }
-
-        private void RebuildUDPClient()
-        {
-            lock(isRebuildingLockObject)
-            {
-                if(isRebuilding)
-                {
-                    return; //It's currently rebuilding
-                }
-                else
-                {
-                    isRebuilding = true;
-                    isSocketReady.Reset();
-                }
-            }
-
-            udpClient.Dispose();
-            udpClient = null;
-            if(clientPort != -1) //We initied this initially with a port number
-            {
-                udpClient = new UdpClient(clientPort);
-            }
-            else
-            {
-                udpClient = new UdpClient(clientIPEndPoint);
-            }
-
-            lock(isRebuildingLockObject)
-            {
-                isRebuilding = false;
-                isSocketReady.Set();
             }
         }
 
@@ -286,11 +262,8 @@ namespace TeamDecided.RaftNetworking
 
                     if (messageToSend.Length > 65507) //Max size of a packet supported
                     {
-                        lock (newMessageSendFailuresLockObject)
-                        {
-                            newMessageSendFailures.Enqueue(new UDPNetworkingSendFailureException("Message is too large to send", message));
-                            onMessageSendFailure.Set();
-                        }
+                        GenerateSendFailureException("Message is too large to send", message);
+                        LogVerbose("Message is too large to send", message);
                         continue;
                     }
 
@@ -300,6 +273,7 @@ namespace TeamDecided.RaftNetworking
                         if (message.IPEndPoint == null)
                         {
                             GenerateSendFailureException("Failed to convert recipient to IPAddress", message);
+                            LogVerbose("Failed to convert recipient to IPAddress", message);
                             continue;
                         }
                         recipient = message.IPEndPoint;
@@ -318,12 +292,15 @@ namespace TeamDecided.RaftNetworking
                         if (sendMessageTask.Result <= 0)
                         {
                             GenerateSendFailureException("Failed to send message", message);
+                            LogVerbose("Failed to send message", message);
                             continue;
                         }
                         //else { sent succesfully }
                     }
-                    catch
+                    catch (Exception e)
                     {
+                        LogVerbose("Caught an exception");
+                        LogVerbose("Dumping exception string: {0}", FlattenException(e));
                         RebuildUDPClient();
                         continue;
                     }                     
@@ -419,6 +396,70 @@ namespace TeamDecided.RaftNetworking
                     }
                 }
             }
+        }
+
+        private void LogVerbose(string format, params object[] args)
+        {
+            string messagePrepend = string.Format("{0} (Method={1}) - ", clientName, new StackFrame(1).GetMethod().Name);
+            RaftLogging.Instance.Debug(messagePrepend + format, args);
+        }
+
+        public static string FlattenException(Exception exception)
+        {
+            var stringBuilder = new StringBuilder();
+
+            while (exception != null)
+            {
+                stringBuilder.AppendLine(exception.Message);
+                stringBuilder.AppendLine(exception.StackTrace);
+
+                exception = exception.InnerException;
+            }
+
+            return stringBuilder.ToString();
+        }
+
+        private void RebuildUDPClient()
+        {
+            lock (isRebuildingLockObject)
+            {
+                if (isRebuilding)
+                {
+                    return; //It's currently rebuilding
+                }
+                else
+                {
+                    isRebuilding = true;
+                    isSocketReady.Reset();
+                }
+            }
+
+            udpClient.Dispose();
+            udpClient = null;
+            if (clientPort != -1) //We initied this initially with a port number
+            {
+                udpClient = new UdpClient(clientPort);
+            }
+            else
+            {
+                udpClient = new UdpClient(clientIPEndPoint);
+            }
+
+            DisableICMPUnreachable();
+
+            lock (isRebuildingLockObject)
+            {
+                isRebuilding = false;
+                isSocketReady.Set();
+            }
+        }
+
+        private void DisableICMPUnreachable()
+        {
+            uint IOC_IN = 0x80000000;
+            uint IOC_VENDOR = 0x18000000;
+            uint SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12;
+            udpClient.Client.IOControl((int)SIO_UDP_CONNRESET, new byte[] { Convert.ToByte(false) }, null);
         }
 
         protected IPEndPoint GetPeerIPEndPoint(string name)
@@ -590,6 +631,11 @@ namespace TeamDecided.RaftNetworking
             return clientName;
         }
 
+        public void SetClientName(string clientName)
+        {
+            this.clientName = clientName;
+        }
+
         protected byte[] SerialiseMessage(BaseMessage message)
         {
             byte[] messageBytes = message.Serialize();
@@ -653,9 +699,9 @@ namespace TeamDecided.RaftNetworking
                     }
                     if(previousStatus == EUDPNetworkingStatus.RUNNING)
                     {
-                        listeningThread.Wait();
-                        sendingThread.Wait();
-                        processingThread.Wait();
+                        listeningThread.Join();
+                        sendingThread.Join();
+                        processingThread.Join();
                     }
                     if (udpClient != null)
                     {

@@ -67,7 +67,7 @@ namespace TeamDecided.RaftConsensus
         private object timeoutValueLockObject;
         #endregion
 
-        private Task backgroundThread;
+        private Thread backgroundThread;
         private ManualResetEvent onNotifyBackgroundThread;
         private ManualResetEvent onReceivedMessage;
         private ManualResetEvent onShutdown;
@@ -106,7 +106,7 @@ namespace TeamDecided.RaftConsensus
 
             timeoutValueLockObject = new object();
 
-            backgroundThread = new Task(BackgroundThread, TaskCreationOptions.LongRunning);
+            backgroundThread = new Thread(new ThreadStart(BackgroundThread));
             onNotifyBackgroundThread = new ManualResetEvent(false);
             onReceivedMessage = new ManualResetEvent(false);
             onShutdown = new ManualResetEvent(false);
@@ -139,6 +139,7 @@ namespace TeamDecided.RaftConsensus
                 }
 
                 networking = new UDPNetworking();
+                networking.SetClientName(nodeName);
                 networking.Start(listeningPort);
                 networking.OnMessageReceived += OnMessageReceive;
                 FlushNetworkPeerBuffer();
@@ -1110,7 +1111,7 @@ namespace TeamDecided.RaftConsensus
                         }
                         Log("Shutting down background thread");
                         onShutdown.Set();
-                        backgroundThread.Wait();
+                        backgroundThread.Join();
                         Log("Background thread completed shutdown. Disposing network.");
                         networking.Dispose();
                         Log("Network disposed");
