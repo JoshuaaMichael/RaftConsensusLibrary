@@ -55,7 +55,7 @@
             this.label5 = new System.Windows.Forms.Label();
             this.gbConfigDetails = new System.Windows.Forms.GroupBox();
             this.label7 = new System.Windows.Forms.Label();
-            this.checkBox1 = new System.Windows.Forms.CheckBox();
+            this.cbUseEncryption = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.nNodes)).BeginInit();
             this.tableLayoutPanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nodeConfigDataView)).BeginInit();
@@ -138,7 +138,7 @@
             this.tableLayoutPanel1.Controls.Add(this.lWarningNodesNumber, 2, 6);
             this.tableLayoutPanel1.Controls.Add(this.tbIPAddress, 1, 5);
             this.tableLayoutPanel1.Controls.Add(this.tbPort, 1, 4);
-            this.tableLayoutPanel1.Controls.Add(this.checkBox1, 1, 3);
+            this.tableLayoutPanel1.Controls.Add(this.cbUseEncryption, 1, 3);
             this.tableLayoutPanel1.Location = new System.Drawing.Point(6, 19);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 8;
@@ -334,16 +334,16 @@
             this.label7.TabIndex = 19;
             this.label7.Text = "Use Encryption:";
             // 
-            // checkBox1
+            // cbUseEncryption
             // 
-            this.checkBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.checkBox1.AutoSize = true;
-            this.checkBox1.Location = new System.Drawing.Point(254, 55);
-            this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
-            this.checkBox1.Size = new System.Drawing.Size(127, 14);
-            this.checkBox1.TabIndex = 20;
-            this.checkBox1.UseVisualStyleBackColor = true;
+            this.cbUseEncryption.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.cbUseEncryption.AutoSize = true;
+            this.cbUseEncryption.Location = new System.Drawing.Point(254, 55);
+            this.cbUseEncryption.Name = "cbUseEncryption";
+            this.cbUseEncryption.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
+            this.cbUseEncryption.Size = new System.Drawing.Size(127, 14);
+            this.cbUseEncryption.TabIndex = 20;
+            this.cbUseEncryption.UseVisualStyleBackColor = true;
             // 
             // RaftBootStrap
             // 
@@ -402,7 +402,7 @@
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.ComboBox cbDebugLevel;
         private System.Windows.Forms.Label label7;
-        private System.Windows.Forms.CheckBox checkBox1;
+        private System.Windows.Forms.CheckBox cbUseEncryption;
     }
 }
 

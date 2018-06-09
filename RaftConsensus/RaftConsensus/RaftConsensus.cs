@@ -176,6 +176,8 @@ namespace TeamDecided.RaftConsensus
                     if (onWaitingToJoinCluster.WaitOne(waitingToJoinClusterTimeout) == false) //The timeout occured
                     {
                         Log(ERaftLogType.WARN, "Never found cluster in {0} millisecond timeout", waitingToJoinClusterTimeout);
+                        Log(ERaftLogType.INFO, "Shutdown background thread");
+                        onShutdown.Dispose();
                         lock (currentStateLockObject)
                         {
                             Log(ERaftLogType.INFO, "Set state to initializing");
@@ -540,6 +542,12 @@ namespace TeamDecided.RaftConsensus
         private void ChangeStateToCandiate()
         {
             Log(ERaftLogType.INFO, "Changing state to Candidate");
+
+            if(currentState == ERaftState.STOPPED)
+            {
+                Log(ERaftLogType.TRACE, "How did you get here?");
+            }
+
             currentState = ERaftState.CANDIDATE;
             lock (currentTermLockObject)
             {
