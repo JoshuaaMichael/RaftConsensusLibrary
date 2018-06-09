@@ -118,7 +118,7 @@ namespace TeamDecided.RaftNetworking
                 if (message.GetType() == typeof(SecureMessage)) //AES Encrypted
                 {
                     Log(ERaftLogType.TRACE, "Got an encrypted message. Decrypting");
-                    decryptedMessage = HandleSecureMessage((SecureMessage)message);
+                    decryptedMessage = HandleSecureMessage((SecureMessage)message, ipEndPoint);
                 }
                 //Non-AES Encrypted hankshaking messages
                 else if (message.GetType() == typeof(SecureClientHello)) //Unencrypted
@@ -129,8 +129,13 @@ namespace TeamDecided.RaftNetworking
                 {
                     HandleSecureServerHelloResponse((SecureServerHelloResponse)message, ipEndPoint);
                 }
+                else if (message.GetType() == typeof(SecureClientDecryptFailed)) //Unencrypted
+                {
+                    Log(ERaftLogType.TRACE, "Received a message from a client who is failing to decrypt our message");
+                    HandleClientDecryptFailed((SecureClientDecryptFailed)message);
+                }
 
-                if(decryptedMessage == null)
+                if (decryptedMessage == null)
                 {
                     return null; //The error will have been written to the log inside the decryption method
                 }
@@ -166,7 +171,7 @@ namespace TeamDecided.RaftNetworking
             return null;
         }
 
-        private BaseMessage HandleSecureMessage(SecureMessage message)
+        private BaseMessage HandleSecureMessage(SecureMessage message, IPEndPoint ipEndPoint)
         {
             byte[] symetricKey;
             bool sessionToSymetricKeyContainKey;
@@ -185,6 +190,14 @@ namespace TeamDecided.RaftNetworking
             if (!sessionToSymetricKeyContainKey || !sessionToHMACSecretContainKey)
             {
                 GenerateReceiveFailureException("We did not have sufficient encryption parameters to decrypt the given message. Session: " + message.Session, null);
+
+                Log(ERaftLogType.DEBUG, "Received message we can't decrypt, notifying");
+                SecureClientDecryptFailed secureClientHello = new SecureClientDecryptFailed()
+                {
+                    IPEndPoint = ipEndPoint,
+                    Session = message.Session
+                };
+                base.SendMessage(secureClientHello);
                 return null;
             }
 
@@ -366,6 +379,52 @@ namespace TeamDecided.RaftNetworking
             };
             SecureMessage messageToSend = EncryptExchangeMessageSymetric(secureClientChallengeResponse, session, ipEndPoint, symetricKey, hmacSecret);
             base.SendMessage(messageToSend);
+        }
+
+        private void HandleClientDecryptFailed(SecureClientDecryptFailed message)
+        {
+            //TODO: Rewrite this in a way which doesn't allow cleartext DOS attack
+
+            //Remove all session information for this user
+            lock (clientToSessionLockObject)
+            {
+                string clientName = "";
+                foreach(KeyValuePair<string, string> pair in clientToSession)
+                {
+                    if(pair.Value == message.Session)
+                    {
+                        clientName = pair.Key;
+                    }
+                }
+                if(clientName != "")
+                {
+                    clientToSession.Remove(clientName);
+                }
+            }
+
+            lock(sessionToSymetricKeyLockObject)
+            {
+                if(sessionToSymetricKey.ContainsKey(message.Session))
+                {
+                    sessionToSymetricKey.Remove(message.Session);
+                }
+            }
+
+            lock (sessionToHMACSecretLockObject)
+            {
+                if (sessionToHMACSecret.ContainsKey(message.Session))
+                {
+                    sessionToHMACSecret.Remove(message.Session);
+                }
+            }
+
+            lock (sessionToChallengeLockObject)
+            {
+                if (sessionToChallenge.ContainsKey(message.Session))
+                {
+                    sessionToChallenge.Remove(message.Session);
+                }
+            }
         }
 
         private void HandleSecureClientChallengeResponse(SecureClientChallengeResponse message, IPEndPoint ipEndPoint)

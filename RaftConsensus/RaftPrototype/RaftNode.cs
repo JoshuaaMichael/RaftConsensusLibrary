@@ -131,6 +131,13 @@ namespace RaftPrototype
                         }
                         else
                         {
+                            mainThread.Send((object state) =>
+                            {
+                                lock (updateWindowLockObject)
+                                {
+                                    btStart.Enabled = true;
+                                }
+                            }, null);
                             return;
                         }
                     }
@@ -304,6 +311,7 @@ namespace RaftPrototype
 
         private void Start_Click(object sender, EventArgs e)
         {
+            btStart.Enabled = false;
             isStopped = false;
             log.Clear();
 

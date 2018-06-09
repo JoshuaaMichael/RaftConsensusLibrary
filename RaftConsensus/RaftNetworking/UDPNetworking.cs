@@ -252,6 +252,12 @@ namespace TeamDecided.RaftNetworking
                     lock (newMessagesToSendLockObject)
                     {
                         message = newMessagesToSend.Dequeue();
+
+                        if(message.GetType() == typeof(SecureClientDecryptFailed))
+                        {
+                            Log(ERaftLogType.TRACE, "Sending along the decrypt failed message");
+                        }
+
                         if (newMessagesToSend.Count == 0)
                         {
                             onMessageToSend.Reset();
