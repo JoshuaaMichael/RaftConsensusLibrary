@@ -252,12 +252,7 @@ namespace TeamDecided.RaftNetworking
                     lock (newMessagesToSendLockObject)
                     {
                         message = newMessagesToSend.Dequeue();
-
-                        if(message.GetType() == typeof(SecureClientDecryptFailed))
-                        {
-                            Log(ERaftLogType.TRACE, "Sending along the decrypt failed message");
-                        }
-
+                        Log(ERaftLogType.TRACE, "Sending message: {0}", message);
                         if (newMessagesToSend.Count == 0)
                         {
                             onMessageToSend.Reset();
@@ -364,6 +359,8 @@ namespace TeamDecided.RaftNetworking
                             GenerateReceiveFailureException("Failed deserialising byte array", e);
                             continue;
                         }
+
+                        Log(ERaftLogType.TRACE, "Received message: {0}", message);
 
                         if (message == null)
                         {
@@ -478,6 +475,8 @@ namespace TeamDecided.RaftNetworking
         {
             lock (newMessageReceiveFailuresLockObject)
             {
+                Log(ERaftLogType.WARN, "Receive failure exception: {0}", message);
+                Log(ERaftLogType.TRACE, FlattenException(innerException));
                 newMessageReceiveFailures.Enqueue(new UDPNetworkingReceiveFailureException(message, innerException));
                 onMessageReceiveFailure.Set();
             }
@@ -487,6 +486,7 @@ namespace TeamDecided.RaftNetworking
         {
             lock (newMessageSendFailuresLockObject)
             {
+                Log(ERaftLogType.WARN, "Sending failure exception: {0}", message);
                 newMessageSendFailures.Enqueue(new UDPNetworkingSendFailureException(stringMessage, message));
                 onMessageSendFailure.Set();
             }
@@ -534,6 +534,7 @@ namespace TeamDecided.RaftNetworking
 
             lock (newMessagesToSendLockObject)
             {
+                Log(ERaftLogType.TRACE, "Enqueuing message to be send, contents: {0}", message);
                 newMessagesToSend.Enqueue(message);
                 onMessageToSend.Set();
             }

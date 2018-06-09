@@ -590,7 +590,6 @@ namespace TeamDecided.RaftConsensus
             }
 
             Log(ERaftLogType.DEBUG, "Received message. From: {0}, type: {1}", message.From, message.GetType());
-            Log(ERaftLogType.TRACE, "Received message contents: {0}", message.ToString());
 
             if (((RaftBaseMessage)message).ClusterName != clusterName)
             {
@@ -1071,7 +1070,6 @@ namespace TeamDecided.RaftConsensus
         private void SendMessage(RaftBaseMessage message)
         {
             Log(ERaftLogType.DEBUG, "Sending message. To: {0}, type: {1}", message.To, message.GetType());
-            Log(ERaftLogType.TRACE, "Sending message contents: {0}", message.ToString());
             networking.SendMessage(message);
         }
 

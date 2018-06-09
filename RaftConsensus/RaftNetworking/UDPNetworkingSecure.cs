@@ -160,12 +160,11 @@ namespace TeamDecided.RaftNetworking
                 else
                 {
                     Log(ERaftLogType.TRACE, "This message was not one of the protocol messages, forward to user");
-                    return decryptedMessage; //It was something to user sent, not an internal message.
+                    return decryptedMessage;
                 }
             }
             else
             {
-                Log(ERaftLogType.TRACE, "Unencrypted message recieved, this is unsupported");
                 GenerateReceiveFailureException("Unencrypted message recieved, this is unsupported", null);
             }
             return null;
@@ -235,16 +234,17 @@ namespace TeamDecided.RaftNetworking
 
         private void SendSecureClientHello(BaseMessage message)
         {
+            Log(ERaftLogType.DEBUG, "Sending secure client hello to {0}", message.To);
             lock (clientToStoredMessageLockObject)
             {
-                //We're already waiting to hear back from setting up an encrypted channel
-                //These will be flushed when we have the channel
                 if (clientToStoredMessage.ContainsKey(message.To))
                 {
+                    Log(ERaftLogType.DEBUG, "We're waiting for a secure channel, dropping stored message and replacing with this one");
+                    clientToStoredMessage[message.To].Clear();
                     clientToStoredMessage[message.To].Enqueue(message);
                     return;
                 }
-                //We haven't got an encrypted channel yet, store the message for now and we'll send later
+                Log(ERaftLogType.DEBUG, "We haven't got a secure channel yet, we'll store this message and send it later");
                 clientToStoredMessage.Add(message.To, new Queue<BaseMessage>());
                 clientToStoredMessage[message.To].Enqueue(message);
             }
@@ -466,6 +466,7 @@ namespace TeamDecided.RaftNetworking
         {
             if(message.ChallengeResult == ESecureChallengeResult.REJECT)
             {
+                Log(ERaftLogType.DEBUG, "We failed node {0}'s challenge", message.From);
                 return; //We failed their test
             }
 
@@ -507,6 +508,7 @@ namespace TeamDecided.RaftNetworking
         {
             if (message.ChallengeResult == ESecureChallengeResult.REJECT)
             {
+                Log(ERaftLogType.DEBUG, "We failed node {0}'s challenge", message.From);
                 return; //We failed their test
             }
 
