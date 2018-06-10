@@ -5,13 +5,13 @@ namespace TeamDecided.RaftConsensus.Networking.Exceptions
 {
     public class UdpNetworkingSendFailureException : UdpNetworkingException
     {
-        BaseMessage _message;
+        private readonly BaseMessage _message;
 
         public UdpNetworkingSendFailureException(string errorMessage, BaseMessage message)
-            :base(errorMessage) { this._message = message; }
+            :base(errorMessage) { _message = message; }
 
         public UdpNetworkingSendFailureException(string errorMessage, Exception innerException, BaseMessage message)
-            : base(errorMessage, innerException) { this._message = message; }
+            : base(errorMessage, innerException) { _message = message; }
 
         public BaseMessage GetMessage()
         {

@@ -10,7 +10,7 @@ namespace TeamDecided.RaftConsensus.Networking.Interfaces
     {
         void Start(int port);
         void Start(IPEndPoint endPoint);
-        EudpNetworkingStatus GetStatus();
+        EUDPNetworkingStatus GetStatus();
 
         void SendMessage(BaseMessage message);
         event EventHandler<BaseMessage> OnMessageReceived;

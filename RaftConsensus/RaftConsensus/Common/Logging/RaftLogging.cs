@@ -104,8 +104,7 @@ namespace TeamDecided.RaftConsensus.Common.Logging
         {
             lock (_methodLockObject)
             {
-                if (_buffer == null) return;
-                if (_buffer.Count <= 0) return;
+                if (_buffer == null || _buffer.Count <= 0) return;
                 File.AppendAllLines(_loggingFileName, _buffer);
                 _buffer.Clear();
             }

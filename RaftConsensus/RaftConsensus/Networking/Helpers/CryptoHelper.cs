@@ -10,17 +10,25 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
     {
         private const int SymetricKeyLengthBits = 128;
         private const int SymetricKeyLengthBytes = SymetricKeyLengthBits / 8;
-        private const int HmacSecretLengthBits = 128;
-        private const int HmacSecretLengthBytes = HmacSecretLengthBits / 8;
 
         internal static byte[] Encrypt(byte[] plainText, byte[] symetricKey)
         {
             using (Aes aes = Aes.Create())
             {
                 if (plainText == null || plainText.Length == 0)
+                {
                     throw new ArgumentNullException("plainText is invalid");
+                }
+
                 if (symetricKey == null || symetricKey.Length != SymetricKeyLengthBytes)
+                {
                     throw new ArgumentNullException("symetricKey is invalid");
+                }
+
+                if (aes == null)
+                {
+                    throw new Exception("Failed to create AES object");
+                }
 
                 aes.Key = symetricKey;
 
@@ -35,8 +43,7 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
                             {
                                 bwEncrypt.Write(plainText);
                             }
-                            byte[] cipherText = cipherTextStream.ToArray();
-                            return cipherText;
+                            return cipherTextStream.ToArray();
                         }
                     }
                 }
@@ -46,12 +53,22 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
         internal static byte[] Decrypt(byte[] cipherText, byte[] symetricKey)
         {
             if (cipherText == null || cipherText.Length == 0)
+            {
                 throw new ArgumentNullException("cipherText is invalid");
+            }
+
             if (symetricKey == null || symetricKey.Length != SymetricKeyLengthBytes)
+            {
                 throw new ArgumentNullException("symetricKey is invalid");
+            }
 
             using (Aes aes = Aes.Create())
             {
+                if (aes == null)
+                {
+                    throw new Exception("Failed to create AES object");
+                }
+
                 aes.Key = symetricKey;
                 using (MemoryStream msDecrypt = new MemoryStream(cipherText))
                 {
@@ -68,8 +85,12 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
                                 {
                                     byte[] buffer = new byte[256];
                                     int count;
+
                                     while ((count = brDecrypt.Read(buffer, 0, buffer.Length)) != 0)
+                                    {
                                         plainTextStream.Write(buffer, 0, count);
+                                    }
+
                                     return plainTextStream.ToArray();
                                 }
                             }
@@ -139,12 +160,12 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
                 {
                     rsa.FromXmlString(Encoding.UTF8.GetString(publicKey));
                 }
+                return true;
             }
             catch
             {
                 return false;
             }
-            return true;
         }
     }
 }

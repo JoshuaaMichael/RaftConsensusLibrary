@@ -188,17 +188,17 @@ namespace TeamDecided.RaftConsensus.Networking.Tests
         [Test]
         public void UT_StartPort_FromInitializedToRunning()
         {
-            Assert.True(Sut.GetStatus() == Enums.EudpNetworkingStatus.Initialized);
+            Assert.True(Sut.GetStatus() == Enums.EUDPNetworkingStatus.Initialized);
             Sut.Start(SutPort);
-            Assert.True(Sut.GetStatus() == Enums.EudpNetworkingStatus.Running);
+            Assert.True(Sut.GetStatus() == Enums.EUDPNetworkingStatus.Running);
         }
 
         [Test]
         public void UT_StartIPEndPoint_FromInitializedToRunning()
         {
-            Assert.True(Sut.GetStatus() == Enums.EudpNetworkingStatus.Initialized);
+            Assert.True(Sut.GetStatus() == Enums.EUDPNetworkingStatus.Initialized);
             Sut.Start(new IPEndPoint(IPAddress.Parse(IpToBind), SutPort));
-            Assert.True(Sut.GetStatus() == Enums.EudpNetworkingStatus.Running);
+            Assert.True(Sut.GetStatus() == Enums.EUDPNetworkingStatus.Running);
         }
 
         [Test]

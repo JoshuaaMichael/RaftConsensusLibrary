@@ -51,7 +51,7 @@ namespace TeamDecided.RaftConsensus.Networking
         private UdpClient _udpClient;
         private string _clientName;
 
-        private EudpNetworkingStatus _status;
+        private EUDPNetworkingStatus _status;
         private object _statusLockObject;
 
         private Thread _listeningThread;
@@ -95,7 +95,7 @@ namespace TeamDecided.RaftConsensus.Networking
 
             _clientName = Guid.NewGuid().ToString();
 
-            _status = EudpNetworkingStatus.Initialized;
+            _status = EUDPNetworkingStatus.Initialized;
             _statusLockObject = new object();
 
             _listeningThread = new Thread(new ThreadStart(ListeningThread));
@@ -115,11 +115,11 @@ namespace TeamDecided.RaftConsensus.Networking
         {
             lock (_statusLockObject)
             {
-                if (_status != EudpNetworkingStatus.Initialized)
+                if (_status != EUDPNetworkingStatus.Initialized)
                 {
                     throw new InvalidOperationException("Library is currently not in a state it may start in");
                 }
-                _status = EudpNetworkingStatus.Starting;
+                _status = EUDPNetworkingStatus.Starting;
             }
             _clientPort = port;
             _udpClient = new UdpClient(port);
@@ -131,11 +131,11 @@ namespace TeamDecided.RaftConsensus.Networking
         {
             lock (_statusLockObject)
             {
-                if (_status != EudpNetworkingStatus.Initialized)
+                if (_status != EUDPNetworkingStatus.Initialized)
                 {
                     throw new InvalidOperationException("Library is currently not in a state it may start in");
                 }
-                _status = EudpNetworkingStatus.Starting;
+                _status = EUDPNetworkingStatus.Starting;
             }
             _clientIpEndPoint = endPoint;
             _udpClient = new UdpClient(endPoint);
@@ -156,7 +156,7 @@ namespace TeamDecided.RaftConsensus.Networking
         {
             lock (_statusLockObject)
             {
-                _status = EudpNetworkingStatus.Running;
+                _status = EUDPNetworkingStatus.Running;
             }
 
             Task taskCheckingDispose = Task.Run(() =>
@@ -173,7 +173,7 @@ namespace TeamDecided.RaftConsensus.Networking
                 Task<UdpReceiveResult> result = null;
                 lock (_statusLockObject)
                 {
-                    if (_status != EudpNetworkingStatus.Running)
+                    if (_status != EUDPNetworkingStatus.Running)
                     {
                         return;
                     }
@@ -199,7 +199,7 @@ namespace TeamDecided.RaftConsensus.Networking
                 }
 
 
-                if (_status != EudpNetworkingStatus.Running)
+                if (_status != EUDPNetworkingStatus.Running)
                 {
                     return;
                 }
@@ -243,7 +243,7 @@ namespace TeamDecided.RaftConsensus.Networking
 
                 lock (_statusLockObject)
                 {
-                    if (_status != EudpNetworkingStatus.Running)
+                    if (_status != EUDPNetworkingStatus.Running)
                     {
                         return; //The object is being disposed
                     }
@@ -327,7 +327,7 @@ namespace TeamDecided.RaftConsensus.Networking
 
                 lock (_statusLockObject)
                 {
-                    if (_status != EudpNetworkingStatus.Running)
+                    if (_status != EUDPNetworkingStatus.Running)
                     {
                         return;
                     }
@@ -523,9 +523,9 @@ namespace TeamDecided.RaftConsensus.Networking
 
         public virtual void SendMessage(BaseMessage message)
         {
-            if (_status != EudpNetworkingStatus.Running)
+            if (_status != EUDPNetworkingStatus.Running)
             {
-                if(_status == EudpNetworkingStatus.Stopped)
+                if(_status == EUDPNetworkingStatus.Stopped)
                 {
                     return;
                 }
@@ -540,7 +540,7 @@ namespace TeamDecided.RaftConsensus.Networking
             }
         }
 
-        public EudpNetworkingStatus GetStatus()
+        public EUDPNetworkingStatus GetStatus()
         {
             lock (_statusLockObject)
             {
@@ -552,7 +552,7 @@ namespace TeamDecided.RaftConsensus.Networking
         {
             lock (_statusLockObject)
             {
-                if (_status == EudpNetworkingStatus.Stopped)
+                if (_status == EUDPNetworkingStatus.Stopped)
                 {
                     throw new InvalidOperationException("Library is currently not in a state it may start in"); ;
                 }
@@ -567,7 +567,7 @@ namespace TeamDecided.RaftConsensus.Networking
         {
             lock (_statusLockObject)
             {
-                if (_status == EudpNetworkingStatus.Stopped)
+                if (_status == EUDPNetworkingStatus.Stopped)
                 {
                     throw new InvalidOperationException("Library is currently not in a state it may start in"); ;
                 }
@@ -582,7 +582,7 @@ namespace TeamDecided.RaftConsensus.Networking
         {
             lock (_statusLockObject)
             {
-                if (_status == EudpNetworkingStatus.Stopped)
+                if (_status == EUDPNetworkingStatus.Stopped)
                 {
                     throw new InvalidOperationException("Library is currently not in a state it may start in"); ;
                 }
@@ -595,7 +595,7 @@ namespace TeamDecided.RaftConsensus.Networking
 
         public void ManualAddPeer(string peerName, IPEndPoint endPoint)
         {
-            if (_status == EudpNetworkingStatus.Stopped)
+            if (_status == EUDPNetworkingStatus.Stopped)
             {
                 throw new InvalidOperationException("Library is currently not in a state it may start in"); ;
             }
@@ -620,7 +620,7 @@ namespace TeamDecided.RaftConsensus.Networking
         {
             lock (_statusLockObject)
             {
-                if (_status == EudpNetworkingStatus.Stopped)
+                if (_status == EUDPNetworkingStatus.Stopped)
                 {
                     throw new InvalidOperationException("Library is currently not in a state it may start in"); ;
                 }
@@ -694,15 +694,15 @@ namespace TeamDecided.RaftConsensus.Networking
             {
                 if (disposing)
                 {
-                    EudpNetworkingStatus previousStatus;
+                    EUDPNetworkingStatus previousStatus;
                     lock (_statusLockObject)
                     {
                         previousStatus = _status;
-                        _status = EudpNetworkingStatus.Stopped;
+                        _status = EUDPNetworkingStatus.Stopped;
 
                         _onNetworkingStop.Set();
                     }
-                    if(previousStatus == EudpNetworkingStatus.Running)
+                    if(previousStatus == EUDPNetworkingStatus.Running)
                     {
                         _listeningThread.Join();
                         _sendingThread.Join();

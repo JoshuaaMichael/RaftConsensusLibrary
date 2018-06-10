@@ -1,6 +1,6 @@
 ﻿namespace TeamDecided.RaftConsensus.Networking.Enums
 {
-    enum EProcessingThreadArrayIndex
+    internal enum EProcessingThreadArrayIndex
     {
         OnNetworkingStop = 0,
         OnMessageReceive = 1,
