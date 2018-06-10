@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using TeamDecided.RaftConsensus.Common;
 using TeamDecided.RaftConsensus.Common.Logging;
 using TeamDecided.RaftConsensus.Consensus.Enums;
 using TeamDecided.RaftConsensus.Consensus.Interfaces;
@@ -29,27 +28,25 @@ namespace TeamDecided.RaftConsensus.Consensus
 {
     public class RaftConsensus<TKey, TValue> : IConsensus<TKey, TValue> where TKey : ICloneable where TValue : ICloneable
     {
-        private static Random _rand = new Random();
+        private static readonly Random Rand = new Random();
         private string _clusterName;
         private int _maxNodes;
         private ERaftState _currentState;
-        private object _currentStateLockObject;
+        private readonly object _currentStateLockObject;
         private int _currentTerm;
+        private readonly object _currentTermLockObject;
         private string _votedFor;
-        private object _votedForLockObject;
-        private object _currentTermLockObject;
-        private Dictionary<string, NodeInfo> _nodesInfo;
-        private object _nodesInfoLockObject;
+        private readonly object _votedForLockObject;
+        private readonly Dictionary<string, NodeInfo> _nodesInfo;
+        private readonly object _nodesInfoLockObject;
         private IUDPNetworking _networking;
-        private List<Tuple<string, string, int>> _manuallyAddedClients;
-        private int _listeningPort;
-        private string _nodeName;
+        private readonly List<Tuple<string, string, int>> _manuallyAddedClients;
+        private readonly int _listeningPort;
+        private readonly string _nodeName;
         private string _leaderName;
 
-        private List<Tuple<string, IPEndPoint>> _manuallyAddedPeers;
-
-        private RaftDistributedLog<TKey, TValue> _distributedLog;
-        private object _distributedLogLockObject;
+        private readonly RaftDistributedLog<TKey, TValue> _distributedLog;
+        private readonly object _distributedLogLockObject;
 
         #region Timeout values
         private const int NetworkLatency = 50; //ms
@@ -57,28 +54,27 @@ namespace TeamDecided.RaftConsensus.Consensus
         private int _timeoutValueMin = 10 * NetworkLatency;
         private int _timeoutValueMax = 5 * 10 * NetworkLatency;
         private int _timeoutValue; //The actual timeout value chosen
-        private object _timeoutValueLockObject;
+        private readonly object _timeoutValueLockObject;
         #endregion
 
-        private Thread _backgroundThread;
-        private ManualResetEvent _onNotifyBackgroundThread;
-        private ManualResetEvent _onReceivedMessage;
-        private ManualResetEvent _onShutdown;
-        private CountdownEvent _onThreadsStarted;
+        private readonly Thread _backgroundThread;
+        private readonly ManualResetEvent _onNotifyBackgroundThread;
+        private readonly ManualResetEvent _onReceivedMessage;
+        private readonly ManualResetEvent _onShutdown;
+        private readonly CountdownEvent _onThreadsStarted;
 
         private ManualResetEvent _onWaitingToJoinCluster;
-        private int _waitingToJoinClusterTimeout = 5000;
-        private object _eJoinClusterResponeLockObject;
-        private int _joiningClusterAttemptNumber;
+        private int _waitingToJoinClusterTimeout = 10000;
+        private readonly int _joiningClusterAttemptNumber;
 
-        private Dictionary<int, ManualResetEvent> _appendEntryTasks;
-        private object _appendEntryTasksLockObject;
+        private readonly Dictionary<int, ManualResetEvent> _appendEntryTasks;
+        private readonly object _appendEntryTasksLockObject;
 
         public event EventHandler StartUAS;
         public event EventHandler<EStopUasReason> StopUAS;
         public event EventHandler<Tuple<TKey, TValue>> OnNewCommitedEntry;
 
-        private bool _disposedValue = false; // To detect redundant calls
+        private bool _disposedValue; // To detect redundant calls
 
         public RaftConsensus(string nodeName, int listeningPort)
         {
@@ -90,20 +86,18 @@ namespace TeamDecided.RaftConsensus.Consensus
             _currentTermLockObject = new object();
             _nodesInfo = new Dictionary<string, NodeInfo>();
             _nodesInfoLockObject = new object();
-            this._listeningPort = listeningPort;
-            this._nodeName = nodeName;
-            _manuallyAddedPeers = new List<Tuple<string, IPEndPoint>>();
+            _listeningPort = listeningPort;
+            _nodeName = nodeName;
             _distributedLog = new RaftDistributedLog<TKey, TValue>();
             _distributedLogLockObject = new object();
 
             _timeoutValueLockObject = new object();
 
-            _backgroundThread = new Thread(new ThreadStart(BackgroundThread));
+            _backgroundThread = new Thread(BackgroundThread);
             _onNotifyBackgroundThread = new ManualResetEvent(false);
             _onReceivedMessage = new ManualResetEvent(false);
             _onShutdown = new ManualResetEvent(false);
             _onThreadsStarted = new CountdownEvent(1);
-            _eJoinClusterResponeLockObject = new object();
             _joiningClusterAttemptNumber = 0;
 
             _appendEntryTasks = new Dictionary<int, ManualResetEvent>();
@@ -131,21 +125,14 @@ namespace TeamDecided.RaftConsensus.Consensus
 
                 Log(ERaftLogType.Info, "Starting networking stack");
 
-                if(useEncryption)
-                {
-                    _networking = new UdpNetworkingSecure(clusterPassword);
-                }
-                else
-                {
-                    _networking = new UDPNetworking();
-                }
+                _networking = useEncryption ? new UdpNetworkingSecure(clusterPassword) : new UDPNetworking();
 
                 _networking.SetClientName(_nodeName);
                 _networking.Start(_listeningPort);
                 _networking.OnMessageReceived += OnMessageReceive;
                 FlushNetworkPeerBuffer();
 
-                this._maxNodes = maxNodes;
+                _maxNodes = maxNodes;
 
                 Log(ERaftLogType.Info, "Trying to join cluster - {0}", clusterName);
                 foreach (KeyValuePair<string, NodeInfo> node in _nodesInfo)
@@ -154,7 +141,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                     Log(ERaftLogType.Debug, "I know: nodeName={0}, ipAddress={1}, port={2}", node.Key, ipEndPoint.Address.ToString(), ipEndPoint.Port);
                 }
 
-                this._clusterName = clusterName;
+                _clusterName = clusterName;
 
                 lock (_nodesInfoLockObject)
                 {
@@ -185,15 +172,13 @@ namespace TeamDecided.RaftConsensus.Consensus
                         }
                         Log(ERaftLogType.Info, "Disposing networking");
                         _networking.Dispose();
-                        this._maxNodes = 0;
+                        _maxNodes = 0;
                         Log(ERaftLogType.Info, "Returning no response message from join attempt");
                         return EJoinClusterResponse.NoResponse;
                     }
-                    else
-                    {
-                        Log(ERaftLogType.Info, "Notifying the user we've succesfully joined the cluster");
-                        return EJoinClusterResponse.Accept; //We found the cluster
-                    }
+
+                    Log(ERaftLogType.Info, "Notifying the user we've succesfully joined the cluster");
+                    return EJoinClusterResponse.Accept; //We found the cluster
                 });
 
                 return task;
@@ -240,10 +225,10 @@ namespace TeamDecided.RaftConsensus.Consensus
                 {
                     return _distributedLog[key].Value;
                 }
-                catch (KeyNotFoundException e)
+                catch (KeyNotFoundException)
                 {
                     Log(ERaftLogType.Warn, "Failed to ReadEntryValue for key: {0}", key);
-                    throw e;
+                    throw;
                 }
             }
         }
@@ -255,10 +240,10 @@ namespace TeamDecided.RaftConsensus.Consensus
                 {
                     return _distributedLog.GetValueHistory(key);
                 }
-                catch (KeyNotFoundException e)
+                catch (KeyNotFoundException)
                 {
                     Log(ERaftLogType.Warn, "Failed to ReadEntryValueHistory for key: {0}", key);
-                    throw e;
+                    throw;
                 }
             }
         }
@@ -279,12 +264,10 @@ namespace TeamDecided.RaftConsensus.Consensus
             int succesfulAdd = 0;
             foreach (Tuple<string, string, int> peer in _manuallyAddedClients)
             {
-                if (!_networking.HasPeer(peer.Item1))
-                {
-                    Log(ERaftLogType.Trace, "Adding node. Node name {0}, node IP {1}, node port {2}", peer.Item1, peer.Item2, peer.Item3);
-                    _networking.ManualAddPeer(peer.Item1, new IPEndPoint(IPAddress.Parse(peer.Item2), peer.Item3));
-                    succesfulAdd += 1;
-                }
+                if (_networking.HasPeer(peer.Item1)) continue;
+                Log(ERaftLogType.Trace, "Adding node. Node name {0}, node IP {1}, node port {2}", peer.Item1, peer.Item2, peer.Item3);
+                _networking.ManualAddPeer(peer.Item1, new IPEndPoint(IPAddress.Parse(peer.Item2), peer.Item3));
+                succesfulAdd += 1;
             }
 
             Log(ERaftLogType.Debug, "Added {0}/{1} entries into UDPNetworking", succesfulAdd, _manuallyAddedClients.Count);
@@ -306,19 +289,16 @@ namespace TeamDecided.RaftConsensus.Consensus
                     Log(ERaftLogType.Info, "Attempting to append new entry to log");
                     Log(ERaftLogType.Debug, entry.ToString());
 
-                    int prevIndex;
-                    int prevTerm;
-                    int commitIndex;
                     ManualResetEvent waitEvent;
                     int currentLastIndex;
 
                     lock (_distributedLogLockObject)
                     {
-                        prevIndex = _distributedLog.GetLastIndex();
+                        var prevIndex = _distributedLog.GetLastIndex();
                         Log(ERaftLogType.Trace, "Previous index: {0}", prevIndex);
-                        prevTerm = _distributedLog.GetTermOfLastIndex();
+                        var prevTerm = _distributedLog.GetTermOfLastIndex();
                         Log(ERaftLogType.Trace, "Previous term: {0}", prevTerm);
-                        commitIndex = _distributedLog.CommitIndex;
+                        var commitIndex = _distributedLog.CommitIndex;
                         Log(ERaftLogType.Trace, "Commit index: {0}", commitIndex);
                         _distributedLog.AppendEntry(entry, _distributedLog.GetLastIndex());
                         Log(ERaftLogType.Trace, "Appended entry");
@@ -472,12 +452,10 @@ namespace TeamDecided.RaftConsensus.Consensus
             {
                 Log(ERaftLogType.Info, "We didn't get voted in to be leader, time to try again");
                 ChangeStateToCandiate();
-                return;
             }
             else
             {
                 Log(ERaftLogType.Debug, "Candidate thread has been signaled, {0}", index);
-                return;
             }
         }
         private void BackgroundThread_Follower(WaitHandle[] waitHandles)
@@ -621,7 +599,6 @@ namespace TeamDecided.RaftConsensus.Consensus
 
         private void HandleAppendEntry(RaftAppendEntry<TKey, TValue> message)
         {
-            RaftAppendEntryResponse responseMessage;
             lock (_currentStateLockObject)
             {
                 if (_currentState != ERaftState.Leader && _currentState != ERaftState.Candidate && _currentState != ERaftState.Follower)
@@ -630,6 +607,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                     return;
                 }
 
+                RaftAppendEntryResponse responseMessage;
                 lock (_currentTermLockObject)
                 {
                     if (message.Term > _currentTerm)
@@ -700,7 +678,6 @@ namespace TeamDecided.RaftConsensus.Consensus
                             }
                             responseMessage = new RaftAppendEntryResponse(message.From, _nodeName, _clusterName, _currentTerm, true, _distributedLog.GetLastIndex());
                             SendMessage(responseMessage);
-                            return;
                         }
                         else
                         {
@@ -1009,7 +986,7 @@ namespace TeamDecided.RaftConsensus.Consensus
             lock (_timeoutValueLockObject)
             {
                 Log(ERaftLogType.Trace, "Previous timeout value {0}", _timeoutValue);
-                _timeoutValue = _rand.Next(_timeoutValueMin, _timeoutValueMax + 1);
+                _timeoutValue = Rand.Next(_timeoutValueMin, _timeoutValueMax + 1);
                 Log(ERaftLogType.Trace, "New timeout value {0}", _timeoutValue);
             }
         }

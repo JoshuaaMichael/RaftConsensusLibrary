@@ -75,6 +75,7 @@ namespace TeamDecided.RaftConsensus.Consensus.Tests
             Task<EJoinClusterResponse>[] joinClusterResponses = new Task<EJoinClusterResponse>[maxNodes - 1]; //This is where we don't do that last one
             for (int i = 0; i < joinClusterResponses.Length; i++)
             {
+                ((RaftConsensus<string, string>)_nodes[i]).SetWaitingForJoinClusterTimeout(10000);
                 joinClusterResponses[i] = _nodes[i].JoinCluster(ClusterName, ClusterPassword, maxNodes, true);
             }
 
@@ -160,6 +161,7 @@ namespace TeamDecided.RaftConsensus.Consensus.Tests
             Task<EJoinClusterResponse>[] joinClusterResponses = new Task<EJoinClusterResponse>[maxNodes];
             for (int i = 0; i < joinClusterResponses.Length; i++)
             {
+                ((RaftConsensus<string, string>)_nodes[i]).SetWaitingForJoinClusterTimeout(10000);
                 joinClusterResponses[i] = _nodes[i].JoinCluster(ClusterName, ClusterPassword, maxNodes, true);
             }
 
@@ -177,7 +179,7 @@ namespace TeamDecided.RaftConsensus.Consensus.Tests
             }
         }
         
-        [Test]
+        //[Test]
         public void IT_ManyNodesJoinCluster()
         {
             int maxNodes = 9;
@@ -569,6 +571,7 @@ namespace TeamDecided.RaftConsensus.Consensus.Tests
             Task<EJoinClusterResponse>[] joinClusterResponses = new Task<EJoinClusterResponse>[maxNodes];
             for (int i = 0; i < joinClusterResponses.Length; i++)
             {
+                ((RaftConsensus<string, string>)_nodes[i]).SetWaitingForJoinClusterTimeout(10000);
                 joinClusterResponses[i] = _nodes[i].JoinCluster(ClusterName, ClusterPassword, maxNodes, true);
             }
 

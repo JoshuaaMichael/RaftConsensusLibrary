@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using Newtonsoft.Json;
 
 namespace TeamDecided.RaftConsensus.Consensus
 {
     public class RaftLogEntry<TKey, TValue> : IEqualityComparer<TKey>, ICloneable where TKey : ICloneable where TValue : ICloneable
     {
-        public TKey Key { get; private set; }
-        public TValue Value { get; private set; }
-        public int Term { get; private set; }
+        public TKey Key { get; }
+        public TValue Value { get; }
+        public int Term { get; }
 
+        [JsonConstructor]
         public RaftLogEntry(TKey key, TValue value, int term)
         {
             Key = key;
@@ -19,7 +20,7 @@ namespace TeamDecided.RaftConsensus.Consensus
 
         public bool Equals(TKey x, TKey y)
         {
-            return x.Equals(y);
+            return x != null && x.Equals(y);
         }
 
         public int GetHashCode(TKey obj)
