@@ -70,8 +70,8 @@ namespace TeamDecided.RaftConsensus.Consensus
         private readonly Dictionary<int, ManualResetEvent> _appendEntryTasks;
         private readonly object _appendEntryTasksLockObject;
 
-        public event EventHandler StartUAS;
-        public event EventHandler<EStopUasReason> StopUAS;
+        public event EventHandler OnStartUAS;
+        public event EventHandler<EStopUasReason> OnStopUAS;
         public event EventHandler<Tuple<TKey, TValue>> OnNewCommitedEntry;
 
         private bool _disposedValue; // To detect redundant calls
@@ -106,7 +106,7 @@ namespace TeamDecided.RaftConsensus.Consensus
             _manuallyAddedClients = new List<Tuple<string, string, int>>();
         }
 
-        public Task<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword, int maxNodes, bool useEncryption)
+        public Task<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword, int maxNodes, int attempts, bool useEncryption)
         {
             lock (_currentStateLockObject)
             {
@@ -127,10 +127,10 @@ namespace TeamDecided.RaftConsensus.Consensus
 
                 _networking = useEncryption ? new UdpNetworkingSecure(clusterPassword) : new UDPNetworking();
 
+                FlushNetworkPeerBuffer();
                 _networking.SetClientName(_nodeName);
                 _networking.Start(_listeningPort);
                 _networking.OnMessageReceived += OnMessageReceive;
-                FlushNetworkPeerBuffer();
 
                 _maxNodes = maxNodes;
 
@@ -160,25 +160,42 @@ namespace TeamDecided.RaftConsensus.Consensus
 
                 Task<EJoinClusterResponse> task = Task.Run(() =>
                 {
-                    if (_onWaitingToJoinCluster.WaitOne(_waitingToJoinClusterTimeout) == false) //The timeout occured
+                    int attemptNumber = 1;
+                    while (true)
                     {
-                        Log(ERaftLogType.Warn, "Never found cluster in {0} millisecond timeout", _waitingToJoinClusterTimeout);
-                        Log(ERaftLogType.Info, "Shutdown background thread");
-                        _onShutdown.Dispose();
-                        lock (_currentStateLockObject)
+                        if (attemptNumber > attempts)
                         {
-                            Log(ERaftLogType.Info, "Set state to initializing");
-                            _currentState = ERaftState.Initializing;
+                            Log(ERaftLogType.Warn, "Never found cluster after {0} attempt(s), each with {1} millisecond timeout", attemptNumber - 1, _waitingToJoinClusterTimeout);
+                            Log(ERaftLogType.Info, "Shutdown background thread");
+                            _onShutdown.Dispose();
+                            lock (_currentStateLockObject)
+                            {
+                                Log(ERaftLogType.Info, "Set state to initializing");
+                                _currentState = ERaftState.Initializing;
+                            }
+
+                            Log(ERaftLogType.Info, "Disposing networking");
+                            _networking.Dispose();
+                            _maxNodes = 0;
+                            Log(ERaftLogType.Info, "Returning no response message from join attempt");
+                            return EJoinClusterResponse.NoResponse;
                         }
-                        Log(ERaftLogType.Info, "Disposing networking");
-                        _networking.Dispose();
-                        _maxNodes = 0;
-                        Log(ERaftLogType.Info, "Returning no response message from join attempt");
-                        return EJoinClusterResponse.NoResponse;
+
+                        Log(ERaftLogType.Debug, "Waiting to join cluster...");
+
+                        if (_onWaitingToJoinCluster.WaitOne(_waitingToJoinClusterTimeout) == false) //The timeout occured
+                        {
+                            Log(ERaftLogType.Info, "Didn't find cluster. This was attempt {0} of {1}", attemptNumber, attempts);
+                            attemptNumber += 1;
+                            continue;
+                        }
+
+                        Log(ERaftLogType.Info, "Notifying the user we've succesfully joined the cluster");
+                        return EJoinClusterResponse.Accept; //We found the cluster
                     }
 
-                    Log(ERaftLogType.Info, "Notifying the user we've succesfully joined the cluster");
-                    return EJoinClusterResponse.Accept; //We found the cluster
+
+
                 });
 
                 return task;
@@ -326,7 +343,16 @@ namespace TeamDecided.RaftConsensus.Consensus
                 }
             }
         }
-        public bool IsUasRunning()
+
+        public int NumberOfCommits()
+        {
+            lock (_distributedLogLockObject)
+            {
+                return _distributedLog.CommitIndex + 1;
+            }
+        }
+
+        public bool IsUASRunning()
         {
             lock (_currentStateLockObject)
             {
@@ -494,7 +520,7 @@ namespace TeamDecided.RaftConsensus.Consensus
             if (_currentState == ERaftState.Leader)
             {
                 Log(ERaftLogType.Info, "Notifying the UAS to stop");
-                StopUAS?.Invoke(this, EStopUasReason.ClusterLeadershipLost);
+                OnStopUAS?.Invoke(this, EStopUasReason.ClusterLeadershipLost);
             }
 
             _currentState = ERaftState.Follower;
@@ -523,7 +549,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                 }
             }
             Log(ERaftLogType.Info, "Notifying to start UAS");
-            StartUAS?.Invoke(this, null);
+            OnStartUAS?.Invoke(this, null);
         }
         private void ChangeStateToCandiate()
         {
@@ -1142,7 +1168,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                         if (previousStatus == ERaftState.Leader)
                         {
                             Log(ERaftLogType.Trace, "We were leader, sending message out to stop UAS");
-                            StopUAS?.Invoke(this, EStopUasReason.ClusterStop);
+                            OnStopUAS?.Invoke(this, EStopUasReason.ClusterStop);
                         }
                         Log(ERaftLogType.Trace, "Shutting down background thread");
                         _onShutdown.Set();

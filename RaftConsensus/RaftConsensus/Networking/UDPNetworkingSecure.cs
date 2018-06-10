@@ -234,15 +234,20 @@ namespace TeamDecided.RaftConsensus.Networking
             Log(ERaftLogType.Debug, "Sending secure client hello to {0}", message.To);
             lock (_clientToStoredMessageLockObject)
             {
-                if (_clientToStoredMessage.ContainsKey(message.To))
+                //if (_clientToStoredMessage.ContainsKey(message.To))
+                //{
+                //    Log(ERaftLogType.Debug, "We're waiting for a secure channel, dropping stored message and replacing with this one");
+                //    _clientToStoredMessage[message.To].Clear();
+                //    _clientToStoredMessage[message.To].Enqueue(message);
+                //    return;
+                //}
+                Log(ERaftLogType.Debug, "We haven't got a secure channel yet, we'll store this message and send it when the encrypted channel is up");
+                if (!_clientToStoredMessage.ContainsKey(message.To))
                 {
-                    Log(ERaftLogType.Debug, "We're waiting for a secure channel, dropping stored message and replacing with this one");
-                    _clientToStoredMessage[message.To].Clear();
-                    _clientToStoredMessage[message.To].Enqueue(message);
-                    return;
+                    _clientToStoredMessage.Add(message.To, new Queue<BaseMessage>());
                 }
-                Log(ERaftLogType.Debug, "We haven't got a secure channel yet, we'll store this message and send it later");
-                _clientToStoredMessage.Add(message.To, new Queue<BaseMessage>());
+
+                _clientToStoredMessage[message.To].Clear();
                 _clientToStoredMessage[message.To].Enqueue(message);
             }
             SecureClientHello secureClientHello = new SecureClientHello()

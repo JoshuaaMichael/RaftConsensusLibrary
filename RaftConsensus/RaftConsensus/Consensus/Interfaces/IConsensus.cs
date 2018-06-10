@@ -7,7 +7,7 @@ namespace TeamDecided.RaftConsensus.Consensus.Interfaces
 {
     public interface IConsensus<TKey, TValue> : IDisposable where TKey : ICloneable where TValue : ICloneable
     {
-        Task<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword, int maxNodes, bool useEncryption);
+        Task<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword, int maxNodes, int attempts, bool useEncryption);
         void ManualAddPeer(string name, IPEndPoint endPoint);
 
         string GetClusterName();
@@ -17,10 +17,11 @@ namespace TeamDecided.RaftConsensus.Consensus.Interfaces
         TValue[] ReadEntryValueHistory(TKey key);
         Task<ERaftAppendEntryState> AppendEntry(TKey key, TValue value);
         event EventHandler<Tuple<TKey, TValue>> OnNewCommitedEntry;
+        int NumberOfCommits();
 
-        bool IsUasRunning();
+        bool IsUASRunning();
 
-        event EventHandler StartUAS;
-        event EventHandler<EStopUasReason> StopUAS;
+        event EventHandler OnStartUAS;
+        event EventHandler<EStopUasReason> OnStopUAS;
     }
 }

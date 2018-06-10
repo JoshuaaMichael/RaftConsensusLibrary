@@ -322,7 +322,7 @@ namespace TeamDecided.RaftConsensus.Networking
 
                 if (message == null)
                 {
-                    Log(ERaftLogType.Trace, "Message was confused during post processing");
+                    Log(ERaftLogType.Trace, "Message was consumed during post processing");
                     continue;
                 }
 

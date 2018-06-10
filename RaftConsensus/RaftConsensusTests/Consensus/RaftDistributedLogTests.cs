@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using NUnit.Framework;
+using TeamDecided.RaftConsensus.Consensus;
 
-namespace TeamDecided.RaftConsensus.Consensus.Tests
+namespace TeamDecided.RaftConsensus.Tests.Consensus
 {
     [TestFixture]
     public class RaftDistributedLogTests
