@@ -9,14 +9,12 @@ namespace TeamDecided.RaftConsensus.Networking.Messages
     {
         public string To { get; set; }
         public string From { get; set; }
-        public Type MessageType { get; private set; }
-        internal IPEndPoint IpEndPoint { get; set; }
+        public Type MessageType { get; set; }
+        internal IPEndPoint IPEndPoint { get; set; }
 
-        public BaseMessage()
-        {
-            MessageType = GetType();
-        }
+        protected BaseMessage() { }
 
+        [JsonConstructor]
         public BaseMessage(string to, string from)
         {
             To = to;

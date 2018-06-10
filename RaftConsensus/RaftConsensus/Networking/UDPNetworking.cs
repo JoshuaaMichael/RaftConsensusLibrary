@@ -270,13 +270,13 @@ namespace TeamDecided.RaftConsensus.Networking
                     IPEndPoint recipient;
                     if(message.To == null)
                     {
-                        if (message.IpEndPoint == null)
+                        if (message.IPEndPoint == null)
                         {
                             GenerateSendFailureException("Failed to convert recipient to IPAddress", message);
                             Log(ERaftLogType.Warn, "Failed to convert recipient to IPAddress", message);
                             continue;
                         }
-                        recipient = message.IpEndPoint;
+                        recipient = message.IPEndPoint;
                     }
                     else
                     {

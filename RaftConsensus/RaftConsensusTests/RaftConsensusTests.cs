@@ -28,9 +28,9 @@ namespace TeamDecided.RaftConsensus.Consensus.Tests
         [SetUp]
         public void BeforeTest()
         {
-            RaftLogging.Instance.LogFilename = @"C:\Users\Tori\Downloads\debug.log";
+            RaftLogging.Instance.LogFilename = @"C:\Users\admin\Downloads\debug.log";
             RaftLogging.Instance.DeleteExistingLogFile();
-            RaftLogging.Instance.LogLevel = ERaftLogType.Debug;
+            RaftLogging.Instance.LogLevel = ERaftLogType.Trace;
 
             _entries = new List<Tuple<string, string>>();
             _onStartUas = new ManualResetEvent(false);
@@ -446,7 +446,7 @@ namespace TeamDecided.RaftConsensus.Consensus.Tests
             }
         }
 
-        [Test]
+        //[Test]
         public void IT_ManyNodesCommitManyEntries()
         {
             int maxNodes = 9;

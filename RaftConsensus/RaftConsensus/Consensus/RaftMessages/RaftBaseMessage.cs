@@ -1,4 +1,5 @@
 ﻿using System;
+using Newtonsoft.Json;
 using TeamDecided.RaftConsensus.Networking.Messages;
 
 namespace TeamDecided.RaftConsensus.Consensus.RaftMessages
@@ -8,8 +9,9 @@ namespace TeamDecided.RaftConsensus.Consensus.RaftMessages
         public string ClusterName { get; set; }
         public string MessageGuid { get; set; }
 
-        public RaftBaseMessage() { }
+        protected RaftBaseMessage() { } //This is needed for Json.NET reasons
 
+        [JsonConstructor]
         public RaftBaseMessage(string to, string from, string clusterName)
             : base(to, from)
         {

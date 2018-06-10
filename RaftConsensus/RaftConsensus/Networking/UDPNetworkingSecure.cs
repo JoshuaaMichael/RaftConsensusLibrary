@@ -194,7 +194,7 @@ namespace TeamDecided.RaftConsensus.Networking
                 Log(ERaftLogType.Debug, "Received message we can't decrypt, notifying");
                 SecureClientDecryptFailed secureClientHello = new SecureClientDecryptFailed()
                 {
-                    IpEndPoint = ipEndPoint,
+                    IPEndPoint = ipEndPoint,
                     Session = message.Session
                 };
                 base.SendMessage(secureClientHello);
@@ -252,7 +252,7 @@ namespace TeamDecided.RaftConsensus.Networking
             SecureClientHello secureClientHello = new SecureClientHello()
             {
                 PublicKey = _rsaPublicKeyBytes,
-                IpEndPoint = GetPeerIpEndPoint(message.To)
+                IPEndPoint = GetPeerIpEndPoint(message.To)
             };
 
             base.SendMessage(secureClientHello);
@@ -298,7 +298,7 @@ namespace TeamDecided.RaftConsensus.Networking
             //Meed to encrypt each part seperately as RSA keys cannot encrypt much data
             SecureServerHelloResponse secureServerHelloResponse = new SecureServerHelloResponse()
             {
-                IpEndPoint = ipEndPoint,
+                IPEndPoint = ipEndPoint,
                 ServerName = CryptoHelper.RsaEncrypt(Encoding.UTF8.GetBytes(GetClientName()), message.PublicKey),
                 SessionInitial = CryptoHelper.RsaEncrypt(Encoding.UTF8.GetBytes(session), message.PublicKey),
                 Challenge = CryptoHelper.RsaEncrypt(challenge, message.PublicKey),

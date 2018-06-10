@@ -5,16 +5,16 @@ namespace TeamDecided.RaftConsensus.Networking.Messages
 {
     internal class SecureMessage : BaseMessage
     {
-        public string Session { get;  set; }
+        public string Session;
         public byte[] EncryptedData { get; private set; }
         public byte[] Hmac { get; private set; }
 
-        internal SecureMessage() { }
+        protected SecureMessage() { }
 
         [JsonConstructor]
         internal SecureMessage(IPEndPoint ipEndPoint, string session, byte[] encryptedData, byte[] hmac)
         {
-            IpEndPoint = ipEndPoint;
+            IPEndPoint = ipEndPoint;
             Session = session;
             EncryptedData = encryptedData;
             Hmac = hmac;
