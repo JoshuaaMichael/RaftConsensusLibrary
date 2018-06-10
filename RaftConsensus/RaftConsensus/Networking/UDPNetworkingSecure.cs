@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
-using TeamDecided.RaftConsensus.Common;
 using TeamDecided.RaftConsensus.Common.Logging;
 using TeamDecided.RaftConsensus.Networking.Enums;
 using TeamDecided.RaftConsensus.Networking.Helpers;
@@ -23,20 +22,20 @@ namespace TeamDecided.RaftConsensus.Networking
     {
         private static readonly RNGCryptoServiceProvider Rand = new RNGCryptoServiceProvider();
 
-        private Dictionary<string, Queue<BaseMessage>> _clientToStoredMessage;
-        private object _clientToStoredMessageLockObject;
-        private Dictionary<string, string> _clientToSession;
-        private object _clientToSessionLockObject;
-        private Dictionary<string, byte[]> _sessionToSymetricKey;
-        private object _sessionToSymetricKeyLockObject;
-        private Dictionary<string, byte[]> _sessionToHmacSecret;
-        private object _sessionToHmacSecretLockObject;
-        private Dictionary<string, byte[]> _sessionToChallenge;
-        private object _sessionToChallengeLockObject;
+        private readonly Dictionary<string, Queue<BaseMessage>> _clientToStoredMessage;
+        private readonly object _clientToStoredMessageLockObject;
+        private readonly Dictionary<string, string> _clientToSession;
+        private readonly object _clientToSessionLockObject;
+        private readonly Dictionary<string, byte[]> _sessionToSymetricKey;
+        private readonly object _sessionToSymetricKeyLockObject;
+        private readonly Dictionary<string, byte[]> _sessionToHmacSecret;
+        private readonly object _sessionToHmacSecretLockObject;
+        private readonly Dictionary<string, byte[]> _sessionToChallenge;
+        private readonly object _sessionToChallengeLockObject;
 
-        private byte[] _passwordBytes;
-        private RSAParameters _rsaPair;
-        private byte[] _rsaPublicKeyBytes;
+        private readonly byte[] _passwordBytes;
+        private readonly RSAParameters _rsaPair;
+        private readonly byte[] _rsaPublicKeyBytes;
 
         public UdpNetworkingSecure(string password)
         {
@@ -92,7 +91,6 @@ namespace TeamDecided.RaftConsensus.Networking
 
             if (!sessionToSymetricKeyContainKey || !sessionToHmacSecretContainKey)
             {
-                Log(ERaftLogType.Warn, "Failed to locate required encryption information to send message: {0}", message);
                 GenerateSendFailureException("Failed to locate required encryption information to send message", message);
                 return;
             }
@@ -189,8 +187,6 @@ namespace TeamDecided.RaftConsensus.Networking
 
             if (!sessionToSymetricKeyContainKey || !sessionToHmacSecretContainKey)
             {
-                GenerateReceiveFailureException("We did not have sufficient encryption parameters to decrypt the given message. Session: " + message.Session, null);
-
                 Log(ERaftLogType.Debug, "Received message we can't decrypt, notifying");
                 SecureClientDecryptFailed secureClientHello = new SecureClientDecryptFailed()
                 {
