@@ -5,7 +5,7 @@
 
 # Members  
 >[Joshua](https://bitbucket.org/JoshuaMichael/)  
->[Sean](https://bitbucket.org/s_matkovich/)  
+>[Sean](https://bitbucket.org/neas57/)  
 
 # Links  
 >[Team Charter](https://bitbucket.org/teamdecided/raftconsensuslibrary/raw/master/Documentation/Project%20Initiation/Team%20Charter.pdf)  
