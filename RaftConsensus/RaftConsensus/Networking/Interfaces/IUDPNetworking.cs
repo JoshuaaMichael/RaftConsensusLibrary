@@ -6,7 +6,7 @@ using TeamDecided.RaftConsensus.Networking.Messages;
 
 namespace TeamDecided.RaftConsensus.Networking.Interfaces
 {
-    public interface IUdpNetworking : IDisposable
+    public interface IUDPNetworking : IDisposable
     {
         void Start(int port);
         void Start(IPEndPoint endPoint);

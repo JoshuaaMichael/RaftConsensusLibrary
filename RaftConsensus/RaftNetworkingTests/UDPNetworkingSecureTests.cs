@@ -38,7 +38,7 @@ namespace TeamDecided.RaftConsensus.Networking.Tests
         [Test]
         public void UT_WillNotReceiveUnencryptedMessage_ThrowsException()
         {
-            Sut = new UdpNetworking();
+            Sut = new UDPNetworking();
             Sut.ManualAddPeer(Rut.GetClientName(), new IPEndPoint(IPAddress.Parse(IpToBind), RutPort));
             Rut.OnMessageReceivedFailure += Rut_OnMessageReceivedFailure;
 

@@ -13,8 +13,8 @@ namespace TeamDecided.RaftConsensus.Networking.Tests
         [SetUp]
         public override void BeforeEachTest()
         {
-            Sut = new UdpNetworking();
-            Rut = new UdpNetworking();
+            Sut = new UDPNetworking();
+            Rut = new UDPNetworking();
             base.BeforeEachTest();
         }
 

@@ -19,7 +19,7 @@ using TeamDecided.RaftConsensus.Networking.Messages;
 
 namespace TeamDecided.RaftConsensus.Networking
 {
-    public sealed class UdpNetworkingSecure : UdpNetworking
+    public sealed class UdpNetworkingSecure : UDPNetworking
     {
         private static readonly RNGCryptoServiceProvider Rand = new RNGCryptoServiceProvider();
 

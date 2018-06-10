@@ -26,8 +26,8 @@ namespace TeamDecided.RaftConsensus.Networking.Tests
         BaseMessage _rutReceivedMessage;
         protected ManualResetEvent RutOnReceiveMessage;
 
-        protected IUdpNetworking Sut;
-        protected IUdpNetworking Rut;
+        protected IUDPNetworking Sut;
+        protected IUDPNetworking Rut;
 
         public virtual void BeforeEachTest()
         {

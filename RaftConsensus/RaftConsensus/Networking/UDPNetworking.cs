@@ -17,7 +17,7 @@ using TeamDecided.RaftConsensus.Networking.Messages;
 
 namespace TeamDecided.RaftConsensus.Networking
 {
-    public class UdpNetworking : IUdpNetworking
+    public class UDPNetworking : IUDPNetworking
     {
         public event EventHandler<BaseMessage> OnMessageReceived;
         private readonly Queue<Tuple<byte[], IPEndPoint>> _newMessagesReceived;
@@ -59,7 +59,7 @@ namespace TeamDecided.RaftConsensus.Networking
 
         private bool _disposedValue; // To detect redundant calls
 
-        public UdpNetworking()
+        public UDPNetworking()
         {
             _newMessagesReceived = new Queue<Tuple<byte[], IPEndPoint>>();
             _newMessagesReceivedLockObject = new object();

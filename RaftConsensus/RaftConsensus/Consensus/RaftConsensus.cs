@@ -40,7 +40,7 @@ namespace TeamDecided.RaftConsensus.Consensus
         private object _currentTermLockObject;
         private Dictionary<string, NodeInfo> _nodesInfo;
         private object _nodesInfoLockObject;
-        private IUdpNetworking _networking;
+        private IUDPNetworking _networking;
         private List<Tuple<string, string, int>> _manuallyAddedClients;
         private int _listeningPort;
         private string _nodeName;
@@ -137,7 +137,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                 }
                 else
                 {
-                    _networking = new UdpNetworking();
+                    _networking = new UDPNetworking();
                 }
 
                 _networking.SetClientName(_nodeName);
