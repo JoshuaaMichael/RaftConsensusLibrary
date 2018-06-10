@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Castle.Components.DictionaryAdapter;
 using NUnit.Framework;
 using TeamDecided.RaftConsensus.Common.Logging;
 using TeamDecided.RaftConsensus.Consensus;
@@ -24,6 +25,7 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
 
         private IConsensus<string, string>[] _nodes;
         private List<Tuple<string, string>> _commitEntries;
+        private List<int> disposedNodes;
 
         private ManualResetEvent _onStartUAS;
         private ManualResetEvent _onStopUAS;
@@ -31,6 +33,8 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
         protected int NumberOfNodesInTest;
         protected int NumberOfActiveNodesInTest;
         private int _numberOfCommits;
+        private const int NumberOfDefaultCommits = 3;
+        private const int NumberOfManyCommits = 20;
         private const int DefaultMillisecondsToKeepAlive = 2000;
 
         [SetUp]
@@ -45,6 +49,8 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
             _onStopUAS = new ManualResetEvent(false);
 
             _numberOfCommits = -1;
+
+            disposedNodes = new List<int>();
         }
 
         [Test]
@@ -79,7 +85,7 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
         [Test]
         public void IT_JoinClusterCommitEntries()
         {
-            _numberOfCommits = 3;
+            _numberOfCommits = NumberOfDefaultCommits;
 
             try
             {
@@ -96,7 +102,7 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
         [Test]
         public void IT_JoinClusterCommitEntriesAndKeepAlive()
         {
-            _numberOfCommits = 3;
+            _numberOfCommits = NumberOfDefaultCommits;
 
             try
             {
@@ -111,13 +117,114 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
             }
         }
 
-        //Commit many entries
+        [Test]
+        public void IT_JoinClusterCommitManyEntries()
+        {
+            _numberOfCommits = NumberOfManyCommits;
 
-        //Rebuild a node after leader loss
+            try
+            {
+                MakeNodes();
+                NodesJoinCluster();
+                CommitEntries();
+            }
+            finally
+            {
+                DisposeNodes();
+            }
+        }
 
-        //Maintain when lose max minority
+        [Test]
+        public void IT_JoinClusterCommitManyEntriesAndKeepAlive()
+        {
+            _numberOfCommits = NumberOfManyCommits;
 
-        //Rebuild after complete cluster failure
+            try
+            {
+                MakeNodes();
+                NodesJoinCluster();
+                CommitEntries();
+                Thread.Sleep(DefaultMillisecondsToKeepAlive);
+            }
+            finally
+            {
+                DisposeNodes();
+            }
+        }
+
+        [Test]
+        public void IT_MaintainClusterAfterLeaderLoss()
+        {
+            if (NumberOfActiveNodesInTest < 3) //2 node clusters can't rebuild after losing 1
+            {
+                return;
+            }
+            _numberOfCommits = NumberOfDefaultCommits;
+
+            try
+            {
+                MakeNodes();
+                NodesJoinCluster();
+                CommitEntries();
+                DisposeLeader();
+                FindLeader();
+            }
+            finally
+            {
+                DisposeNodes();
+            }
+        }
+
+        [Test]
+        public void IT_MaintainClusterAfterMaxMinorityLoss()
+        {
+            if (NumberOfActiveNodesInTest < 3) //2 node clusters can't rebuild after losing 1
+            {
+                return;
+            }
+            _numberOfCommits = NumberOfDefaultCommits;
+
+            try
+            {
+                MakeNodes();
+                NodesJoinCluster();
+                CommitEntries();
+
+                int maxPossibleLostNodes = CalculateMaxPossibleNodesCanLose();
+                DisposeLeader();
+                DisposeCountOfNonleaders(maxPossibleLostNodes - 1);
+                FindLeader();
+            }
+            finally
+            {
+                DisposeNodes();
+            }
+        }
+
+        [Test]
+        public void IT_MaintainClusterAfterMajorityLoss()
+        {
+            _numberOfCommits = NumberOfDefaultCommits;
+
+            try
+            {
+                MakeNodes();
+                NodesJoinCluster();
+                CommitEntries();
+
+                int minimumMajority = CalculateMinimumMajority();
+                DisposeLeader();
+                DisposeCountOfNonleaders(minimumMajority - 1);
+
+                RebuildAndRejoinDisposedNodes();
+
+                FindLeader();
+            }
+            finally
+            {
+                DisposeNodes();
+            }
+        }
 
         private void MakeNodes()
         {
@@ -125,22 +232,24 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
 
             for (int i = 0; i < NumberOfNodesInTest; i++)
             {
-                _nodes[i] = new RaftConsensus<string, string>(DefaultNodeName + (i + 1), StartPort + i);
-                _nodes[i].OnStartUAS += OnStartUAS;
-                _nodes[i].OnStopUAS += OnStopUAS;
-                _nodes[i].OnNewCommitedEntry += OnNewCommitedEntry;
+                MakeSingleNode(i);
             }
+        }
 
-            for (int i = 0; i < _nodes.Length; i++)
+        private void MakeSingleNode(int index)
+        {
+            _nodes[index] = new RaftConsensus<string, string>(DefaultNodeName + (index + 1), StartPort + index);
+            _nodes[index].OnStartUAS += OnStartUAS;
+            _nodes[index].OnStopUAS += OnStopUAS;
+            _nodes[index].OnNewCommitedEntry += OnNewCommitedEntry;
+
+            for (int j = 0; j < _nodes.Length; j++)
             {
-                for (int j = 0; j < _nodes.Length; j++)
+                if (index == j)
                 {
-                    if (i == j)
-                    {
-                        continue;
-                    }
-                    _nodes[i].ManualAddPeer(_nodes[j].GetNodeName(), new IPEndPoint(IPAddress.Parse(IPToBind), StartPort + j));
+                    continue;
                 }
+                _nodes[index].ManualAddPeer(DefaultNodeName + (j + 1), new IPEndPoint(IPAddress.Parse(IPToBind), StartPort + j));
             }
         }
 
@@ -164,6 +273,13 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
             }
         }
 
+        private void JoinSingleNodeIntoCluster(int index)
+        {
+            Task<EJoinClusterResponse> joinClusterResponses = _nodes[index].JoinCluster(ClusterName, ClusterPassword,
+                NumberOfNodesInTest, AttemptsToJoinCluster, UseEncryption);
+            joinClusterResponses.Wait();
+        }
+
         private void CommitEntries()
         {
             if (_numberOfCommits == -1)
@@ -173,10 +289,11 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
 
             Task[] appendTasks = new Task[_numberOfCommits];
 
-            IConsensus<string, string> leader = FindLeader();
+            IConsensus<string, string> leader;
 
             for (int j = 0; j < _numberOfCommits; j++)
             {
+                leader = FindLeader();
                 appendTasks[j] = leader.AppendEntry("Hello" + (j + 1), "World" + (j + 1));
             }
 
@@ -192,13 +309,18 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
 
         private IConsensus<string, string> FindLeader()
         {
+            return _nodes[GetLeaderIndex()];
+        }
+
+        private int GetLeaderIndex()
+        {
             while (true)
             {
-                foreach (IConsensus<string, string> node in _nodes)
+                for(int i = 0; i < _nodes.Length; i++)
                 {
-                    if (node.IsUASRunning())
+                    if (_nodes[i].IsUASRunning())
                     {
-                        return node;
+                        return i;
                     }
                 }
             }
@@ -209,6 +331,47 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
             foreach (IConsensus<string, string> node in _nodes)
             {
                 node.Dispose();
+            }
+        }
+
+        private int CalculateMaxPossibleNodesCanLose()
+        {
+            return (NumberOfNodesInTest > 2) ? (NumberOfNodesInTest / 2) : 0;
+        }
+
+        private int CalculateMinimumMajority()
+        {
+            return CalculateMaxPossibleNodesCanLose() + 1;
+        }
+
+        private void DisposeLeader()
+        {
+            int leaderIndex = GetLeaderIndex();
+            _nodes[leaderIndex].Dispose();
+            disposedNodes.Add(leaderIndex);
+        }
+
+        private void DisposeCountOfNonleaders(int count)
+        {
+            int disposedCount = 0;
+            for (int i = 0; i < count || disposedCount > count; i++)
+            {
+                if (!_nodes[i].IsUASRunning()) continue;
+                _nodes[i].Dispose();
+                disposedCount += 1;
+                disposedNodes.Add(i);
+            }
+        }
+
+        private void RebuildAndRejoinDisposedNodes()
+        {
+            for (int i = 0; i < _nodes.Length; i++)
+            {
+                if (disposedNodes.Contains(i))
+                {
+                    MakeSingleNode(i);
+                    JoinSingleNodeIntoCluster(i);
+                }
             }
         }
 
