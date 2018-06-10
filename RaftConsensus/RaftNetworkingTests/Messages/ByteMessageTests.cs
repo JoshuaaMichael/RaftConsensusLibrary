@@ -7,23 +7,23 @@ namespace TeamDecided.RaftNetworking.Tests.Messages
     [TestFixture]
     class ByteMessageTests
     {
-        string to;
-        string from;
-        byte[] data;
+        string _to;
+        string _from;
+        byte[] _data;
 
-        ByteMessage sut;
+        ByteMessage _sut;
 
-        static Random rand = new Random();
+        static Random _rand = new Random();
 
         [SetUp]
         public void BeforeTest()
         {
-            to = Guid.NewGuid().ToString();
-            from = Guid.NewGuid().ToString();
-            data = new byte[256];
-            rand.NextBytes(data);
+            _to = Guid.NewGuid().ToString();
+            _from = Guid.NewGuid().ToString();
+            _data = new byte[256];
+            _rand.NextBytes(_data);
 
-            sut = new ByteMessage(to, from, data);
+            _sut = new ByteMessage(_to, _from, _data);
         }
 
         [Test]
@@ -32,50 +32,50 @@ namespace TeamDecided.RaftNetworking.Tests.Messages
             //Arrange
 
             //Act
-            byte[] serialise = sut.Serialize();
+            byte[] serialise = _sut.Serialize();
             ByteMessage deserialised = BaseMessage.Deserialize<ByteMessage>(serialise);
 
             //Assert
-            Assert.AreEqual(to, deserialised.To);
-            Assert.AreEqual(from, deserialised.From);
+            Assert.AreEqual(_to, deserialised.To);
+            Assert.AreEqual(_from, deserialised.From);
             Assert.AreEqual(typeof(ByteMessage), deserialised.MessageType);
-            Assert.AreEqual(data, deserialised.Data);
+            Assert.AreEqual(_data, deserialised.Data);
         }
 
         [Test]
         public void UT_GetTo_MemberIsEqual()
         {
-            Assert.AreEqual(to, sut.To);
+            Assert.AreEqual(_to, _sut.To);
         }
 
         [Test]
         public void UT_GetFrom_MemberIsEqual()
         {
-            Assert.AreEqual(from, sut.From);
+            Assert.AreEqual(_from, _sut.From);
         }
 
         [Test]
         public void UT_GetMessageType_MemberIsEqual()
         {
-            Assert.AreEqual(typeof(ByteMessage), sut.MessageType);
+            Assert.AreEqual(typeof(ByteMessage), _sut.MessageType);
         }
 
         [Test]
         public void UT_GetData_MemberIsEqual()
         {
-            Assert.AreEqual(data, sut.Data);
+            Assert.AreEqual(_data, _sut.Data);
         }
 
         [Test]
         public void UT_Serialize_DoesNotThrow()
         {
-            Assert.DoesNotThrow(() => { sut.Serialize(); });
+            Assert.DoesNotThrow(() => { _sut.Serialize(); });
         }
 
         [Test]
         public void UT_Serialize_ReturnsByteArrayWithData()
         {
-            byte[] serialized = sut.Serialize();
+            byte[] serialized = _sut.Serialize();
             Assert.IsNotNull(serialized);
             Assert.IsTrue(serialized.Length > 0);
         }
@@ -83,7 +83,7 @@ namespace TeamDecided.RaftNetworking.Tests.Messages
         [Test]
         public void UT_Deserialize_DoesNotThrow()
         {
-            byte[] serialized = sut.Serialize();
+            byte[] serialized = _sut.Serialize();
 
             Assert.DoesNotThrow(() => { BaseMessage.Deserialize<ByteMessage>(serialized); });
         }
@@ -91,7 +91,7 @@ namespace TeamDecided.RaftNetworking.Tests.Messages
         [Test]
         public void UT_Deserialize_ReturnsStringWithData()
         {
-            byte[] serialized = sut.Serialize();
+            byte[] serialized = _sut.Serialize();
             ByteMessage deserialized = BaseMessage.Deserialize<ByteMessage>(serialized);
 
             Assert.IsNotNull(deserialized);

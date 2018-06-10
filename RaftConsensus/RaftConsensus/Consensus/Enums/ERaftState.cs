@@ -2,12 +2,12 @@
 {
     public enum ERaftState
     {
-        INITIALIZING,
-        ATTEMPTING_TO_START_CLUSTER,
-        ATTEMPTING_TO_JOIN_CLUSTER,
-        FOLLOWER,
-        CANDIDATE,
-        LEADER,
-        STOPPED
+        Initializing,
+        AttemptingToStartCluster,
+        AttemptingToJoinCluster,
+        Follower,
+        Candidate,
+        Leader,
+        Stopped
     }
 }

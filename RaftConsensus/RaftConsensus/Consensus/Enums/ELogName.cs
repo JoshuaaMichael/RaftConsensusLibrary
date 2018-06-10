@@ -2,7 +2,7 @@
 {
     public enum ELogName
     {
-        UAS_LOG,
-        NODE_INFO_LOG
+        UasLog,
+        NodeInfoLog
     }
 }

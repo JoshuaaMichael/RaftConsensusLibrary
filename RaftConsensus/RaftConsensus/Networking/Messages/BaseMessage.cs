@@ -10,7 +10,7 @@ namespace TeamDecided.RaftConsensus.Networking.Messages
         public string To { get; set; }
         public string From { get; set; }
         public Type MessageType { get; private set; }
-        internal IPEndPoint IPEndPoint { get; set; }
+        internal IPEndPoint IpEndPoint { get; set; }
 
         public BaseMessage()
         {

@@ -8,10 +8,10 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
 {
     internal static class CryptoHelper
     {
-        private const int SYMETRIC_KEY_LENGTH_BITS = 128;
-        private const int SYMETRIC_KEY_LENGTH_BYTES = SYMETRIC_KEY_LENGTH_BITS / 8;
-        private const int HMAC_SECRET_LENGTH_BITS = 128;
-        private const int HMAC_SECRET_LENGTH_BYTES = HMAC_SECRET_LENGTH_BITS / 8;
+        private const int SymetricKeyLengthBits = 128;
+        private const int SymetricKeyLengthBytes = SymetricKeyLengthBits / 8;
+        private const int HmacSecretLengthBits = 128;
+        private const int HmacSecretLengthBytes = HmacSecretLengthBits / 8;
 
         internal static byte[] Encrypt(byte[] plainText, byte[] symetricKey)
         {
@@ -19,7 +19,7 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
             {
                 if (plainText == null || plainText.Length == 0)
                     throw new ArgumentNullException("plainText is invalid");
-                if (symetricKey == null || symetricKey.Length != SYMETRIC_KEY_LENGTH_BYTES)
+                if (symetricKey == null || symetricKey.Length != SymetricKeyLengthBytes)
                     throw new ArgumentNullException("symetricKey is invalid");
 
                 aes.Key = symetricKey;
@@ -47,7 +47,7 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
         {
             if (cipherText == null || cipherText.Length == 0)
                 throw new ArgumentNullException("cipherText is invalid");
-            if (symetricKey == null || symetricKey.Length != SYMETRIC_KEY_LENGTH_BYTES)
+            if (symetricKey == null || symetricKey.Length != SymetricKeyLengthBytes)
                 throw new ArgumentNullException("symetricKey is invalid");
 
             using (Aes aes = Aes.Create())
@@ -55,9 +55,9 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
                 aes.Key = symetricKey;
                 using (MemoryStream msDecrypt = new MemoryStream(cipherText))
                 {
-                    byte[] aesIV = new byte[aes.IV.Length];
-                    msDecrypt.Read(aesIV, 0, aes.IV.Length);
-                    aes.IV = aesIV;
+                    byte[] aesIv = new byte[aes.IV.Length];
+                    msDecrypt.Read(aesIv, 0, aes.IV.Length);
+                    aes.IV = aesIv;
                     using (ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV))
                     {
                         using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
@@ -80,7 +80,7 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
             }
         }
 
-        internal static byte[] GenerateHMAC(byte[] data, byte[] hashKey)
+        internal static byte[] GenerateHmac(byte[] data, byte[] hashKey)
         {
             using (HMACSHA256 hmac = new HMACSHA256(hashKey))
             {
@@ -88,10 +88,10 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
             }
         }
 
-        internal static bool VerifyHMAC(byte[] data, byte[] hashKey, byte[] hmac)
+        internal static bool VerifyHmac(byte[] data, byte[] hashKey, byte[] hmac)
         {
-            byte[] calcualtedHMAC = GenerateHMAC(data, hashKey);
-            return calcualtedHMAC.SequenceEqual(hmac);
+            byte[] calcualtedHmac = GenerateHmac(data, hashKey);
+            return calcualtedHmac.SequenceEqual(hmac);
         }
 
         internal static byte[] CompleteChallenge(byte[] password, byte[] challenge)
@@ -108,25 +108,25 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
             return challengeAttempt.SequenceEqual(completedChallenge);
         }
 
-        internal static byte[] RSAEncrypt(byte[] plainText, byte[] publicKey)
+        internal static byte[] RsaEncrypt(byte[] plainText, byte[] publicKey)
         {
             byte[] encryptedData;
-            using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider(2048))
+            using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(2048))
             {
                 string publicKeyStr = Encoding.UTF8.GetString(publicKey);
-                RSA.FromXmlString(publicKeyStr);
-                encryptedData = RSA.Encrypt(plainText, true);
+                rsa.FromXmlString(publicKeyStr);
+                encryptedData = rsa.Encrypt(plainText, true);
             }
             return encryptedData;
         }
 
-        internal static byte[] RSADecrypt(byte[] DataToDecrypt, RSAParameters RSAKeyInfo)
+        internal static byte[] RsaDecrypt(byte[] dataToDecrypt, RSAParameters rsaKeyInfo)
         {
             byte[] decryptedData;
-            using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
+            using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider())
             {
-                RSA.ImportParameters(RSAKeyInfo); //Needs private info
-                decryptedData = RSA.Decrypt(DataToDecrypt, true);
+                rsa.ImportParameters(rsaKeyInfo); //Needs private info
+                decryptedData = rsa.Decrypt(dataToDecrypt, true);
             }
             return decryptedData;
         }
@@ -135,9 +135,9 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
         {
             try
             {
-                using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider(2048))
+                using (RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(2048))
                 {
-                    RSA.FromXmlString(Encoding.UTF8.GetString(publicKey));
+                    rsa.FromXmlString(Encoding.UTF8.GetString(publicKey));
                 }
             }
             catch

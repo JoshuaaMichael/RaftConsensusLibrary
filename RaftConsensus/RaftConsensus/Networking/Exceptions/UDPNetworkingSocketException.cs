@@ -2,12 +2,12 @@
 
 namespace TeamDecided.RaftConsensus.Networking.Exceptions
 {
-    public class UDPNetworkingSocketException : UDPNetworkingException
+    public class UdpNetworkingSocketException : UdpNetworkingException
     {
-        public UDPNetworkingSocketException(string errorMessage)
+        public UdpNetworkingSocketException(string errorMessage)
             : base(errorMessage) { }
 
-        public UDPNetworkingSocketException(string errorMessage, Exception innerException)
+        public UdpNetworkingSocketException(string errorMessage, Exception innerException)
             : base(errorMessage, innerException) { }
     }
 }

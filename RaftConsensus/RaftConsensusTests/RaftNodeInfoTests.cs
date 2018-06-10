@@ -7,29 +7,29 @@ namespace TeamDecided.RaftConsensus.Consensus.Tests
     [TestFixture]
     public class RaftNodeInfoTests
     {
-        NodeInfo node1;
-        string nodeName;
+        NodeInfo _node1;
+        string _nodeName;
 
         [SetUp]
         public void BeforeTest()
         {
-            nodeName = Guid.NewGuid().ToString();
-            node1 = new NodeInfo(nodeName);
+            _nodeName = Guid.NewGuid().ToString();
+            _node1 = new NodeInfo(_nodeName);
         }
 
         [Test]
         public void UT_GetNodeName_ReturnsNodeName()
         {
-            Assert.AreEqual(nodeName, node1.NodeName);
+            Assert.AreEqual(_nodeName, _node1.NodeName);
         }
 
         [Test]
         public void UT_SetLastReceived_ReturnLastReceivedMatch()
         {
-            DateTime current = node1.LastReceived;
+            DateTime current = _node1.LastReceived;
             Thread.Sleep(1); //Wow, computers are fast. Needed this.
-            node1.UpdateLastReceived();
-            Assert.Greater(node1.LastReceived, current);
+            _node1.UpdateLastReceived();
+            Assert.Greater(_node1.LastReceived, current);
         }
     }
 }

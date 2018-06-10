@@ -1,10 +1,10 @@
 ﻿namespace TeamDecided.RaftConsensus.Networking.Enums
 {
-    public enum EUDPNetworkingStatus
+    public enum EudpNetworkingStatus
     {
-        INITIALIZED = 0,
-        STARTING = 1,
-        RUNNING = 2,
-        STOPPED = 3
+        Initialized = 0,
+        Starting = 1,
+        Running = 2,
+        Stopped = 3
     }
 }

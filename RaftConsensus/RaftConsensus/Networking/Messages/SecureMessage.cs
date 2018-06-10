@@ -7,17 +7,17 @@ namespace TeamDecided.RaftConsensus.Networking.Messages
     {
         public string Session { get;  set; }
         public byte[] EncryptedData { get; private set; }
-        public byte[] HMAC { get; private set; }
+        public byte[] Hmac { get; private set; }
 
         internal SecureMessage() { }
 
         [JsonConstructor]
         internal SecureMessage(IPEndPoint ipEndPoint, string session, byte[] encryptedData, byte[] hmac)
         {
-            IPEndPoint = ipEndPoint;
+            IpEndPoint = ipEndPoint;
             Session = session;
             EncryptedData = encryptedData;
-            HMAC = hmac;
+            Hmac = hmac;
         }
     }
 }

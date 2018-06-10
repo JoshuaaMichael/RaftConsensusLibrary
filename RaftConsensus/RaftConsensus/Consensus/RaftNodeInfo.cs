@@ -9,7 +9,7 @@ namespace TeamDecided.RaftConsensus.Consensus
         public int MatchIndex { get; set; }
         public bool VoteGranted { get; set; }
         public DateTime LastReceived { get; private set; }
-        public DateTime RPCDue { get; set; }
+        public DateTime RpcDue { get; set; }
 
         public NodeInfo(string nodeName)
         {

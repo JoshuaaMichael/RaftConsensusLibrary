@@ -1,9 +1,9 @@
 ﻿namespace TeamDecided.RaftConsensus.Consensus.Enums
 {
-    public enum EStopUASReason
+    public enum EStopUasReason
     {
-        CLUSTER_LEADERSHIP_LOST = 0,
-        CLUSTER_STOP = 1,
-        CLUSTER_MAJORITY_LOST = 2
+        ClusterLeadershipLost = 0,
+        ClusterStop = 1,
+        ClusterMajorityLost = 2
     }
 }

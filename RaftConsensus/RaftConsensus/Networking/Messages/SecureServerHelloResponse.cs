@@ -6,6 +6,6 @@
         public byte[] SessionInitial;
         public byte[] Challenge;
         public byte[] SymetricKey;
-        public byte[] HMACSecret;
+        public byte[] HmacSecret;
     }
 }

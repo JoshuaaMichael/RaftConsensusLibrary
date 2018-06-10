@@ -3,13 +3,13 @@
 namespace TeamDecided.RaftConsensus.Networking.Tests
 {
     [TestFixture]
-    public class UDPNetworkingTests : BaseUDPNetworkingTests
+    public class UdpNetworkingTests : BaseUdpNetworkingTests
     {
         [SetUp]
         public override void BeforeEachTest()
         {
-            sut = new UDPNetworking();
-            rut = new UDPNetworking();
+            Sut = new UdpNetworking();
+            Rut = new UdpNetworking();
             base.BeforeEachTest();
         }
     }

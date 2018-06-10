@@ -2,7 +2,7 @@
 {
     internal enum ESecureChallengeResult
     {
-        ACCEPT = 0,
-        REJECT = 1
+        Accept = 0,
+        Reject = 1
     }
 }

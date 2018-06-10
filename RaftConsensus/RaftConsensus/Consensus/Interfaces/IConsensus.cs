@@ -18,9 +18,9 @@ namespace TeamDecided.RaftConsensus.Consensus.Interfaces
         Task<ERaftAppendEntryState> AppendEntry(TKey key, TValue value);
         event EventHandler<Tuple<TKey, TValue>> OnNewCommitedEntry;
 
-        bool IsUASRunning();
+        bool IsUasRunning();
 
-        event EventHandler StartUAS;
-        event EventHandler<EStopUASReason> StopUAS;
+        event EventHandler StartUas;
+        event EventHandler<EStopUasReason> StopUas;
     }
 }

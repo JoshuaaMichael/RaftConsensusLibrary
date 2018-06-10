@@ -7,18 +7,18 @@ namespace TeamDecided.RaftConsensus.Consensus.Tests
     [TestFixture]
     public class RaftDistributedLogTests
     {
-        RaftDistributedLog<string, string> raftDistributedLog;
+        RaftDistributedLog<string, string> _raftDistributedLog;
 
         [SetUp]
         public void BeforeEachTest()
         {
-            raftDistributedLog = new RaftDistributedLog<string, string>();
+            _raftDistributedLog = new RaftDistributedLog<string, string>();
         }
 
         [Test]
         public void IT_EnterKey_DoesntThrow()
         {
-            raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 1));
+            _raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 1));
         }
 
         [Test]
@@ -26,9 +26,9 @@ namespace TeamDecided.RaftConsensus.Consensus.Tests
         {
             string key = Guid.NewGuid().ToString();
             string value = Guid.NewGuid().ToString();
-            raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(key, value, 1));
+            _raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(key, value, 1));
 
-            Assert.AreEqual(value, raftDistributedLog.GetValue(key));
+            Assert.AreEqual(value, _raftDistributedLog.GetValue(key));
         }
 
         [Test]
@@ -40,10 +40,10 @@ namespace TeamDecided.RaftConsensus.Consensus.Tests
             for(int i = 0; i < value.Length; i++)
             {
                 value[i] = Guid.NewGuid().ToString();
-                raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(key, value[i], 1));
+                _raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(key, value[i], 1));
             }
 
-            string[] valueHistory = raftDistributedLog.GetValueHistory(key);
+            string[] valueHistory = _raftDistributedLog.GetValueHistory(key);
 
             Assert.AreEqual(value.Length, valueHistory.Length);
 
@@ -56,21 +56,21 @@ namespace TeamDecided.RaftConsensus.Consensus.Tests
         [Test]
         public void IT_GetValueNotFound_Throws()
         {
-            raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 1));
+            _raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 1));
 
             string keyToLookFor = Guid.NewGuid().ToString();
 
-            Assert.Throws<KeyNotFoundException>(() => { raftDistributedLog.GetValue(keyToLookFor); });
+            Assert.Throws<KeyNotFoundException>(() => { _raftDistributedLog.GetValue(keyToLookFor); });
         }
 
         [Test]
         public void IT_GetValueHistoryNotFound_Throws()
         {
-            raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 1));
+            _raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 1));
 
             string keyToLookFor = Guid.NewGuid().ToString();
 
-            Assert.Throws<KeyNotFoundException>(() => { raftDistributedLog.GetValueHistory(keyToLookFor); });
+            Assert.Throws<KeyNotFoundException>(() => { _raftDistributedLog.GetValueHistory(keyToLookFor); });
         }
 
         [Test]
@@ -78,9 +78,9 @@ namespace TeamDecided.RaftConsensus.Consensus.Tests
         {
             string key = Guid.NewGuid().ToString();
             string value = Guid.NewGuid().ToString();
-            raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(key, value, 1));
+            _raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(key, value, 1));
 
-            Assert.AreEqual(value, raftDistributedLog.GetEntry(key).Value);
+            Assert.AreEqual(value, _raftDistributedLog.GetEntry(key).Value);
         }
 
         [Test]
@@ -92,10 +92,10 @@ namespace TeamDecided.RaftConsensus.Consensus.Tests
             for (int i = 0; i < value.Length; i++)
             {
                 value[i] = Guid.NewGuid().ToString();
-                raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(key, value[i], 1));
+                _raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(key, value[i], 1));
             }
 
-            RaftLogEntry<string, string>[] valueHistory = raftDistributedLog.GetEntryHistory(key);
+            RaftLogEntry<string, string>[] valueHistory = _raftDistributedLog.GetEntryHistory(key);
 
             Assert.AreEqual(value.Length, valueHistory.Length);
 
@@ -108,21 +108,21 @@ namespace TeamDecided.RaftConsensus.Consensus.Tests
         [Test]
         public void IT_GetEntryNotFound_Throws()
         {
-            raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 1));
+            _raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 1));
 
             string keyToLookFor = Guid.NewGuid().ToString();
 
-            Assert.Throws<KeyNotFoundException>(() => { raftDistributedLog.GetEntry(keyToLookFor); });
+            Assert.Throws<KeyNotFoundException>(() => { _raftDistributedLog.GetEntry(keyToLookFor); });
         }
 
         [Test]
         public void IT_GetEntryHistoryNotFound_Throws()
         {
-            raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 1));
+            _raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 1));
 
             string keyToLookFor = Guid.NewGuid().ToString();
 
-            Assert.Throws<KeyNotFoundException>(() => { raftDistributedLog.GetEntryHistory(keyToLookFor); });
+            Assert.Throws<KeyNotFoundException>(() => { _raftDistributedLog.GetEntryHistory(keyToLookFor); });
         }
 
         [Test]
@@ -134,12 +134,12 @@ namespace TeamDecided.RaftConsensus.Consensus.Tests
             for (int i = 0; i < value.Length; i++)
             {
                 value[i] = Guid.NewGuid().ToString();
-                raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(key, value[i], 1));
+                _raftDistributedLog.AppendEntry(new RaftLogEntry<string, string>(key, value[i], 1));
             }
 
             for (int i = 0; i < value.Length; i++)
             {
-                Assert.AreEqual(value[i], raftDistributedLog.GetValue(i));
+                Assert.AreEqual(value[i], _raftDistributedLog.GetValue(i));
             }
         }
     }

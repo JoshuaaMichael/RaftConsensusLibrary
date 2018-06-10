@@ -23,48 +23,48 @@ using TeamDecided.RaftConsensus.Networking.Messages;
 namespace TeamDecided.RaftConsensus.Networking.Tests
 {
     [TestFixture]
-    public class UDPNetworkingSecureTests : BaseUDPNetworkingTests
+    public class UdpNetworkingSecureTests : BaseUdpNetworkingTests
     {
-        UDPNetworkingReceiveFailureException exceptionMessage;
+        UdpNetworkingReceiveFailureException _exceptionMessage;
 
         [SetUp]
         public override void BeforeEachTest()
         {
-            sut = new UDPNetworkingSecure("password123");
-            rut = new UDPNetworkingSecure("password123");
+            Sut = new UdpNetworkingSecure("password123");
+            Rut = new UdpNetworkingSecure("password123");
             base.BeforeEachTest();
         }
 
         [Test]
         public void UT_WillNotReceiveUnencryptedMessage_ThrowsException()
         {
-            sut = new UDPNetworking();
-            sut.ManualAddPeer(rut.GetClientName(), new IPEndPoint(IPAddress.Parse(IP_TO_BIND), RUT_PORT));
-            rut.OnMessageReceivedFailure += Rut_OnMessageReceivedFailure;
+            Sut = new UdpNetworking();
+            Sut.ManualAddPeer(Rut.GetClientName(), new IPEndPoint(IPAddress.Parse(IpToBind), RutPort));
+            Rut.OnMessageReceivedFailure += Rut_OnMessageReceivedFailure;
 
-            Assert.DoesNotThrow(() => { sut.Start(SUT_PORT); });
-            Assert.DoesNotThrow(() => { rut.Start(RUT_PORT); });
+            Assert.DoesNotThrow(() => { Sut.Start(SutPort); });
+            Assert.DoesNotThrow(() => { Rut.Start(RutPort); });
 
             string randomStringMessage = Guid.NewGuid().ToString();
-            StringMessage message = new StringMessage(rut.GetClientName(), sut.GetClientName(), randomStringMessage);
+            StringMessage message = new StringMessage(Rut.GetClientName(), Sut.GetClientName(), randomStringMessage);
 
-            Assert.DoesNotThrow(() => { sut.SendMessage(message); });
+            Assert.DoesNotThrow(() => { Sut.SendMessage(message); });
 
-            rutOnReceiveMessage.WaitOne();
+            RutOnReceiveMessage.WaitOne();
 
-            sut.Dispose();
-            rut.Dispose();
+            Sut.Dispose();
+            Rut.Dispose();
 
-            Assert.NotNull(exceptionMessage);
-            Assert.AreEqual(typeof(UDPNetworkingReceiveFailureException), exceptionMessage.GetType());
+            Assert.NotNull(_exceptionMessage);
+            Assert.AreEqual(typeof(UdpNetworkingReceiveFailureException), _exceptionMessage.GetType());
 
-            Assert.IsTrue(exceptionMessage.Message.Length > 0);
+            Assert.IsTrue(_exceptionMessage.Message.Length > 0);
         }
 
-        private void Rut_OnMessageReceivedFailure(object sender, UDPNetworkingReceiveFailureException e)
+        private void Rut_OnMessageReceivedFailure(object sender, UdpNetworkingReceiveFailureException e)
         {
-            exceptionMessage = e;
-            rutOnReceiveMessage.Set();
+            _exceptionMessage = e;
+            RutOnReceiveMessage.Set();
         }
     }
 }
