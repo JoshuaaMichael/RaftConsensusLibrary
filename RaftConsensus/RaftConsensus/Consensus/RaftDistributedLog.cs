@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace TeamDecided.RaftConsensus.Consensus
 {
     public class RaftDistributedLog<TKey, TValue> where TKey : ICloneable where TValue : ICloneable
     {
-        private Dictionary<TKey, List<RaftLogEntry<TKey, TValue>>> _log;
-        private List<Tuple<TKey, int>> _commitIndexLookup;
+        private readonly Dictionary<TKey, List<RaftLogEntry<TKey, TValue>>> _log;
+        private readonly List<Tuple<TKey, int>> _commitIndexLookup;
         public int CommitIndex { get; private set; }
 
         public RaftDistributedLog()
@@ -23,50 +24,48 @@ namespace TeamDecided.RaftConsensus.Consensus
 
         public TValue GetValue(TKey key)
         {
-            if (_log.TryGetValue(key, out List<RaftLogEntry<TKey, TValue>> logEntries))
+            if (!_log.TryGetValue(key, out List<RaftLogEntry<TKey, TValue>> logEntries))
             {
-                TValue newestValue = logEntries[logEntries.Count - 1].Value;
-                return (TValue)newestValue.Clone();
+                throw new KeyNotFoundException("Value not found from key");
             }
-            throw new KeyNotFoundException("Value not found from key");
+
+            TValue newestValue = logEntries[logEntries.Count - 1].Value;
+            return (TValue)newestValue.Clone();
         }
 
         public TValue[] GetValueHistory(TKey key)
         {
-            if (_log.TryGetValue(key, out List<RaftLogEntry<TKey, TValue>> logEntries))
+            if (!_log.TryGetValue(key, out List<RaftLogEntry<TKey, TValue>> logEntries))
             {
-                List<TValue> tempCloned = new List<TValue>(logEntries.Count);
-                for (int i = 0; i < logEntries.Count; i++)
-                {
-                    tempCloned.Add((TValue)logEntries[i].Value.Clone());
-                }
-                return tempCloned.ToArray();
+                throw new KeyNotFoundException("Values not found from key");
             }
-            throw new KeyNotFoundException("Values not found from key");
+
+            List<TValue> tempCloned = new List<TValue>(logEntries.Count);
+            tempCloned.AddRange(logEntries.Select(t => (TValue) t.Value.Clone()));
+            return tempCloned.ToArray();
         }
 
         public RaftLogEntry<TKey, TValue> GetEntry(TKey key)
         {
-            if (_log.TryGetValue(key, out List<RaftLogEntry<TKey, TValue>> logEntries))
+            if (!_log.TryGetValue(key, out List<RaftLogEntry<TKey, TValue>> logEntries))
             {
-                RaftLogEntry<TKey, TValue> newestValue = logEntries[logEntries.Count - 1];
-                return (RaftLogEntry<TKey, TValue>)newestValue.Clone();
+                throw new KeyNotFoundException("Value not found from key");
             }
-            throw new KeyNotFoundException("Value not found from key");
+
+            RaftLogEntry<TKey, TValue> newestValue = logEntries[logEntries.Count - 1];
+            return (RaftLogEntry<TKey, TValue>)newestValue.Clone();
         }
 
         public RaftLogEntry<TKey, TValue>[] GetEntryHistory(TKey key)
         {
-            if (_log.TryGetValue(key, out List<RaftLogEntry<TKey, TValue>> logEntries))
+            if (!_log.TryGetValue(key, out List<RaftLogEntry<TKey, TValue>> logEntries))
             {
-                List<RaftLogEntry<TKey, TValue>> tempCloned = new List<RaftLogEntry<TKey, TValue>>(logEntries.Count);
-                for (int i = 0; i < logEntries.Count; i++)
-                {
-                    tempCloned.Add((RaftLogEntry<TKey, TValue>)logEntries[i].Clone());
-                }
-                return tempCloned.ToArray();
+                throw new KeyNotFoundException("Values not found from key");
             }
-            throw new KeyNotFoundException("Values not found from key");
+
+            List<RaftLogEntry<TKey, TValue>> tempCloned = new List<RaftLogEntry<TKey, TValue>>(logEntries.Count);
+            tempCloned.AddRange(logEntries.Select(t => (RaftLogEntry<TKey, TValue>) t.Clone()));
+            return tempCloned.ToArray();
         }
 
         public bool TryGetValue(TKey key, out TValue value)
@@ -224,12 +223,6 @@ namespace TeamDecided.RaftConsensus.Consensus
             }
         }
 
-        public RaftLogEntry<TKey, TValue> this[TKey key]
-        {
-            get
-            {
-                return GetEntry(key);
-            }
-        }
+        public RaftLogEntry<TKey, TValue> this[TKey key] => GetEntry(key);
     }
 }
