@@ -22,7 +22,7 @@ namespace TeamDecided.RaftConsensus.Networking.Interfaces
         void SetClientName(string clientName);
         string[] GetPeers();
         void ManualAddPeer(string peerName, IPEndPoint endPoint);
-        IPEndPoint GetIpFromName(string peerName);
+        IPEndPoint GetIPFromName(string peerName);
         bool HasPeer(string peerName);
         void RemovePeer(string peerName);
         int CountPeers();

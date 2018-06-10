@@ -150,7 +150,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                 Log(ERaftLogType.Info, "Trying to join cluster - {0}", clusterName);
                 foreach (KeyValuePair<string, NodeInfo> node in _nodesInfo)
                 {
-                    IPEndPoint ipEndPoint = _networking.GetIpFromName(node.Key);
+                    IPEndPoint ipEndPoint = _networking.GetIPFromName(node.Key);
                     Log(ERaftLogType.Debug, "I know: nodeName={0}, ipAddress={1}, port={2}", node.Key, ipEndPoint.Address.ToString(), ipEndPoint.Port);
                 }
 

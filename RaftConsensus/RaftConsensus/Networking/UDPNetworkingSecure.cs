@@ -101,7 +101,7 @@ namespace TeamDecided.RaftConsensus.Networking
             byte[] encryptedMessage = CryptoHelper.Encrypt(serialisedMessage, symetricKey);
             byte[] hmacOfEncryptedMessage = CryptoHelper.GenerateHmac(encryptedMessage, hmacSecret);
 
-            IPEndPoint ipEndPoint = GetPeerIpEndPoint(message.To);
+            IPEndPoint ipEndPoint = GetPeerIPEndPoint(message.To);
 
             SecureMessage secureMessage = new SecureMessage(ipEndPoint, session, encryptedMessage, hmacOfEncryptedMessage);
 
@@ -252,7 +252,7 @@ namespace TeamDecided.RaftConsensus.Networking
             SecureClientHello secureClientHello = new SecureClientHello()
             {
                 PublicKey = _rsaPublicKeyBytes,
-                IPEndPoint = GetPeerIpEndPoint(message.To)
+                IPEndPoint = GetPeerIPEndPoint(message.To)
             };
 
             base.SendMessage(secureClientHello);
@@ -537,11 +537,6 @@ namespace TeamDecided.RaftConsensus.Networking
                 BaseMessage dequeuedMessage = storedMessages.Dequeue();
                 SendMessage(dequeuedMessage);
             }
-        }
-
-        protected override bool DerivedHandleMessageProcessing(object messageToProcess)
-        {
-            return false; //Consume the message, it can't be used
         }
 
         private SecureMessage EncryptExchangeMessageSymetric(SecureMessage message, string session, IPEndPoint ipEndPoint)
