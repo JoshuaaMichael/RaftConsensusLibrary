@@ -1,5 +1,4 @@
 ﻿using System;
-using TeamDecided.RaftConsensus.Consensus.Enums;
 
 namespace TeamDecided.RaftConsensus.Consensus.RaftMessages
 {
@@ -28,12 +27,6 @@ namespace TeamDecided.RaftConsensus.Consensus.RaftMessages
         {
             Term = term;
             LeaderCommitIndex = leaderCommitIndex;
-        }
-
-        //This is the index of this entry
-        public int GetLogIndex()
-        {
-            return PrevIndex + 1;
         }
 
         public override string ToString()

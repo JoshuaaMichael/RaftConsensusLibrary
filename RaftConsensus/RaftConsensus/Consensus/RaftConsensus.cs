@@ -74,8 +74,8 @@ namespace TeamDecided.RaftConsensus.Consensus
         private Dictionary<int, ManualResetEvent> _appendEntryTasks;
         private object _appendEntryTasksLockObject;
 
-        public event EventHandler StartUas;
-        public event EventHandler<EStopUasReason> StopUas;
+        public event EventHandler StartUAS;
+        public event EventHandler<EStopUasReason> StopUAS;
         public event EventHandler<Tuple<TKey, TValue>> OnNewCommitedEntry;
 
         private bool _disposedValue = false; // To detect redundant calls
@@ -516,7 +516,7 @@ namespace TeamDecided.RaftConsensus.Consensus
             if (_currentState == ERaftState.Leader)
             {
                 Log(ERaftLogType.Info, "Notifying the UAS to stop");
-                StopUas?.Invoke(this, EStopUasReason.ClusterLeadershipLost);
+                StopUAS?.Invoke(this, EStopUasReason.ClusterLeadershipLost);
             }
 
             _currentState = ERaftState.Follower;
@@ -545,7 +545,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                 }
             }
             Log(ERaftLogType.Info, "Notifying to start UAS");
-            StartUas?.Invoke(this, null);
+            StartUAS?.Invoke(this, null);
         }
         private void ChangeStateToCandiate()
         {
@@ -1165,7 +1165,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                         if (previousStatus == ERaftState.Leader)
                         {
                             Log(ERaftLogType.Trace, "We were leader, sending message out to stop UAS");
-                            StopUas?.Invoke(this, EStopUasReason.ClusterStop);
+                            StopUAS?.Invoke(this, EStopUasReason.ClusterStop);
                         }
                         Log(ERaftLogType.Trace, "Shutting down background thread");
                         _onShutdown.Set();

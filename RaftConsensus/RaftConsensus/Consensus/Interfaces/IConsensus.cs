@@ -20,7 +20,7 @@ namespace TeamDecided.RaftConsensus.Consensus.Interfaces
 
         bool IsUasRunning();
 
-        event EventHandler StartUas;
-        event EventHandler<EStopUasReason> StopUas;
+        event EventHandler StartUAS;
+        event EventHandler<EStopUasReason> StopUAS;
     }
 }

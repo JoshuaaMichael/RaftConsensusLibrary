@@ -3,8 +3,6 @@
     public enum ERaftState
     {
         Initializing,
-        AttemptingToStartCluster,
-        AttemptingToJoinCluster,
         Follower,
         Candidate,
         Leader,

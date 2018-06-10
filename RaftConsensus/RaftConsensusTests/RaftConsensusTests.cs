@@ -627,7 +627,7 @@ namespace TeamDecided.RaftConsensus.Consensus.Tests
             for (int i = 0; i < joinClusterResponses.Length; i++)
             {
                 _nodes[i].OnNewCommitedEntry += OnNewCommitedEntryClient;
-                _nodes[i].StartUas += RaftConsensusTest_StartUAS;
+                _nodes[i].StartUAS += RaftConsensusTest_StartUAS;
                 joinClusterResponses[i] = _nodes[i].JoinCluster(ClusterName, ClusterPassword, maxNodes, true);
             }
 
@@ -689,7 +689,7 @@ namespace TeamDecided.RaftConsensus.Consensus.Tests
             Task<EJoinClusterResponse>[] joinClusterResponses = new Task<EJoinClusterResponse>[maxNodes];
             for (int i = 0; i < joinClusterResponses.Length; i++)
             {
-                _nodes[i].StartUas += RaftConsensusTest_StartUAS;
+                _nodes[i].StartUAS += RaftConsensusTest_StartUAS;
                 joinClusterResponses[i] = _nodes[i].JoinCluster(ClusterName, ClusterPassword, maxNodes, true);
             }
 

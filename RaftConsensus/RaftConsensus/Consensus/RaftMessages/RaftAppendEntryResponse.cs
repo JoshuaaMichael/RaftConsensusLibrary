@@ -1,6 +1,4 @@
-﻿using TeamDecided.RaftConsensus.Consensus.Enums;
-
-namespace TeamDecided.RaftConsensus.Consensus.RaftMessages
+﻿namespace TeamDecided.RaftConsensus.Consensus.RaftMessages
 {
     public class RaftAppendEntryResponse : RaftBaseMessage
     {

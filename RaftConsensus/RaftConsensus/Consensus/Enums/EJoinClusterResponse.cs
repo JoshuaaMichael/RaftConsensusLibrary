@@ -3,13 +3,13 @@
     public enum EJoinClusterResponse
     {
         Accept,
-        Forward,
-        RejectWrongClusterName,
-        RejectLeaderUnknown,
-        RejectNameTaken,
-        RejectClusterFull ,
-        RejectUnknownError ,
+        //Forward,
+        //RejectWrongClusterName,
+        //RejectLeaderUnknown,
+        //RejectNameTaken,
+        //RejectClusterFull ,
+        //RejectUnknownError ,
         NoResponse,
-        NotYetSet
+        //NotYetSet
     }
 }
