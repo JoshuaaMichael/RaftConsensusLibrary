@@ -5,7 +5,6 @@ namespace TeamDecided.RaftConsensus.Consensus.RaftMessages
 {
     public class RaftAppendEntry<TKey, TValue> : RaftBaseMessage where TKey : ICloneable where TValue : ICloneable
     {
-        public ELogName LogName { get; set; }
         public int Term { get; set; }
         public int PrevIndex { get; set; }
         public int PrevTerm { get; set; }
@@ -14,10 +13,9 @@ namespace TeamDecided.RaftConsensus.Consensus.RaftMessages
 
         public RaftAppendEntry() { }
 
-        public RaftAppendEntry(string to, string from, string clusterName, ELogName logName, int term, int prevIndex, int prevTerm, int leaderCommitIndex, RaftLogEntry<TKey, TValue> entry)
+        public RaftAppendEntry(string to, string from, string clusterName, int term, int prevIndex, int prevTerm, int leaderCommitIndex, RaftLogEntry<TKey, TValue> entry)
             : base(to, from, clusterName)
         {
-            LogName = logName;
             Term = term;
             PrevIndex = prevIndex;
             PrevTerm = prevTerm;
@@ -25,10 +23,9 @@ namespace TeamDecided.RaftConsensus.Consensus.RaftMessages
             Entry = entry;
         }
 
-        public RaftAppendEntry(string to, string from, string clusterName, ELogName logName, int term, int leaderCommitIndex)
+        public RaftAppendEntry(string to, string from, string clusterName, int term, int leaderCommitIndex)
             : base(to, from, clusterName)
         {
-            LogName = logName;
             Term = term;
             LeaderCommitIndex = leaderCommitIndex;
         }
@@ -41,7 +38,7 @@ namespace TeamDecided.RaftConsensus.Consensus.RaftMessages
 
         public override string ToString()
         {
-            return string.Format(base.ToString() + ", LogName:{0}, Term: {1}, PrevIndex: {2}, PrevTerm: {3}, LeaderCommitIndex: {4}, Entry: {5}", LogName, Term, PrevIndex, PrevTerm, LeaderCommitIndex, Entry);
+            return string.Format(base.ToString() + ", Term: {0}, PrevIndex: {1}, PrevTerm: {2}, LeaderCommitIndex: {3}, Entry: {4}", Term, PrevIndex, PrevTerm, LeaderCommitIndex, Entry);
         }
     }
 }

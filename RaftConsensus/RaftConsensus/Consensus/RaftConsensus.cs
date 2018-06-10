@@ -441,7 +441,6 @@ namespace TeamDecided.RaftConsensus.Consensus
                                             new RaftAppendEntry<TKey, TValue>(node.Key,
                                                                                     _nodeName,
                                                                                     _clusterName,
-                                                                                    ELogName.UasLog,
                                                                                     _currentTerm,
                                                                                     prevIndex,
                                                                                     prevTerm,
@@ -450,7 +449,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                                     }
                                     else
                                     {
-                                        heartbeatMessage = new RaftAppendEntry<TKey, TValue>(node.Key, _nodeName, _clusterName, ELogName.UasLog, _currentTerm, _distributedLog.CommitIndex);
+                                        heartbeatMessage = new RaftAppendEntry<TKey, TValue>(node.Key, _nodeName, _clusterName, _currentTerm, _distributedLog.CommitIndex);
                                     }
                                     SendMessage(heartbeatMessage);
                                 }
@@ -541,7 +540,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                 //Blast out to let everyone know about our victory
                 foreach (KeyValuePair<string, NodeInfo> node in _nodesInfo)
                 {
-                    RaftAppendEntry<TKey, TValue> message = new RaftAppendEntry<TKey, TValue>(node.Key, _nodeName, _clusterName, ELogName.UasLog, _currentTerm, _distributedLog.CommitIndex);
+                    RaftAppendEntry<TKey, TValue> message = new RaftAppendEntry<TKey, TValue>(node.Key, _nodeName, _clusterName, _currentTerm, _distributedLog.CommitIndex);
                     SendMessage(message);
                 }
             }
@@ -652,7 +651,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                     if (message.Term < _currentTerm)
                     {
                         Log(ERaftLogType.Debug, "Recieved AppendEntry from node {0} for a previous term. Sending back a reject.", message.From);
-                        responseMessage = new RaftAppendEntryResponse(message.From, _nodeName, _clusterName, message.LogName, _currentTerm, false, -1);
+                        responseMessage = new RaftAppendEntryResponse(message.From, _nodeName, _clusterName, _currentTerm, false, -1);
                         SendMessage(responseMessage);
                         return;
                     }
@@ -699,7 +698,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                                 Log(ERaftLogType.Info, "Heartbeat contained a request to update out commit index");
                                 FollowerUpdateCommitIndex(message.LeaderCommitIndex);
                             }
-                            responseMessage = new RaftAppendEntryResponse(message.From, _nodeName, _clusterName, message.LogName, _currentTerm, true, _distributedLog.GetLastIndex());
+                            responseMessage = new RaftAppendEntryResponse(message.From, _nodeName, _clusterName, _currentTerm, true, _distributedLog.GetLastIndex());
                             SendMessage(responseMessage);
                             return;
                         }
@@ -724,14 +723,14 @@ namespace TeamDecided.RaftConsensus.Consensus
                                         FollowerUpdateCommitIndex(message.LeaderCommitIndex);
                                     }
                                     Log(ERaftLogType.Info, "Responding to leader with the success of our append");
-                                    responseMessage = new RaftAppendEntryResponse(message.From, _nodeName, _clusterName, message.LogName, _currentTerm, true, _distributedLog.GetLastIndex());
+                                    responseMessage = new RaftAppendEntryResponse(message.From, _nodeName, _clusterName, _currentTerm, true, _distributedLog.GetLastIndex());
                                     SendMessage(responseMessage);
                                 }
                             }
                             else if (_distributedLog.GetLastIndex() < message.PrevIndex)
                             {
                                 Log(ERaftLogType.Debug, "Got entry we weren't ready for, replying with false. Our previous index {0}, their previous index {1}", _distributedLog.GetLastIndex(), message.PrevIndex);
-                                responseMessage = new RaftAppendEntryResponse(message.From, _nodeName, _clusterName, message.LogName, _currentTerm, false, _distributedLog.GetLastIndex());
+                                responseMessage = new RaftAppendEntryResponse(message.From, _nodeName, _clusterName, _currentTerm, false, _distributedLog.GetLastIndex());
                                 SendMessage(responseMessage);
                             }
                         }
@@ -828,7 +827,6 @@ namespace TeamDecided.RaftConsensus.Consensus
                                                     new RaftAppendEntry<TKey, TValue>(node.Key,
                                                                                             _nodeName,
                                                                                             _clusterName,
-                                                                                            ELogName.UasLog,
                                                                                             _currentTerm,
                                                                                             _distributedLog.CommitIndex);
                                                 SendMessage(updateMessage);
