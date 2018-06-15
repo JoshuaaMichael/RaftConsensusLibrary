@@ -82,6 +82,7 @@
     <Compile Include="Consensus\9Nodes\RaftConsensusTests9NodesUnencrypted.cs" />
     <Compile Include="Consensus\BaseRaftConsensusTests.cs" />
     <Compile Include="Consensus\2Nodes\RaftConsensusTests2NodesUnencrypted.cs" />
+    <Compile Include="Consensus\DistributedLog\RaftDistributedLogTests.cs" />
     <Compile Include="Consensus\RaftNodeInfoTests.cs" />
     <Compile Include="Networking\BaseUDPNetworkingTests.cs" />
     <Compile Include="Networking\Messages\ByteMessageTests.cs" />
@@ -89,7 +90,6 @@
     <Compile Include="Networking\UDPNetworkingSecureTests.cs" />
     <Compile Include="Networking\UDPNetworkingTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Consensus\RaftDistributedLogTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -4,6 +4,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using TeamDecided.RaftConsensus.Common.Logging;
+using TeamDecided.RaftConsensus.Consensus.DistributedLog;
 using TeamDecided.RaftConsensus.Consensus.Enums;
 using TeamDecided.RaftConsensus.Consensus.Interfaces;
 using TeamDecided.RaftConsensus.Consensus.RaftMessages;
@@ -240,7 +241,7 @@ namespace TeamDecided.RaftConsensus.Consensus
             {
                 try
                 {
-                    return _distributedLog[key].Value;
+                    return _distributedLog.GetValue(key);
                 }
                 catch (KeyNotFoundException)
                 {
@@ -307,27 +308,22 @@ namespace TeamDecided.RaftConsensus.Consensus
                     Log(ERaftLogType.Debug, entry.ToString());
 
                     ManualResetEvent waitEvent;
-                    int currentLastIndex;
 
                     lock (_distributedLogLockObject)
                     {
-                        var prevIndex = _distributedLog.GetLastIndex();
-                        Log(ERaftLogType.Trace, "Previous index: {0}", prevIndex);
-                        var prevTerm = _distributedLog.GetTermOfLastIndex();
-                        Log(ERaftLogType.Trace, "Previous term: {0}", prevTerm);
-                        var commitIndex = _distributedLog.CommitIndex;
-                        Log(ERaftLogType.Trace, "Commit index: {0}", commitIndex);
-                        _distributedLog.AppendEntry(entry, _distributedLog.GetLastIndex());
+                        Log(ERaftLogType.Trace, "Previous index: {0}", _distributedLog.LatestIndex);
+                        Log(ERaftLogType.Trace, "Previous term: {0}", _distributedLog.LatestIndexTerm);
+                        Log(ERaftLogType.Trace, "Commit index: {0}", _distributedLog.CommitIndex);
+                        _distributedLog.AppendEntry(entry);
                         Log(ERaftLogType.Trace, "Appended entry");
+                        Log(ERaftLogType.Trace, "New last index: {0}", _distributedLog.LatestIndex);
                         waitEvent = new ManualResetEvent(false);
-                        currentLastIndex = _distributedLog.GetLastIndex();
-                        Log(ERaftLogType.Trace, "Current last index: {0}", currentLastIndex);
                     }
 
                     lock (_appendEntryTasksLockObject)
                     {
                         Log(ERaftLogType.Trace, "Adding event for notifying of commit");
-                        _appendEntryTasks.Add(currentLastIndex, waitEvent);
+                        _appendEntryTasks.Add(_distributedLog.LatestIndex, waitEvent);
                     }
 
                     Task<ERaftAppendEntryState> task = Task.Run(() =>
@@ -425,7 +421,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                                 foreach (KeyValuePair<string, NodeInfo> node in _nodesInfo)
                                 {
                                     RaftAppendEntry<TKey, TValue> heartbeatMessage;
-                                    if (_distributedLog.GetLastIndex() >= node.Value.NextIndex)
+                                    if (_distributedLog.LatestIndex >= node.Value.NextIndex)
                                     {
                                         int prevIndex;
                                         int prevTerm;
@@ -437,7 +433,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                                         else
                                         {
                                             prevIndex = node.Value.NextIndex - 1;
-                                            prevTerm = _distributedLog.GetTermOfIndex(prevIndex);
+                                            prevTerm = _distributedLog.GetTerm(prevIndex);
                                         }
 
                                         Log(ERaftLogType.Trace, "Previous index: {0}", prevIndex);
@@ -451,7 +447,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                                                                                     prevIndex,
                                                                                     prevTerm,
                                                                                     _distributedLog.CommitIndex,
-                                                                                    _distributedLog[node.Value.NextIndex]);
+                                                                                    _distributedLog.GetEntry(node.Value.NextIndex));
                                     }
                                     else
                                     {
@@ -536,7 +532,7 @@ namespace TeamDecided.RaftConsensus.Consensus
             {
                 foreach (KeyValuePair<string, NodeInfo> node in _nodesInfo)
                 {
-                    node.Value.NextIndex = _distributedLog.GetLastIndex() + 1;
+                    node.Value.NextIndex = _distributedLog.LatestIndex + 1;
                 }
 
                 _onNotifyBackgroundThread.Set();
@@ -576,7 +572,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                     foreach (KeyValuePair<string, NodeInfo> node in _nodesInfo)
                     {
                         node.Value.VoteGranted = false;
-                        RaftRequestVote message = new RaftRequestVote(node.Key, _nodeName, _clusterName, _currentTerm, _distributedLog.GetLastIndex(), _distributedLog.GetTermOfLastIndex());
+                        RaftRequestVote message = new RaftRequestVote(node.Key, _nodeName, _clusterName, _currentTerm, _distributedLog.LatestIndex, _distributedLog.LatestIndexTerm);
                         SendMessage(message);
                     }
                 }
@@ -702,38 +698,28 @@ namespace TeamDecided.RaftConsensus.Consensus
                                 Log(ERaftLogType.Info, "Heartbeat contained a request to update out commit index");
                                 FollowerUpdateCommitIndex(message.LeaderCommitIndex);
                             }
-                            responseMessage = new RaftAppendEntryResponse(message.From, _nodeName, _clusterName, _currentTerm, true, _distributedLog.GetLastIndex());
+                            responseMessage = new RaftAppendEntryResponse(message.From, _nodeName, _clusterName, _currentTerm, true, _distributedLog.LatestIndex);
                             SendMessage(responseMessage);
                         }
                         else
                         {
-                            Log(ERaftLogType.Info, "This is a AppendEntry message from {0} has new entries to commit", message.From);
+                            Log(ERaftLogType.Info, "This is a AppendEntry message from {0} has entries to commit", message.From);
 
-                            if (_distributedLog.GetLastIndex() > message.PrevIndex)
+                            if (!_distributedLog.AppendEntry(message.Entry, message.PrevIndex, message.PrevTerm))
                             {
-                                Log(ERaftLogType.Debug, "We received a message but our latestIndex ({0}) was greater than their PrevIndex ({0}). Truncating the rest of the log forward for safety", _distributedLog.GetLastIndex(), message.PrevIndex);
-                                _distributedLog.TruncateLog(message.PrevIndex + 1);
-                            }
-
-                            if (_distributedLog.GetLastIndex() == message.PrevIndex)
-                            {
-                                if (_distributedLog.ConfirmPreviousIndex(message.PrevIndex, message.PrevTerm))
+                                Log(ERaftLogType.Debug, "Confirmed previous index. Appended message");
+                                if (message.LeaderCommitIndex > _distributedLog.CommitIndex)
                                 {
-                                    _distributedLog.AppendEntry(message.Entry, message.PrevIndex);
-                                    Log(ERaftLogType.Debug, "Confirmed previous index. Appended message");
-                                    if (message.LeaderCommitIndex > _distributedLog.CommitIndex)
-                                    {
-                                        FollowerUpdateCommitIndex(message.LeaderCommitIndex);
-                                    }
-                                    Log(ERaftLogType.Info, "Responding to leader with the success of our append");
-                                    responseMessage = new RaftAppendEntryResponse(message.From, _nodeName, _clusterName, _currentTerm, true, _distributedLog.GetLastIndex());
-                                    SendMessage(responseMessage);
+                                    FollowerUpdateCommitIndex(message.LeaderCommitIndex);
                                 }
+                                Log(ERaftLogType.Info, "Responding to leader with the success of our append");
+                                responseMessage = new RaftAppendEntryResponse(message.From, _nodeName, _clusterName, _currentTerm, true, _distributedLog.LatestIndex);
+                                SendMessage(responseMessage);
                             }
-                            else if (_distributedLog.GetLastIndex() < message.PrevIndex)
+                            else
                             {
-                                Log(ERaftLogType.Debug, "Got entry we weren't ready for, replying with false. Our previous index {0}, their previous index {1}", _distributedLog.GetLastIndex(), message.PrevIndex);
-                                responseMessage = new RaftAppendEntryResponse(message.From, _nodeName, _clusterName, _currentTerm, false, _distributedLog.GetLastIndex());
+                                Log(ERaftLogType.Debug, "Failed to confirm previous index, replying with false. Our previous index {0}, their previous index {1}", _distributedLog.LatestIndex, message.PrevIndex);
+                                responseMessage = new RaftAppendEntryResponse(message.From, _nodeName, _clusterName, _currentTerm, false, _distributedLog.LatestIndex);
                                 SendMessage(responseMessage);
                             }
                         }
@@ -813,7 +799,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                                 {
                                     Log(ERaftLogType.Debug, "Since we've got another commit, we should check if we're at majority now");
                                     //Now we've got another commit, have we reached majority now?
-                                    if (CheckForCommitMajority(message.MatchIndex) && _distributedLog.GetTermOfIndex(message.MatchIndex) == _currentTerm)
+                                    if (CheckForCommitMajority(message.MatchIndex) && _distributedLog.GetTerm(message.MatchIndex) == _currentTerm)
                                     {
                                         Log(ERaftLogType.Info, "We've reached majority. Time to notify everyone to update.");
                                         //We have! Update our log. Notify everyone to update their logs
@@ -837,7 +823,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                                             Log(ERaftLogType.Debug, "Running OnNewCommitedEntry. Starting from {0}, going to and including {1}", oldCommitIndex + 1, message.MatchIndex);
                                             for (int i = oldCommitIndex + 1; i <= message.MatchIndex; i++)
                                             {
-                                                OnNewCommitedEntry?.Invoke(this, _distributedLog[i].GetTuple());
+                                                OnNewCommitedEntry?.Invoke(this, _distributedLog.GetEntry(i).ToTuple());
                                             }
                                         }
                                     }
@@ -894,8 +880,8 @@ namespace TeamDecided.RaftConsensus.Consensus
                             {
                                 lock (_distributedLogLockObject)
                                 {
-                                    int logLatestIndex = _distributedLog.GetLastIndex();
-                                    if (message.LastLogIndex >= logLatestIndex && message.LastTermIndex >= _distributedLog.GetTermOfIndex(logLatestIndex))
+                                    int logLatestIndex = _distributedLog.LatestIndex;
+                                    if (message.LastLogIndex >= logLatestIndex && message.LastTermIndex >= _distributedLog.GetTerm(logLatestIndex))
                                     {
                                         Log(ERaftLogType.Info, "Their log is at least as up to date as ours, replying accept");
                                         _votedFor = message.From;
@@ -987,14 +973,14 @@ namespace TeamDecided.RaftConsensus.Consensus
 
         private void FollowerUpdateCommitIndex(int leaderCommitIndex)
         {
-            int newCommitIndex = Math.Min(leaderCommitIndex, _distributedLog.GetLastIndex());
+            int newCommitIndex = Math.Min(leaderCommitIndex, _distributedLog.LatestIndex);
             Log(ERaftLogType.Debug, "Updating commit index to {0}, leader's is {1}", newCommitIndex, leaderCommitIndex);
             int oldCommitIndex = _distributedLog.CommitIndex;
             _distributedLog.CommitUpToIndex(newCommitIndex);
             Log(ERaftLogType.Debug, "Running OnNewCommitedEntry. Starting from {0}, going to and including {1}", oldCommitIndex + 1, newCommitIndex);
             for (int i = oldCommitIndex + 1; i <= newCommitIndex; i++)
             {
-                OnNewCommitedEntry?.Invoke(this, _distributedLog[i].GetTuple());
+                OnNewCommitedEntry?.Invoke(this, _distributedLog.GetEntry(i).ToTuple());
             }
         }
         private void FoundCluster(string leader, int term)
