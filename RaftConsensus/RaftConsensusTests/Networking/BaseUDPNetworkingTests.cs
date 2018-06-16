@@ -65,14 +65,14 @@ namespace TeamDecided.RaftConsensus.Tests.Networking
         [Test]
         public void IT_StartSendReceiveDispose_SuccessfulSendAndReceive()
         {
-            Sut.ManualAddPeer(Rut.GetClientName(), new IPEndPoint(IPAddress.Parse(IpToBind), RutPort));
+            Sut.ManualAddPeer(Rut.ClientName, new IPEndPoint(IPAddress.Parse(IpToBind), RutPort));
             Rut.OnMessageReceived += Rut_OnMessageReceived;
 
             Assert.DoesNotThrow(() => { Sut.Start(SutPort); });
             Assert.DoesNotThrow(() => { Rut.Start(RutPort); });
 
             string randomStringMessage = Guid.NewGuid().ToString();
-            StringMessage message = new StringMessage(Rut.GetClientName(), Sut.GetClientName(), randomStringMessage);
+            StringMessage message = new StringMessage(Rut.ClientName, Sut.ClientName, randomStringMessage);
 
             Assert.DoesNotThrow(() => { Sut.SendMessage(message); });
 
@@ -84,8 +84,8 @@ namespace TeamDecided.RaftConsensus.Tests.Networking
             Assert.NotNull(_rutReceivedMessage);
             Assert.AreEqual(typeof(StringMessage), _rutReceivedMessage.GetType());
 
-            Assert.AreEqual(_rutReceivedMessage.To, Rut.GetClientName());
-            Assert.AreEqual(_rutReceivedMessage.From, Sut.GetClientName());
+            Assert.AreEqual(_rutReceivedMessage.To, Rut.ClientName);
+            Assert.AreEqual(_rutReceivedMessage.From, Sut.ClientName);
             Assert.AreEqual(((StringMessage)_rutReceivedMessage).Data, randomStringMessage);
         }
 
@@ -96,35 +96,35 @@ namespace TeamDecided.RaftConsensus.Tests.Networking
             Rut.Start(RutPort);
 
             Sut.Start(SutPort);
-            Sut.ManualAddPeer(Rut.GetClientName(), new IPEndPoint(IPAddress.Parse(IpToBind), RutPort));
+            Sut.ManualAddPeer(Rut.ClientName, new IPEndPoint(IPAddress.Parse(IpToBind), RutPort));
 
             string randomStringMessage = Guid.NewGuid().ToString();
-            StringMessage message = new StringMessage(Rut.GetClientName(), Sut.GetClientName(), randomStringMessage);
+            StringMessage message = new StringMessage(Rut.ClientName, Sut.ClientName, randomStringMessage);
 
             Assert.DoesNotThrow(() => { Sut.SendMessage(message); });
 
             RutOnReceiveMessage.WaitOne();
 
-            Assert.IsTrue(Rut.HasPeer(Sut.GetClientName()));
+            Assert.IsTrue(Rut.HasPeer(Sut.ClientName));
         }
 
         [Test]
         public void IT_OnNewConnectedPeer_SuccessfulPeer()
         {
-            Sut.ManualAddPeer(Rut.GetClientName(), new IPEndPoint(IPAddress.Parse(IpToBind), SutPort));
+            Sut.ManualAddPeer(Rut.ClientName, new IPEndPoint(IPAddress.Parse(IpToBind), SutPort));
             Sut.Start(SutPort);
 
-            Assert.IsTrue(Sut.HasPeer(Rut.GetClientName()));
+            Assert.IsTrue(Sut.HasPeer(Rut.ClientName));
             string[] peers = Sut.GetPeers();
-            Assert.IsTrue(Rut.GetClientName() == peers[0]);
+            Assert.IsTrue(Rut.ClientName == peers[0]);
         }
 
         [Test]
         public void UT_NotStartedSendMessage_ThrowsException()
         {
-            Sut.ManualAddPeer(Rut.GetClientName(), new IPEndPoint(IPAddress.Parse(IpToBind), SutPort));
+            Sut.ManualAddPeer(Rut.ClientName, new IPEndPoint(IPAddress.Parse(IpToBind), SutPort));
             string randomStringMessage = Guid.NewGuid().ToString();
-            StringMessage message = new StringMessage(Rut.GetClientName(), Sut.GetClientName(), randomStringMessage);
+            StringMessage message = new StringMessage(Rut.ClientName, Sut.ClientName, randomStringMessage);
             Assert.Throws<InvalidOperationException>(() => { Sut.SendMessage(message); });
         }
 
@@ -147,10 +147,10 @@ namespace TeamDecided.RaftConsensus.Tests.Networking
         [Test]
         public void UT_RemovePeer_PeerNoLongerExists()
         {
-            Sut.ManualAddPeer(Rut.GetClientName(), new IPEndPoint(IPAddress.Parse(IpToBind), RutPort));
-            Assert.IsTrue(Sut.HasPeer(Rut.GetClientName()));
-            Sut.RemovePeer(Rut.GetClientName());
-            Assert.IsFalse(Sut.HasPeer(Rut.GetClientName()));
+            Sut.ManualAddPeer(Rut.ClientName, new IPEndPoint(IPAddress.Parse(IpToBind), RutPort));
+            Assert.IsTrue(Sut.HasPeer(Rut.ClientName));
+            Sut.RemovePeer(Rut.ClientName);
+            Assert.IsFalse(Sut.HasPeer(Rut.ClientName));
         }
 
         [Test]

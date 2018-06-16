@@ -129,7 +129,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                 _networking = useEncryption ? new UdpNetworkingSecure(clusterPassword) : new UDPNetworking();
 
                 FlushNetworkPeerBuffer();
-                _networking.SetClientName(_nodeName);
+                _networking.ClientName = _nodeName;
                 _networking.Start(_listeningPort);
                 _networking.OnMessageReceived += OnMessageReceive;
 

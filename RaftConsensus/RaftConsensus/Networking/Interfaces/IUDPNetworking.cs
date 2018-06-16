@@ -18,8 +18,7 @@ namespace TeamDecided.RaftConsensus.Networking.Interfaces
         event EventHandler<UdpNetworkingSendFailureException> OnMessageSendFailure;
         event EventHandler<string> OnNewConnectedPeer;
 
-        string GetClientName();
-        void SetClientName(string clientName);
+        string ClientName { get; set; }
         string[] GetPeers();
         void ManualAddPeer(string peerName, IPEndPoint endPoint);
         IPEndPoint GetIPFromName(string peerName);

@@ -99,7 +99,7 @@ namespace TeamDecided.RaftConsensus.Networking
             byte[] encryptedMessage = CryptoHelper.Encrypt(serialisedMessage, symetricKey);
             byte[] hmacOfEncryptedMessage = CryptoHelper.GenerateHmac(encryptedMessage, hmacSecret);
 
-            IPEndPoint ipEndPoint = NodeIPs[message.To];
+            IPEndPoint ipEndPoint = GetPeerIPEndPoint(message.To);
 
             SecureMessage secureMessage = new SecureMessage(ipEndPoint, session, encryptedMessage, hmacOfEncryptedMessage);
 
@@ -253,7 +253,7 @@ namespace TeamDecided.RaftConsensus.Networking
             SecureClientHello secureClientHello = new SecureClientHello()
             {
                 PublicKey = _rsaPublicKeyBytes,
-                IPEndPoint = NodeIPs[message.To]
+                IPEndPoint = GetPeerIPEndPoint(message.To)
             };
 
             base.SendMessage(secureClientHello);
@@ -300,7 +300,7 @@ namespace TeamDecided.RaftConsensus.Networking
             SecureServerHelloResponse secureServerHelloResponse = new SecureServerHelloResponse()
             {
                 IPEndPoint = ipEndPoint,
-                ServerName = CryptoHelper.RsaEncrypt(Encoding.UTF8.GetBytes(GetClientName()), message.PublicKey),
+                ServerName = CryptoHelper.RsaEncrypt(Encoding.UTF8.GetBytes(ClientName), message.PublicKey),
                 SessionInitial = CryptoHelper.RsaEncrypt(Encoding.UTF8.GetBytes(session), message.PublicKey),
                 Challenge = CryptoHelper.RsaEncrypt(challenge, message.PublicKey),
                 SymetricKey = CryptoHelper.RsaEncrypt(symetricKey, message.PublicKey),
@@ -374,10 +374,10 @@ namespace TeamDecided.RaftConsensus.Networking
             {
                 Session = session,
                 To = serverName,
-                From = GetClientName(),
+                From = ClientName,
                 ChallengeResponse = CryptoHelper.CompleteChallenge(_passwordBytes, challenge),
                 Challenge = returnChallenge,
-                ClientName = GetClientName()
+                ClientName = ClientName
             };
             SecureMessage messageToSend = EncryptExchangeMessageSymetric(secureClientChallengeResponse, session, ipEndPoint, symetricKey, hmacSecret);
             base.SendMessage(messageToSend);
@@ -451,8 +451,8 @@ namespace TeamDecided.RaftConsensus.Networking
             {
                 Session = message.Session,
                 To = message.ClientName,
-                From = GetClientName(),
-                ChallengeResult = serverChallengeResultEnum,
+                From = ClientName,
+                ChallengeResult = serverChallengeResultEnum
             };
 
             if (serverChallengeResultEnum == ESecureChallengeResult.Accept)
@@ -498,7 +498,7 @@ namespace TeamDecided.RaftConsensus.Networking
             {
                 Session = message.Session,
                 To = message.From,
-                From = GetClientName(),
+                From = ClientName,
                 ChallengeResult = clientChallengeResultEnum
             };
 
@@ -518,7 +518,7 @@ namespace TeamDecided.RaftConsensus.Networking
             {
                 Session = message.Session,
                 To = message.From,
-                From = GetClientName()
+                From = ClientName
             };
 
             SecureMessage messageToSend = EncryptExchangeMessageSymetric(secureServerGoAhead, message.Session, ipEndPoint);

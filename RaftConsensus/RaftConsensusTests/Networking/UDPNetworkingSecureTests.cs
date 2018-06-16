@@ -40,14 +40,14 @@ namespace TeamDecided.RaftConsensus.Tests.Networking
         public void UT_WillNotReceiveUnencryptedMessage_ThrowsException()
         {
             Sut = new UDPNetworking();
-            Sut.ManualAddPeer(Rut.GetClientName(), new IPEndPoint(IPAddress.Parse(IpToBind), RutPort));
+            Sut.ManualAddPeer(Rut.ClientName, new IPEndPoint(IPAddress.Parse(IpToBind), RutPort));
             Rut.OnMessageReceivedFailure += Rut_OnMessageReceivedFailure;
 
             Assert.DoesNotThrow(() => { Sut.Start(SutPort); });
             Assert.DoesNotThrow(() => { Rut.Start(RutPort); });
 
             string randomStringMessage = Guid.NewGuid().ToString();
-            StringMessage message = new StringMessage(Rut.GetClientName(), Sut.GetClientName(), randomStringMessage);
+            StringMessage message = new StringMessage(Rut.ClientName, Sut.ClientName, randomStringMessage);
 
             Assert.DoesNotThrow(() => { Sut.SendMessage(message); });
 

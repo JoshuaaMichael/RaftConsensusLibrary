@@ -40,7 +40,7 @@ namespace TeamDecided.RaftConsensus.Tests.Networking
             Dictionary<string, BaseMessage> messageBuffer = new Dictionary<string, BaseMessage>();
             CountdownEvent cde = new CountdownEvent(numberOfMessages);
 
-            Sut.ManualAddPeer(Rut.GetClientName(), new IPEndPoint(IPAddress.Parse(IpToBind), RutPort));
+            Sut.ManualAddPeer(Rut.ClientName, new IPEndPoint(IPAddress.Parse(IpToBind), RutPort));
             Rut.OnMessageReceived += delegate (Object o, BaseMessage e)
             {
                 StringMessage message = (StringMessage)e;
@@ -55,7 +55,7 @@ namespace TeamDecided.RaftConsensus.Tests.Networking
             for (int i = 0; i < numberOfMessages; i++)
             {
                 string data = string.Format("{0}_{1}", stringMessage, i);
-                StringMessage sendingMessage = new StringMessage(Rut.GetClientName(), Sut.GetClientName(), data);
+                StringMessage sendingMessage = new StringMessage(Rut.ClientName, Sut.ClientName, data);
                 Assert.DoesNotThrow(() => { Sut.SendMessage(sendingMessage); });
                 Thread.Sleep(sleepDelay);
             }
@@ -77,8 +77,8 @@ namespace TeamDecided.RaftConsensus.Tests.Networking
                 Assert.IsTrue(typeof(StringMessage) == messageBuffer[data].GetType());
 
                 StringMessage message = (StringMessage)messageBuffer[data];
-                Assert.AreEqual(message.To, Rut.GetClientName());
-                Assert.AreEqual(message.From, Sut.GetClientName());
+                Assert.AreEqual(message.To, Rut.ClientName);
+                Assert.AreEqual(message.From, Sut.ClientName);
             }
         }
     }
