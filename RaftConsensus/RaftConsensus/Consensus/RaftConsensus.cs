@@ -705,7 +705,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                         {
                             Log(ERaftLogType.Info, "This is a AppendEntry message from {0} has entries to commit", message.From);
 
-                            if (!_distributedLog.AppendEntry(message.Entry, message.PrevIndex, message.PrevTerm))
+                            if (_distributedLog.AppendEntry(message.Entry, message.PrevIndex, message.PrevTerm))
                             {
                                 Log(ERaftLogType.Debug, "Confirmed previous index. Appended message");
                                 if (message.LeaderCommitIndex > _distributedLog.CommitIndex)

@@ -7,16 +7,16 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
     public class RaftDistributedLog<TKey, TValue> : IRaftDistributedLog<TKey, TValue> where TKey : ICloneable where TValue : ICloneable
     {
         private readonly Dictionary<TKey, List<RaftLogEntry<TKey, TValue>>> _log;
-        private readonly List<Tuple<TKey, int>> _commitIndexLookup;
+        private readonly List<Tuple<TKey, int>> _logIndexLookup;
 
         public int CommitIndex { get; private set; }
-        public int LatestIndex => _commitIndexLookup.Count - 1;
+        public int LatestIndex => _logIndexLookup.Count - 1;
         public int LatestIndexTerm => ((LatestIndex == -1) ? -1 : GetEntry(LatestIndex).Term);
 
         public RaftDistributedLog()
         {
             _log = new Dictionary<TKey, List<RaftLogEntry<TKey, TValue>>>();
-            _commitIndexLookup = new List<Tuple<TKey, int>>();
+            _logIndexLookup = new List<Tuple<TKey, int>>();
             CommitIndex = -1;
         }
 
@@ -27,7 +27,7 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
                 _log.Add(entry.Key, new List<RaftLogEntry<TKey, TValue>>());
             }
             _log[entry.Key].Add(entry);
-            _commitIndexLookup.Add(new Tuple<TKey, int>(entry.Key, _log[entry.Key].Count - 1));
+            _logIndexLookup.Add(new Tuple<TKey, int>(entry.Key, _log[entry.Key].Count - 1));
         }
 
         public bool AppendEntry(RaftLogEntry<TKey, TValue> entry, int prevIndex, int prevTerm)
@@ -56,8 +56,8 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
 
             for (int i = lastLogEntry; i > index; i--)
             {
-                Tuple<TKey, int> dictIndex = _commitIndexLookup[i];
-                _commitIndexLookup.RemoveAt(i);
+                Tuple<TKey, int> dictIndex = _logIndexLookup[i];
+                _logIndexLookup.RemoveAt(i);
 
                 _log[dictIndex.Item1].RemoveAt(dictIndex.Item2);
                 if (_log[dictIndex.Item1].Count == 0)
@@ -73,7 +73,7 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
 
             if(prevIndex != LatestIndex) { return false; }
 
-            Tuple<TKey, int> dictIndex = _commitIndexLookup[prevIndex];
+            Tuple<TKey, int> dictIndex = _logIndexLookup[prevIndex];
             return _log[dictIndex.Item1][dictIndex.Item2].Term == prevTerm;
         }
 
@@ -84,7 +84,7 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
 
         public RaftLogEntry<TKey, TValue> GetEntry(int index)
         {
-            Tuple<TKey, int> dictIndex = _commitIndexLookup[index];
+            Tuple<TKey, int> dictIndex = _logIndexLookup[index];
             return (RaftLogEntry<TKey, TValue>)_log[dictIndex.Item1][dictIndex.Item2].Clone();
         }
 
@@ -108,7 +108,7 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
 
         public TValue GetValue(int index)
         {
-            Tuple<TKey, int> dictIndex = _commitIndexLookup[index];
+            Tuple<TKey, int> dictIndex = _logIndexLookup[index];
             return (TValue)_log[dictIndex.Item1][dictIndex.Item2].Value.Clone();
         }
 
@@ -132,7 +132,8 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
 
         public int GetTerm(int index)
         {
-            Tuple<TKey, int> dictIndex = _commitIndexLookup[index];
+            if (index == -1) return -1; //No entries yet
+            Tuple<TKey, int> dictIndex = _logIndexLookup[index];
             return _log[dictIndex.Item1][dictIndex.Item2].Term;
         }
 

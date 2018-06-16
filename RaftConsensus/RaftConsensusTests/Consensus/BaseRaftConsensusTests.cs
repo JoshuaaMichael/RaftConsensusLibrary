@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using Castle.Components.DictionaryAdapter;
 using NUnit.Framework;
 using TeamDecided.RaftConsensus.Common.Logging;
 using TeamDecided.RaftConsensus.Consensus;
