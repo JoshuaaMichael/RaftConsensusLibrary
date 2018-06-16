@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace TeamDecided.RaftConsensus.Common.Logging
 {
@@ -113,6 +114,21 @@ namespace TeamDecided.RaftConsensus.Common.Logging
         private static string GetTimestampString()
         {
             return DateTime.Now.ToString("HH:mm:ss.ffff") + ": ";
+        }
+
+        public static string FlattenException(Exception exception)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+
+            while (exception != null)
+            {
+                stringBuilder.AppendLine(exception.Message);
+                stringBuilder.AppendLine(exception.StackTrace);
+
+                exception = exception.InnerException;
+            }
+
+            return stringBuilder.ToString();
         }
     }
 }

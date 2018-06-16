@@ -167,7 +167,7 @@ namespace TeamDecided.RaftConsensus.Networking
                 }
                 catch (Exception e)
                 {
-                    Log(ERaftLogType.Debug, "Caught exception. Dumping exception string: {0}", FlattenException(e));
+                    Log(ERaftLogType.Debug, "Caught exception. Dumping exception string: {0}", RaftLogging.FlattenException(e));
                     RebuildUdpClient();
                     continue;
                 }
@@ -193,7 +193,7 @@ namespace TeamDecided.RaftConsensus.Networking
                 }
                 catch (Exception e)
                 {
-                    Log(ERaftLogType.Debug, "Caught exception. Dumping exception string: {0}", FlattenException(e));
+                    Log(ERaftLogType.Debug, "Caught exception. Dumping exception string: {0}", RaftLogging.FlattenException(e));
                     RebuildUdpClient();
                 }
             }
@@ -262,7 +262,7 @@ namespace TeamDecided.RaftConsensus.Networking
                 }
                 catch (Exception e)
                 {
-                    Log(ERaftLogType.Debug, "Caught exception. Dumping exception string: {0}", FlattenException(e));
+                    Log(ERaftLogType.Debug, "Caught exception. Dumping exception string: {0}", RaftLogging.FlattenException(e));
                     RebuildUdpClient();
                 }
             }
@@ -340,21 +340,6 @@ namespace TeamDecided.RaftConsensus.Networking
             RaftLogging.Instance.Log(logType, messagePrepend + format, args);
         }
 
-        protected static string FlattenException(Exception exception)
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-
-            while (exception != null)
-            {
-                stringBuilder.AppendLine(exception.Message);
-                stringBuilder.AppendLine(exception.StackTrace);
-
-                exception = exception.InnerException;
-            }
-
-            return stringBuilder.ToString();
-        }
-
         private void RebuildUdpClient()
         {
             lock (_isRebuildingLockObject)
@@ -388,15 +373,10 @@ namespace TeamDecided.RaftConsensus.Networking
             _udpClient.Client.IOControl(unchecked((int)sioUdpConnreset), new[] { Convert.ToByte(false) }, null);
         }
 
-        protected IPEndPoint GetIPEndPoint(string name)
-        {
-            return _nodeIPs[name];
-        }
-
         protected void GenerateReceiveFailureException(string message, Exception innerException)
         {
             Log(ERaftLogType.Warn, "Receive failure exception: {0}", message);
-            Log(ERaftLogType.Trace, FlattenException(innerException));
+            Log(ERaftLogType.Trace, RaftLogging.FlattenException(innerException));
             OnMessageReceivedFailure?.Invoke(this, new UdpNetworkingReceiveFailureException(message, innerException));
         }
 
