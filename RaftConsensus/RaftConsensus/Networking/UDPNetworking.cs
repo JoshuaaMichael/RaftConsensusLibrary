@@ -21,20 +21,14 @@ namespace TeamDecided.RaftConsensus.Networking
     public class UDPNetworking : IUDPNetworking
     {
         public event EventHandler<BaseMessage> OnMessageReceived;
-        private readonly Queue<Tuple<byte[], IPEndPoint>> _newMessagesReceived;
-        private readonly object _newMessagesReceivedLockObject;
-        private readonly ManualResetEvent _onMessageReceive;
-
         public event EventHandler<UdpNetworkingReceiveFailureException> OnMessageReceivedFailure;
         public event EventHandler<UdpNetworkingSendFailureException> OnMessageSendFailure;
-
         public event EventHandler<string> OnNewConnectedPeer;
 
-        protected readonly NodeIPDictionary _nodeIPs;
+        private readonly RaftPCQueue<Tuple<byte[], IPEndPoint>> _newMessagesReceived;
+        private readonly RaftPCQueue<BaseMessage> _newMessagesToSend;
 
-        private readonly Queue<BaseMessage> _newMessagesToSend;
-        private readonly object _newMessagesToSendLockObject;
-        private readonly ManualResetEvent _onMessageToSend;
+        protected readonly NodeIPDictionary NodeIPs;
 
         private readonly ManualResetEvent _onNetworkingStop;
 
@@ -61,15 +55,11 @@ namespace TeamDecided.RaftConsensus.Networking
 
         public UDPNetworking()
         {
-            _newMessagesReceived = new Queue<Tuple<byte[], IPEndPoint>>();
-            _newMessagesReceivedLockObject = new object();
-            _onMessageReceive = new ManualResetEvent(false);
+            _newMessagesReceived = new RaftPCQueue<Tuple<byte[], IPEndPoint>>();
 
-            _nodeIPs = new NodeIPDictionary();
+            NodeIPs = new NodeIPDictionary();
 
-            _newMessagesToSend = new Queue<BaseMessage>();
-            _newMessagesToSendLockObject = new object();
-            _onMessageToSend = new ManualResetEvent(false);
+            _newMessagesToSend = new RaftPCQueue<BaseMessage>();
 
             _onNetworkingStop = new ManualResetEvent(false);
 
@@ -185,11 +175,7 @@ namespace TeamDecided.RaftConsensus.Networking
                     byte[] messageBytes = result.Result.Buffer;
                     IPEndPoint endPoint = result.Result.RemoteEndPoint;
 
-                    lock (_newMessagesReceivedLockObject)
-                    {
-                        _newMessagesReceived.Enqueue(new Tuple<byte[], IPEndPoint>(messageBytes, endPoint));
-                        _onMessageReceive.Set();
-                    }
+                    _newMessagesReceived.Enqueue(new Tuple<byte[], IPEndPoint>(messageBytes, endPoint));
                 }
                 catch (Exception e)
                 {
@@ -203,7 +189,7 @@ namespace TeamDecided.RaftConsensus.Networking
         {
             WaitHandle[] resetEvents = new WaitHandle[2];
             resetEvents[0] = _onNetworkingStop;
-            resetEvents[1] = _onMessageToSend;
+            resetEvents[1] = _newMessagesToSend.Flag;
 
             _onThreadsStarted.Signal();
             int index;
@@ -222,16 +208,8 @@ namespace TeamDecided.RaftConsensus.Networking
                     }
                 }
 
-                BaseMessage message;
-                lock (_newMessagesToSendLockObject)
-                {
-                    message = _newMessagesToSend.Dequeue();
-                    Log(ERaftLogType.Trace, "Sending message: {0}", message);
-                    if (_newMessagesToSend.Count == 0)
-                    {
-                        _onMessageToSend.Reset();
-                    }
-                }
+                BaseMessage message = _newMessagesToSend.Dequeue();
+                Log(ERaftLogType.Trace, "Sending message: {0}", message);
 
                 byte[] messageToSend = SerialiseMessage(message);
 
@@ -243,7 +221,7 @@ namespace TeamDecided.RaftConsensus.Networking
 
                 if (message.To != null)
                 {
-                    message.IPEndPoint = _nodeIPs[message.To];
+                    message.IPEndPoint = NodeIPs[message.To];
                 }
 
                 if (message.IPEndPoint == null)
@@ -272,7 +250,7 @@ namespace TeamDecided.RaftConsensus.Networking
         {
             WaitHandle[] resetEvents = new WaitHandle[2];
             resetEvents[0] = _onNetworkingStop;
-            resetEvents[1] = _onMessageReceive;
+            resetEvents[1] = _newMessagesReceived.Flag;
 
             _onThreadsStarted.Signal();
             int index;
@@ -291,16 +269,7 @@ namespace TeamDecided.RaftConsensus.Networking
                     }
                 }
 
-                Tuple<byte[], IPEndPoint> messageToProcess;
-                lock (_newMessagesReceivedLockObject)
-                {
-                    messageToProcess = _newMessagesReceived.Dequeue();
-
-                    if (_newMessagesReceived.Count == 0)
-                    {
-                        _onMessageReceive.Reset();
-                    }
-                }
+                Tuple<byte[], IPEndPoint> messageToProcess = _newMessagesReceived.Dequeue();
 
                 byte[] newMessageByteArray = messageToProcess.Item1;
                 IPEndPoint newMessageIpEndPoint = messageToProcess.Item2;
@@ -325,7 +294,7 @@ namespace TeamDecided.RaftConsensus.Networking
                     continue;
                 }
 
-                if (_nodeIPs.AddOrUpdateNode(message.From, newMessageIpEndPoint))
+                if (NodeIPs.AddOrUpdateNode(message.From, newMessageIpEndPoint))
                 {
                     OnNewConnectedPeer?.Invoke(this, message.From);
                 }
@@ -403,12 +372,8 @@ namespace TeamDecided.RaftConsensus.Networking
                 throw new InvalidOperationException("Library is currently not in a state it may send in"); ;
             }
 
-            lock (_newMessagesToSendLockObject)
-            {
-                Log(ERaftLogType.Trace, "Enqueuing message to be send, contents: {0}", message);
-                _newMessagesToSend.Enqueue(message);
-                _onMessageToSend.Set();
-            }
+            Log(ERaftLogType.Trace, "Enqueuing message to be send, contents: {0}", message);
+            _newMessagesToSend.Enqueue(message);
         }
 
         public EUDPNetworkingStatus GetStatus()
@@ -428,7 +393,7 @@ namespace TeamDecided.RaftConsensus.Networking
                     throw new InvalidOperationException("Library is currently not in a state it may get peers in"); ;
                 }
 
-                return _nodeIPs.GetNodes();
+                return NodeIPs.GetNodes();
             }
         }
 
@@ -441,7 +406,7 @@ namespace TeamDecided.RaftConsensus.Networking
                     throw new InvalidOperationException("Library is currently not in a state it may count peers in"); ;
                 }
 
-                return _nodeIPs.Count;
+                return NodeIPs.Count;
             }
         }
 
@@ -454,7 +419,7 @@ namespace TeamDecided.RaftConsensus.Networking
                     throw new InvalidOperationException("Library is currently not in a state it may check for peers in"); ;
                 }
 
-                return _nodeIPs.HasNode(peerName);
+                return NodeIPs.HasNode(peerName);
             }
         }
 
@@ -465,12 +430,12 @@ namespace TeamDecided.RaftConsensus.Networking
                 throw new InvalidOperationException("Library is currently not in a state it may add a peer in"); ;
             }
 
-            _nodeIPs.AddOrUpdateNode(peerName, endPoint);
+            NodeIPs.AddOrUpdateNode(peerName, endPoint);
         }
 
         public IPEndPoint GetIPFromName(string peerName)
         {
-            return _nodeIPs[peerName];
+            return NodeIPs[peerName];
         }
 
         public void RemovePeer(string peerName)
@@ -482,7 +447,7 @@ namespace TeamDecided.RaftConsensus.Networking
                     throw new InvalidOperationException("Library is currently not in a state it may remove a peer in"); ;
                 }
 
-                _nodeIPs.RemoveNode(peerName);
+                NodeIPs.RemoveNode(peerName);
             }
         }
 

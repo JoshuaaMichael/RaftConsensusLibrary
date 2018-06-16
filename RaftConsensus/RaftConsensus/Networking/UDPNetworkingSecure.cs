@@ -99,7 +99,7 @@ namespace TeamDecided.RaftConsensus.Networking
             byte[] encryptedMessage = CryptoHelper.Encrypt(serialisedMessage, symetricKey);
             byte[] hmacOfEncryptedMessage = CryptoHelper.GenerateHmac(encryptedMessage, hmacSecret);
 
-            IPEndPoint ipEndPoint = _nodeIPs[message.To];
+            IPEndPoint ipEndPoint = NodeIPs[message.To];
 
             SecureMessage secureMessage = new SecureMessage(ipEndPoint, session, encryptedMessage, hmacOfEncryptedMessage);
 
@@ -253,7 +253,7 @@ namespace TeamDecided.RaftConsensus.Networking
             SecureClientHello secureClientHello = new SecureClientHello()
             {
                 PublicKey = _rsaPublicKeyBytes,
-                IPEndPoint = _nodeIPs[message.To]
+                IPEndPoint = NodeIPs[message.To]
             };
 
             base.SendMessage(secureClientHello);
