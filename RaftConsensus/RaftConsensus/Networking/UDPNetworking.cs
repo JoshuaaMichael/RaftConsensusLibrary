@@ -542,16 +542,14 @@ namespace TeamDecided.RaftConsensus.Networking
 
         protected byte[] SerialiseMessage(BaseMessage message)
         {
-            //byte[] messageBytes = message.Serialize();
-            //return CompressMessage(messageBytes);
-            return message.Serialize();
+            byte[] messageBytes = message.Serialize();
+            return CompressMessage(messageBytes);
         }
 
         protected BaseMessage DeserialiseMessage(byte[] message)
         {
-            //byte[] messageToDeserialise = DecompressMessage(message);
-            //return BaseMessage.Deserialize<BaseMessage>(messageToDeserialise);
-            return BaseMessage.Deserialize<BaseMessage>(message);
+            byte[] messageToDeserialise = DecompressMessage(message);
+            return BaseMessage.Deserialize<BaseMessage>(messageToDeserialise);
         }
 
         protected byte[] CompressMessage(byte[] message)
