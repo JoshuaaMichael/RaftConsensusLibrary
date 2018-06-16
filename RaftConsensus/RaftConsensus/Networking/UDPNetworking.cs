@@ -211,7 +211,7 @@ namespace TeamDecided.RaftConsensus.Networking
                 BaseMessage message = _newMessagesToSend.Dequeue();
                 Log(ERaftLogType.Trace, "Sending message: {0}", message);
 
-                byte[] messageToSend = SerialiseMessage(message);
+                byte[] messageToSend = message.Serialize();
 
                 if (messageToSend.Length > MaxPacketSize)
                 {
@@ -277,7 +277,7 @@ namespace TeamDecided.RaftConsensus.Networking
                 BaseMessage message;
                 try
                 {
-                    message = DeserialiseMessage(newMessageByteArray);
+                    message = BaseMessage.Deserialize(newMessageByteArray);
                     Log(ERaftLogType.Trace, "Received message, pre processing: {0}", message);
                     message = DerivedMessageProcessing(message, newMessageIpEndPoint); //This is for derived classes to do encryption, if it returns null it was consumed
                     Log(ERaftLogType.Trace, "Received message, post processing: {0}", message);
@@ -459,51 +459,6 @@ namespace TeamDecided.RaftConsensus.Networking
         public void SetClientName(string clientName)
         {
             _clientName = clientName;
-        }
-
-        protected byte[] SerialiseMessage(BaseMessage message)
-        {
-            byte[] messageBytes = message.Serialize();
-            return CompressMessage(messageBytes);
-        }
-
-        protected BaseMessage DeserialiseMessage(byte[] message)
-        {
-            byte[] messageToDeserialise = DecompressMessage(message);
-            return BaseMessage.Deserialize<BaseMessage>(messageToDeserialise);
-        }
-
-        protected byte[] CompressMessage(byte[] message)
-        {
-            //https://www.dotnetperls.com/compress
-            using (MemoryStream memory = new MemoryStream())
-            {
-                using (GZipStream gzip = new GZipStream(memory, CompressionMode.Compress, true))
-                {
-                    gzip.Write(message, 0, message.Length);
-                }
-                return memory.ToArray();
-            }
-        }
-
-        protected byte[] DecompressMessage(byte[] message)
-        {
-            //https://www.dotnetperls.com/decompress
-            //Removed do while
-            using (GZipStream stream = new GZipStream(new MemoryStream(message), CompressionMode.Decompress))
-            {
-                const int size = 4096;
-                byte[] buffer = new byte[size];
-                using (MemoryStream memory = new MemoryStream())
-                {
-                    int count = 0;
-                    while ((count = stream.Read(buffer, 0, size)) > 0)
-                    {
-                        memory.Write(buffer, 0, count);
-                    }
-                    return memory.ToArray();
-                }
-            }
         }
 
         #region IDisposable Support

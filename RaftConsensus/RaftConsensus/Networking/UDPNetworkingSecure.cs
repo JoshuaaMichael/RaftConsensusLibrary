@@ -95,7 +95,7 @@ namespace TeamDecided.RaftConsensus.Networking
                 return;
             }
 
-            byte[] serialisedMessage = SerialiseMessage(message);
+            byte[] serialisedMessage = message.Serialize();
             byte[] encryptedMessage = CryptoHelper.Encrypt(serialisedMessage, symetricKey);
             byte[] hmacOfEncryptedMessage = CryptoHelper.GenerateHmac(encryptedMessage, hmacSecret);
 
@@ -218,7 +218,7 @@ namespace TeamDecided.RaftConsensus.Networking
             BaseMessage plainTextBaseMessage;
             try
             {
-                plainTextBaseMessage = DeserialiseMessage(plainText);
+                plainTextBaseMessage = BaseMessage.Deserialize(plainText);
             }
             catch
             {
@@ -566,7 +566,7 @@ namespace TeamDecided.RaftConsensus.Networking
 
         private SecureMessage EncryptExchangeMessageSymetric(SecureMessage message, string session, IPEndPoint ipEndPoint, byte[] symetricKey, byte[] hmacSecret)
         {
-            byte[] encryptedData = CryptoHelper.Encrypt(SerialiseMessage(message), symetricKey);
+            byte[] encryptedData = CryptoHelper.Encrypt(message.Serialize(), symetricKey);
             byte[] hmac = CryptoHelper.GenerateHmac(encryptedData, hmacSecret);
 
             return new SecureMessage(ipEndPoint, session, encryptedData, hmac);

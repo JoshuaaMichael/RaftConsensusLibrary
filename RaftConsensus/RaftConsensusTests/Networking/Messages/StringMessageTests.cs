@@ -30,7 +30,7 @@ namespace TeamDecided.RaftConsensus.Tests.Networking.Messages
 
             //Act
             byte[] serialise = _sut.Serialize();
-            StringMessage deserialised = BaseMessage.Deserialize<StringMessage>(serialise);
+            StringMessage deserialised = (StringMessage)BaseMessage.Deserialize(serialise);
 
             //Assert
             Assert.AreEqual(_to, deserialised.To);
@@ -82,14 +82,14 @@ namespace TeamDecided.RaftConsensus.Tests.Networking.Messages
         {
             byte[] serialized = _sut.Serialize();
 
-            Assert.DoesNotThrow(() => { BaseMessage.Deserialize<StringMessage>(serialized); });
+            Assert.DoesNotThrow(() => { BaseMessage.Deserialize(serialized); });
         }
 
         [Test]
         public void UT_Deserialize_ReturnsStringWithData()
         {
             byte[] serialized = _sut.Serialize();
-            StringMessage deserialized = BaseMessage.Deserialize<StringMessage>(serialized);
+            StringMessage deserialized = (StringMessage)BaseMessage.Deserialize(serialized);
 
             Assert.IsNotNull(deserialized);
             Assert.IsTrue(deserialized.Data.Length > 0);
