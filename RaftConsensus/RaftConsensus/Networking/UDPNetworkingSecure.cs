@@ -99,7 +99,7 @@ namespace TeamDecided.RaftConsensus.Networking
             byte[] encryptedMessage = CryptoHelper.Encrypt(serialisedMessage, symetricKey);
             byte[] hmacOfEncryptedMessage = CryptoHelper.GenerateHmac(encryptedMessage, hmacSecret);
 
-            IPEndPoint ipEndPoint = GetPeerIPEndPoint(message.To);
+            IPEndPoint ipEndPoint = _nodeIPs[message.To];
 
             SecureMessage secureMessage = new SecureMessage(ipEndPoint, session, encryptedMessage, hmacOfEncryptedMessage);
 
@@ -253,7 +253,7 @@ namespace TeamDecided.RaftConsensus.Networking
             SecureClientHello secureClientHello = new SecureClientHello()
             {
                 PublicKey = _rsaPublicKeyBytes,
-                IPEndPoint = GetPeerIPEndPoint(message.To)
+                IPEndPoint = _nodeIPs[message.To]
             };
 
             base.SendMessage(secureClientHello);
@@ -261,13 +261,13 @@ namespace TeamDecided.RaftConsensus.Networking
 
         private void HandleSecureClientHello(SecureClientHello message, IPEndPoint ipEndPoint)
         {
-            if(!CryptoHelper.IsPublicKey(message.PublicKey))
+            if (!CryptoHelper.IsPublicKey(message.PublicKey))
             {
                 GenerateReceiveFailureException("Recieved a SecureClientHello with a non-valid public key, discarding", null);
                 return;
             }
 
-            if(message.PublicKey.SequenceEqual(_rsaPublicKeyBytes))
+            if (message.PublicKey.SequenceEqual(_rsaPublicKeyBytes))
             {
                 GenerateReceiveFailureException("We are talking to ourselves, this is not supported, discarding", null);
                 return;
@@ -391,22 +391,22 @@ namespace TeamDecided.RaftConsensus.Networking
             lock (_clientToSessionLockObject)
             {
                 string clientName = "";
-                foreach(KeyValuePair<string, string> pair in _clientToSession)
+                foreach (KeyValuePair<string, string> pair in _clientToSession)
                 {
-                    if(pair.Value == message.Session)
+                    if (pair.Value == message.Session)
                     {
                         clientName = pair.Key;
                     }
                 }
-                if(clientName != "")
+                if (clientName != "")
                 {
                     _clientToSession.Remove(clientName);
                 }
             }
 
-            lock(_sessionToSymetricKeyLockObject)
+            lock (_sessionToSymetricKeyLockObject)
             {
-                if(_sessionToSymetricKey.ContainsKey(message.Session))
+                if (_sessionToSymetricKey.ContainsKey(message.Session))
                 {
                     _sessionToSymetricKey.Remove(message.Session);
                 }
@@ -466,7 +466,7 @@ namespace TeamDecided.RaftConsensus.Networking
 
         private void HandleSecureServerChallengeResponse(SecureServerChallengeResponse message, IPEndPoint ipEndPoint)
         {
-            if(message.ChallengeResult == ESecureChallengeResult.Reject)
+            if (message.ChallengeResult == ESecureChallengeResult.Reject)
             {
                 Log(ERaftLogType.Debug, "We failed node {0}'s challenge", message.From);
                 return; //We failed their test
@@ -533,7 +533,7 @@ namespace TeamDecided.RaftConsensus.Networking
                 storedMessages = _clientToStoredMessage[message.From];
                 _clientToStoredMessage.Remove(message.From);
             }
-            for (int i = 0; i < storedMessages.Count; ) //Removing messages moves through the list
+            for (int i = 0; i < storedMessages.Count;) //Removing messages moves through the list
             {
                 BaseMessage dequeuedMessage = storedMessages.Dequeue();
                 SendMessage(dequeuedMessage);

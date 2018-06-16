@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using TeamDecided.RaftConsensus.Common.Logging;
 using TeamDecided.RaftConsensus.Networking.Enums;
 using TeamDecided.RaftConsensus.Networking.Exceptions;
+using TeamDecided.RaftConsensus.Networking.Helpers;
 using TeamDecided.RaftConsensus.Networking.Interfaces;
 using TeamDecided.RaftConsensus.Networking.Messages;
 
@@ -28,9 +29,8 @@ namespace TeamDecided.RaftConsensus.Networking
         public event EventHandler<UdpNetworkingSendFailureException> OnMessageSendFailure;
 
         public event EventHandler<string> OnNewConnectedPeer;
-        
-        private readonly Dictionary<string, IPEndPoint> _peers;
-        private readonly object _peersLockObject;
+
+        protected readonly NodeIPDictionary _nodeIPs;
 
         private readonly Queue<BaseMessage> _newMessagesToSend;
         private readonly object _newMessagesToSendLockObject;
@@ -65,8 +65,7 @@ namespace TeamDecided.RaftConsensus.Networking
             _newMessagesReceivedLockObject = new object();
             _onMessageReceive = new ManualResetEvent(false);
 
-            _peers = new Dictionary<string, IPEndPoint>();
-            _peersLockObject = new object();
+            _nodeIPs = new NodeIPDictionary();
 
             _newMessagesToSend = new Queue<BaseMessage>();
             _newMessagesToSendLockObject = new object();
@@ -196,7 +195,7 @@ namespace TeamDecided.RaftConsensus.Networking
                 {
                     Log(ERaftLogType.Debug, "Caught exception. Dumping exception string: {0}", FlattenException(e));
                     RebuildUdpClient();
-                }                
+                }
             }
         }
 
@@ -244,10 +243,10 @@ namespace TeamDecided.RaftConsensus.Networking
 
                 if (message.To != null)
                 {
-                    message.IPEndPoint = GetPeerIPEndPoint(message.To);
+                    message.IPEndPoint = _nodeIPs[message.To];
                 }
 
-                if(message.IPEndPoint == null)
+                if (message.IPEndPoint == null)
                 {
                     GenerateSendFailureException("Failed to convert recipient to IPAddress", message);
                     continue;
@@ -326,13 +325,9 @@ namespace TeamDecided.RaftConsensus.Networking
                     continue;
                 }
 
-                lock (_peersLockObject)
+                if (_nodeIPs.AddOrUpdateNode(message.From, newMessageIpEndPoint))
                 {
-                    if (!_peers.ContainsKey(message.From))
-                    {
-                        _peers.Add(message.From, newMessageIpEndPoint);
-                        OnNewConnectedPeer?.Invoke(this, message.From);
-                    }
+                    OnNewConnectedPeer?.Invoke(this, message.From);
                 }
 
                 OnMessageReceived?.Invoke(this, message);
@@ -393,12 +388,9 @@ namespace TeamDecided.RaftConsensus.Networking
             _udpClient.Client.IOControl(unchecked((int)sioUdpConnreset), new[] { Convert.ToByte(false) }, null);
         }
 
-        protected IPEndPoint GetPeerIPEndPoint(string name)
+        protected IPEndPoint GetIPEndPoint(string name)
         {
-            lock (_peersLockObject)
-            {
-                return _peers[name];
-            }
+            return _nodeIPs[name];
         }
 
         protected void GenerateReceiveFailureException(string message, Exception innerException)
@@ -424,7 +416,7 @@ namespace TeamDecided.RaftConsensus.Networking
         {
             if (_status != EUDPNetworkingStatus.Running)
             {
-                if(_status == EUDPNetworkingStatus.Stopped)
+                if (_status == EUDPNetworkingStatus.Stopped)
                 {
                     return;
                 }
@@ -455,10 +447,8 @@ namespace TeamDecided.RaftConsensus.Networking
                 {
                     throw new InvalidOperationException("Library is currently not in a state it may get peers in"); ;
                 }
-                lock (_peersLockObject)
-                {
-                    return _peers.Keys.ToArray();
-                }
+
+                return _nodeIPs.GetNodes();
             }
         }
 
@@ -470,10 +460,8 @@ namespace TeamDecided.RaftConsensus.Networking
                 {
                     throw new InvalidOperationException("Library is currently not in a state it may count peers in"); ;
                 }
-                lock (_peersLockObject)
-                {
-                    return _peers.Count;
-                }
+
+                return _nodeIPs.Count;
             }
         }
 
@@ -485,10 +473,8 @@ namespace TeamDecided.RaftConsensus.Networking
                 {
                     throw new InvalidOperationException("Library is currently not in a state it may check for peers in"); ;
                 }
-                lock (_peersLockObject)
-                {
-                    return _peers.ContainsKey(peerName);
-                }
+
+                return _nodeIPs.HasNode(peerName);
             }
         }
 
@@ -498,21 +484,13 @@ namespace TeamDecided.RaftConsensus.Networking
             {
                 throw new InvalidOperationException("Library is currently not in a state it may add a peer in"); ;
             }
-            lock (_peersLockObject)
-            {
-                _peers.Add(peerName, endPoint);
-            }
+
+            _nodeIPs.AddOrUpdateNode(peerName, endPoint);
         }
 
         public IPEndPoint GetIPFromName(string peerName)
         {
-            IPEndPoint toReturn;
-            lock(_peersLockObject)
-            {
-                _peers.TryGetValue(peerName, out toReturn);
-            }
-
-            return toReturn;
+            return _nodeIPs[peerName];
         }
 
         public void RemovePeer(string peerName)
@@ -523,10 +501,8 @@ namespace TeamDecided.RaftConsensus.Networking
                 {
                     throw new InvalidOperationException("Library is currently not in a state it may remove a peer in"); ;
                 }
-                lock (_peersLockObject)
-                {
-                    _peers.Remove(peerName);
-                }
+
+                _nodeIPs.RemoveNode(peerName);
             }
         }
 
@@ -601,7 +577,7 @@ namespace TeamDecided.RaftConsensus.Networking
 
                         _onNetworkingStop.Set();
                     }
-                    if(previousStatus == EUDPNetworkingStatus.Running)
+                    if (previousStatus == EUDPNetworkingStatus.Running)
                     {
                         _listeningThread.Join();
                         _sendingThread.Join();
