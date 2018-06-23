@@ -21,7 +21,7 @@ namespace TeamDecided.RaftConsensus.Consensus.RaftMessages
 
         public override string ToString()
         {
-            return string.Format("Message Contents: Type:{0}, GUID: {1}, To: {2}, From: {3}", MessageType, MessageGuid, To, From);
+            return string.Format("Message Contents: Type:{0}, GUID: {1}, To: {2}, From: {3}", GetMessageType(), MessageGuid, To, From);
         }
     }
 }

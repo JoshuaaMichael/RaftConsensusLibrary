@@ -85,6 +85,7 @@
     <Compile Include="Consensus\DistributedLog\RaftDistributedLogTests.cs" />
     <Compile Include="Consensus\RaftNodeInfoTests.cs" />
     <Compile Include="Networking\BaseUDPNetworkingTests.cs" />
+    <Compile Include="Networking\Helpers\SecureClientSessionInfoTests.cs" />
     <Compile Include="Networking\Messages\ByteMessageTests.cs" />
     <Compile Include="Networking\Messages\StringMessageTests.cs" />
     <Compile Include="Networking\UDPNetworkingSecureTests.cs" />
