@@ -1,9 +1,4 @@
 ﻿using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TeamDecided.RaftConsensus.Networking.Helpers;
 using TeamDecided.RaftConsensus.Networking.Messages;
 using TeamDecided.RaftConsensus.Networking.Messages.SRP;
@@ -37,6 +32,8 @@ namespace TeamDecided.RaftConsensus.Tests.Networking.Helpers
             BaseSecureMessage c5 = srpSMClient.GetNextMessage();
 
             Assert.IsNull(c5);
+            Assert.IsTrue(srpSMClient.IsComplete());
+            Assert.IsTrue(srpSMServer.IsComplete());
         }
     }
 }

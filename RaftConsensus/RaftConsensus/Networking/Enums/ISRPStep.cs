@@ -1,13 +1,14 @@
 ﻿namespace TeamDecided.RaftConsensus.Networking.Enums
 {
-    enum ISRPStep
+    internal enum ISRPStep
     {
-        NOT_CONTACTED,
-        STEP_1,
-        STEP_2,
-        STEP_3,
-        STEP_4,
-        COMPLETE,
-        TIMED_OUT,
+        NotContacted,
+        Step1,
+        Step2,
+        Step3,
+        Step4,
+        Step5,
+        Complete,
+        TimedOut
     }
 }
