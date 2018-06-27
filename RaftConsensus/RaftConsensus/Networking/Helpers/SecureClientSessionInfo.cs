@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Security.Cryptography;
 using TeamDecided.RaftConsensus.Networking.Enums;
 using TeamDecided.RaftConsensus.Networking.Messages;
 using TeamDecided.RaftConsensus.Networking.Messages.SRP;
@@ -10,115 +9,71 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
 {
     public class SRPSessionManager
     {
-        private static readonly RNGCryptoServiceProvider Rand = new RNGCryptoServiceProvider();
-
         private ISRPStep _stage;
-
-        private readonly string _password;
-
-        private string _session;
-
         private readonly string _to;
         private readonly string _from;
-        private byte[] a;
-        private byte[] A;
+        private readonly string _password;
+        private string _session;
 
-        private byte[] s;
-        private byte[] v;
-        private byte[] B;
-        private byte[] K;
-
-        private byte[] M1;
-        private byte[] M2;
+        private byte[] _clientSecretEphemeralValue; //a
+        private byte[] _clientPublicEphemeralValue; //A
+        private byte[] _userSalt; //s
+        private byte[] _userPasswordVerifier; //v
+        private byte[] _serverPublicEphemeralValue; //B
+        private byte[] _sessionKey; //K
+        private byte[] _clientProof; //M1
+        private byte[] _serverProof; //M2
 
         private BaseSecureMessage _lastSentMessage;
         private DateTime _lastTimeSentMessage;
         private DateTime _lastTimeReicevedMessage;
 
-        private SRPSessionManager(ISRPStep stage)
-        {
-            _stage = stage;
-        }
-
         public SRPSessionManager(string to, string from, string password)
-            : this(ISRPStep.NotContacted)
         {
+            _stage = ISRPStep.Step1;
             _to = to;
             _from = from;
             _password = password;
         }
 
         public SRPSessionManager(SRPStep1 message, string ownName, string password)
-            : this(ISRPStep.Step2)
         {
-            A = message.A;
+            _stage = ISRPStep.Step2;
+            _clientPublicEphemeralValue = message.A;
+            _to = message.From;
             _from = ownName;
             _password = password;
         }
 
         public void HandleMessage(BaseSecureMessage message)
         {
-            switch (_stage)
+            if(message.GetMessageType() == typeof(SRPStep2))
             {
-                case ISRPStep.NotContacted:
-                    throw new ArgumentException("Cannot process a message yet, we haven't even sent a message yet");
-                case ISRPStep.Complete:
-                    throw new ArgumentException("Cannot process any more message. Exchange already complete.");
-            }
-
-            if (message.GetMessageType() == typeof(SRPStep1))
-            {
-                //We must have had some packet loss, GetNextMessage() will handle that
-            }
-            else if(message.GetMessageType() == typeof(SRPStep2))
-            {
-                if (_stage == ISRPStep.Step1)
-                {
-                    B = ((SRPStep2)message).B;
-                    s = ((SRPStep2)message).s;
-                    _stage = ISRPStep.Step3;
-                }
-                else if (_stage == ISRPStep.Step3)
-                {
-                    //We must have had some packet loss, GetNextMessage() will handle that
-                }
-                else
+                if (_stage != ISRPStep.Step1 && _stage != ISRPStep.Step3)
                 {
                     throw new ArgumentException("We are not in the correct state to process this message");
                 }
+                _serverPublicEphemeralValue = ((SRPStep2)message).B;
+                _userSalt = ((SRPStep2)message).s;
+                _stage = ISRPStep.Step3;
             }
             else if (message.GetMessageType() == typeof(SRPStep3))
             {
-                //Including COMPLETE as the message we respond with isn't ack'd to save round trip time
-                if (_stage == ISRPStep.Step2 || _stage == ISRPStep.Complete)
-                {
-                    M1 = ((SRPStep3)message).M1;
-                    _stage = ISRPStep.Step4;
-                }
-                else if (_stage == ISRPStep.Step4)
-                {
-                    //We must have had some packet loss, GetNextMessage() will handle that
-                }
-                else
+                if (_stage != ISRPStep.Step2 && _stage != ISRPStep.PendingComplete)
                 {
                     throw new ArgumentException("We are not in the correct state to process this message");
                 }
+                _clientProof = ((SRPStep3)message).M1;
+                _stage = ISRPStep.Step4;
             }
             else if (message.GetMessageType() == typeof(SRPStep4))
             {
-                if (_stage == ISRPStep.Step3)
-                {
-                    M2 = ((SRPStep4)message).M2;
-                    _stage = ISRPStep.Step5;
-                }
-                else if (_stage == ISRPStep.Step5)
-                {
-                    //We must have had some packet loss, GetNextMessage() will handle that
-                }
-                else
+                if (_stage != ISRPStep.Step3 && _stage != ISRPStep.Step5)
                 {
                     throw new ArgumentException("We are not in the correct state to process this message");
                 }
+                _serverProof = ((SRPStep4)message).M2;
+                _stage = ISRPStep.Step5;
             }
             else if(message.GetMessageType() == typeof(SRPException))
             {
@@ -126,7 +81,7 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
             }
             else
             {
-                throw new ArgumentException("Unsupported message");
+                throw new ArgumentException("Unsupported message: " + message);
             }
         }
 
@@ -134,9 +89,6 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
         {
             switch (_stage)
             {
-                case ISRPStep.NotContacted:
-                    _stage = ISRPStep.Step1;
-                    return Step1();
                 case ISRPStep.Step1:
                     return Step1();
                 case ISRPStep.Step2:
@@ -147,10 +99,6 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
                     return Step4();
                 case ISRPStep.Step5:
                     return Step5();
-                case ISRPStep.Complete:
-                    return null;
-                case ISRPStep.TimedOut:
-                    return null;
                 default:
                     return null;
             }
@@ -160,9 +108,9 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
         {
             if (_lastSentMessage is SRPStep1) return _lastSentMessage;
 
-            a = SRP.a();    //Generate new private ephemeral value
-            A = SRP.A(a);   //Calculate new public ephemeral value
-            _lastSentMessage = new SRPStep1(_to, _from, A);
+            _clientSecretEphemeralValue = SRP.a();                              //Generate new private ephemeral value
+            _clientPublicEphemeralValue = SRP.A(_clientSecretEphemeralValue);   //Calculate new public ephemeral value
+            _lastSentMessage = new SRPStep1(_to, _from, _clientPublicEphemeralValue);
             return _lastSentMessage;
         }
 
@@ -170,21 +118,21 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
         {
             if (_lastSentMessage is SRPStep2) return _lastSentMessage;
 
-            if (!SRP.IsValid_A(A))
+            if (!SRP.IsValid_A(_clientPublicEphemeralValue))
             {
                 return new SRPException(_to, _from, "Received an invalid A value");
             }
 
-            s = SRP.s();                            //Generate user salt
-            byte[] x = SRP.x(_password, s);         //Calculates user private key
-            v = SRP.v(x);                           //Calculates user verifier
+            _userSalt = SRP.s();                                                                            //Generate user salt
+            byte[] x = SRP.x(_password, _userSalt);                                                         //Calculates user private key
+            _userPasswordVerifier = SRP.v(x);                                                               //Calculates user verifier
 
-            byte[] b = SRP.b();                     //Generate service private ephemeral value
-            B = SRP.B(b, v);                        //Calculate service public ephemeral value
-            byte[] u = SRP.u(A, B);                 //Calcualte random scambling value
-            K = SRP.K_Service(A, v, u, b);          //Calculate session key
+            byte[] b = SRP.b();                                                                             //Generate service private ephemeral value
+            _serverPublicEphemeralValue = SRP.B(b, _userPasswordVerifier);                                  //Calculate service public ephemeral value
+            byte[] u = SRP.u(_clientPublicEphemeralValue, _serverPublicEphemeralValue);                     //Calcualte random scambling value
+            _sessionKey = SRP.K_Service(_clientPublicEphemeralValue, _userPasswordVerifier, u, b);          //Calculate session key
 
-            _lastSentMessage = new SRPStep2(_to, _from, s, B);
+            _lastSentMessage = new SRPStep2(_to, _from, _userSalt, _serverPublicEphemeralValue);
             _session = _lastSentMessage.Session;
             return _lastSentMessage;
         }
@@ -193,17 +141,17 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
         {
             if (_lastSentMessage is SRPStep2) return _lastSentMessage;
 
-            byte[] u = SRP.u(A, B);
-            if(!SRP.IsValid_B_u(B, u))
+            byte[] u = SRP.u(_clientPublicEphemeralValue, _serverPublicEphemeralValue);
+            if(!SRP.IsValid_B_u(_serverPublicEphemeralValue, u))
             {
                 return new SRPException(_to, _from, _session, "Received an invalid B or u value");
             }
 
-            byte[] x = SRP.x(_password, s);     //Calculate user private key
-            K = SRP.K_Client(B, x, u, a);       //Calculate session key
+            byte[] x = SRP.x(_password, _userSalt);                                                         //Calculate user private key
+            _sessionKey = SRP.K_Client(_serverPublicEphemeralValue, x, u, _clientSecretEphemeralValue);     //Calculate session key
 
-            M1 = SRP.M1(A, B, K);
-            _lastSentMessage = new SRPStep3(_to, _from, _session, M1);
+            _clientProof = SRP.M1(_clientPublicEphemeralValue, _serverPublicEphemeralValue, _sessionKey);
+            _lastSentMessage = new SRPStep3(_to, _from, _session, _clientProof);
             return _lastSentMessage;
         }
 
@@ -211,33 +159,52 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
         {
             if (_lastSentMessage is SRPStep4) return _lastSentMessage;
 
-            if(!M1.SequenceEqual(SRP.M1(A, B, K)))
+            if(!_clientProof.SequenceEqual(SRP.M1(_clientPublicEphemeralValue, _serverPublicEphemeralValue, _sessionKey)))
             {
                 return new SRPException(_to, _from, _session, "Failed to confirm M1 value");
             }
 
-            _stage = ISRPStep.Complete; //We've authenticated the client
+            _stage = ISRPStep.PendingComplete; //We've authenticated the client
 
-            M2 = SRP.M2(A, M1, K);
-            _lastSentMessage = new SRPStep4(_to, _from, _session, M2);
+            _serverProof = SRP.M2(_clientPublicEphemeralValue, _clientProof, _sessionKey);
+            _lastSentMessage = new SRPStep4(_to, _from, _session, _serverProof);
             return _lastSentMessage;
         }
 
         private BaseSecureMessage Step5()
         {
-            if (!M2.SequenceEqual(SRP.M2(A, M1, K)))
+            if (!_serverProof.SequenceEqual(SRP.M2(_clientPublicEphemeralValue, _clientProof, _sessionKey)))
             {
                 return new SRPException(_to, _from, _session, "Failed to confirm M2 value");
             }
 
             _stage = ISRPStep.Complete; //We've authenticated the server
-
             return null;
         }
 
-        public bool IsComplete()
+        public bool IsPendingComplete()
         {
-            return _stage == ISRPStep.Complete;
+            if (_clientSecretEphemeralValue == null) //I'm the server
+            {
+                return _stage == ISRPStep.PendingComplete;
+            }
+
+            throw new InvalidOperationException("This method may only be called when this side of the connection is the \"server\"");
+        }
+
+        public void SetServerToComplete()
+        {
+            if (!IsPendingComplete())
+            {
+                throw new InvalidOperationException("This method may only be called when this side of the connection is the \"server\", and they're in a PendingComplete state");
+            }
+
+            _stage = ISRPStep.Complete;
+        }
+
+        public bool IsReadyToSend()
+        {
+            return _stage == ISRPStep.PendingComplete || _stage == ISRPStep.Complete;
         }
 
         public void UpdateLastTimeMessageSent()

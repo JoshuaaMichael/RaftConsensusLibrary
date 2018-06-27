@@ -1,6 +1,6 @@
 ﻿namespace TeamDecided.RaftConsensus.Networking.Messages.SRP
 {
-    class SRPException : BaseSecureMessage
+    internal class SRPException : BaseSecureMessage
     {
         public string Message;
 
