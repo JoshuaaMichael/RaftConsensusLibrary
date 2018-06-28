@@ -24,16 +24,18 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
         private byte[] _clientProof; //M1
         private byte[] _serverProof; //M2
 
+        private BaseMessage _clientInitialBufferedMessage;
         private BaseSecureMessage _lastSentMessage;
         private DateTime _lastTimeSentMessage;
         private DateTime _lastTimeReicevedMessage;
 
-        public SRPSessionManager(string to, string from, string password)
+        public SRPSessionManager(string to, string from, string password, BaseMessage clientInitialBufferedMessage)
         {
             _stage = ISRPStep.Step1;
             _to = to;
             _from = from;
             _password = password;
+            _clientInitialBufferedMessage = clientInitialBufferedMessage;
         }
 
         public SRPSessionManager(SRPStep1 message, string ownName, string password)
@@ -215,6 +217,13 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
         public void UpdateLastTimeMessageReiceved()
         {
             _lastTimeReicevedMessage = DateTime.UtcNow;
+        }
+
+        public bool TimeToRetry(int timeout)
+        {
+            return !IsReadyToSend() &&
+                        ((DateTime.UtcNow - _lastTimeSentMessage).TotalMilliseconds > timeout
+                            || (DateTime.UtcNow - _lastTimeReicevedMessage).TotalMilliseconds > timeout);
         }
     }
 }

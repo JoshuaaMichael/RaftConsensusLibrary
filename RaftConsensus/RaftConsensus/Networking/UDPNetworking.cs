@@ -36,7 +36,7 @@ namespace TeamDecided.RaftConsensus.Networking
         private readonly Thread _processingThread;
         private readonly CountdownEvent _onThreadsStarted;
 
-        private bool _disposedValue; // To detect redundant calls
+        protected bool _disposedValue; // To detect redundant calls
 
         public UDPNetworking()
         {
@@ -284,7 +284,7 @@ namespace TeamDecided.RaftConsensus.Networking
             _udpClient.NodeIPs.RemoveNode(peerName);
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             if (_disposedValue) return;
 

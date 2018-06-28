@@ -6,7 +6,7 @@ using TeamDecided.RaftConsensus.Networking.Messages.SRP;
 namespace TeamDecided.RaftConsensus.Tests.Networking.Helpers
 {
     [TestFixture]
-    class SecureClientSessionInfoTests
+    internal class SecureClientSessionInfoTests
     {
         [SetUp]
         public void BeforeTest()
@@ -16,7 +16,7 @@ namespace TeamDecided.RaftConsensus.Tests.Networking.Helpers
         [Test]
         public void SRP_Success()
         {
-            SRPSessionManager srpSMClient = new SRPSessionManager("Server", "Client", "password123");
+            SRPSessionManager srpSMClient = new SRPSessionManager("Server", "Client", "password123", null);
             BaseSecureMessage c1 = srpSMClient.GetNextMessage();
 
             SRPSessionManager srpSMServer = new SRPSessionManager((SRPStep1)c1, "Server", "password123");
