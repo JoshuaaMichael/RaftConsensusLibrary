@@ -1,9 +1,9 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace TeamDecided.RaftConsensus.Networking.Messages
 {
@@ -14,7 +14,7 @@ namespace TeamDecided.RaftConsensus.Networking.Messages
         public string TypeString;
         internal IPEndPoint IPEndPoint;
 
-        protected bool Compressable;
+        internal bool Compressable;
 
         private Type _type;
 
@@ -24,7 +24,7 @@ namespace TeamDecided.RaftConsensus.Networking.Messages
             Compressable = true;
         }
 
-        public BaseMessage(string to, string from)
+        protected BaseMessage(string to, string from)
             : this()
         {
             To = to;
@@ -35,6 +35,7 @@ namespace TeamDecided.RaftConsensus.Networking.Messages
             : this()
         {
             IPEndPoint = to;
+            From = from;
         }
 
         public Type GetMessageType()
@@ -51,15 +52,14 @@ namespace TeamDecided.RaftConsensus.Networking.Messages
             JsonSerializerSettings settings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All };
             string json = JsonConvert.SerializeObject(this, settings);
             byte[] message = Encoding.UTF8.GetBytes(json);
-            byte[] flaggedResult;
 
             if(Compressable)
             {
                 message = Compress(message);
             }
 
-            flaggedResult = new byte[message.Length + 1];
-            flaggedResult[0] = (byte)((Compressable) ? 1 : 0);
+            byte[] flaggedResult = new byte[message.Length + 1];
+            flaggedResult[0] = (byte)(Compressable ? 1 : 0);
 
             Buffer.BlockCopy(message, 0, flaggedResult, 1, message.Length);
 

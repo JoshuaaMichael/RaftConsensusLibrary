@@ -1,6 +1,6 @@
 ﻿namespace TeamDecided.RaftConsensus.Networking.Messages.SRP
 {
-    public class SRPStep1 : BaseSecureMessage
+    internal class SRPStep1 : SecureMessage
     {
         //public string UserName; this can be implied from BaseClass's From
         public byte[] A;

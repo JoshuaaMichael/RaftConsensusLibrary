@@ -126,7 +126,7 @@ namespace TeamDecided.RaftConsensus.Consensus
 
                 Log(ERaftLogType.Info, "Starting networking stack");
 
-                _networking = useEncryption ? new UdpNetworkingSecure(clusterPassword) : new UDPNetworking();
+                _networking = new UDPNetworking();
 
                 FlushNetworkPeerBuffer();
                 _networking.ClientName = _nodeName;

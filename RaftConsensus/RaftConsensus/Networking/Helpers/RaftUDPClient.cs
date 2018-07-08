@@ -11,7 +11,7 @@ using TeamDecided.RaftConsensus.Networking.Messages;
 
 namespace TeamDecided.RaftConsensus.Networking.Helpers
 {
-    internal class RaftUDPClient : IDisposable
+    public class RaftUDPClient : IDisposable
     {
         private UdpClient _udpClient;
         private IPEndPoint _ipEndPoint;
@@ -159,7 +159,7 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
         public void Dispose()
         {
             if (_disposedValue) return;
-            _udpClient.Dispose();
+            _udpClient?.Dispose();
             _disposedValue = true;
         }
     }

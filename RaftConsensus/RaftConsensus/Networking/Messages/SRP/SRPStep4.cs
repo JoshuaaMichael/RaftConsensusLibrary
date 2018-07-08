@@ -1,6 +1,6 @@
 ﻿namespace TeamDecided.RaftConsensus.Networking.Messages.SRP
 {
-    class SRPStep4 : BaseSecureMessage
+    class SRPStep4 : SecureMessage
     {
         public byte[] M2;
 

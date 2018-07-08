@@ -25,7 +25,7 @@ namespace TeamDecided.RaftConsensus.Networking
 
         private readonly ManualResetEvent _onNetworkingStop;
 
-        private readonly RaftUDPClient _udpClient;
+        protected readonly RaftUDPClient UDPClient;
         public string ClientName { get; set; }
 
         private EUDPNetworkingStatus _status;
@@ -36,7 +36,7 @@ namespace TeamDecided.RaftConsensus.Networking
         private readonly Thread _processingThread;
         private readonly CountdownEvent _onThreadsStarted;
 
-        protected bool _disposedValue; // To detect redundant calls
+        protected bool DisposedValue; // To detect redundant calls
 
         public UDPNetworking()
         {
@@ -45,7 +45,7 @@ namespace TeamDecided.RaftConsensus.Networking
 
             _onNetworkingStop = new ManualResetEvent(false);
 
-            _udpClient = new RaftUDPClient();
+            UDPClient = new RaftUDPClient();
             ClientName = Guid.NewGuid().ToString();
 
             _status = EUDPNetworkingStatus.Initialized;
@@ -80,11 +80,11 @@ namespace TeamDecided.RaftConsensus.Networking
 
             if (ipEndPoint == null)
             {
-                _udpClient.Start(port);
+                UDPClient.Start(port);
             }
             else
             {
-                _udpClient.Start(ipEndPoint);
+                UDPClient.Start(ipEndPoint);
             }
 
             _listeningThread.Start();
@@ -126,7 +126,7 @@ namespace TeamDecided.RaftConsensus.Networking
             {
                 try
                 {
-                    Task<UdpReceiveResult> result = _udpClient.ReceiveAsync();
+                    Task<UdpReceiveResult> result = UDPClient.ReceiveAsync();
 
                     if (Task.WaitAny(taskCheckingDispose, result) == 0)
                     {
@@ -160,9 +160,9 @@ namespace TeamDecided.RaftConsensus.Networking
                 BaseMessage message = _newMessagesToSend.Dequeue();
                 Log(ERaftLogType.Trace, "Sending message: {0}", message);
 
-                if (!_udpClient.Send(message))
+                if (!UDPClient.Send(message))
                 {
-                    GenerateSendFailureException(_udpClient.GetSendFailureException());
+                    GenerateSendFailureException(UDPClient.GetSendFailureException());
                 }
             }
         }
@@ -195,7 +195,7 @@ namespace TeamDecided.RaftConsensus.Networking
                         continue;
                     }
 
-                    if (_udpClient.NodeIPs.AddOrUpdateNode(message.From, messageToProcess.Item2))
+                    if (UDPClient.NodeIPs.AddOrUpdateNode(message.From, messageToProcess.Item2))
                     {
                         OnNewConnectedPeer?.Invoke(this, message.From);
                     }
@@ -251,42 +251,42 @@ namespace TeamDecided.RaftConsensus.Networking
 
         protected IPEndPoint GetPeerIPEndPoint(string peerName)
         {
-            return _udpClient.NodeIPs[peerName];
+            return UDPClient.NodeIPs[peerName];
         }
 
         public string[] GetPeers()
         {
-            return _udpClient.NodeIPs.GetNodes();
+            return UDPClient.NodeIPs.GetNodes();
         }
 
         public int CountPeers()
         {
-            return _udpClient.NodeIPs.Count;
+            return UDPClient.NodeIPs.Count;
         }
 
         public bool HasPeer(string peerName)
         {
-            return _udpClient.NodeIPs.HasNode(peerName);
+            return UDPClient.NodeIPs.HasNode(peerName);
         }
 
         public void ManualAddPeer(string peerName, IPEndPoint endPoint)
         {
-            _udpClient.NodeIPs.AddOrUpdateNode(peerName, endPoint);
+            UDPClient.NodeIPs.AddOrUpdateNode(peerName, endPoint);
         }
 
         public IPEndPoint GetIPFromName(string peerName)
         {
-            return _udpClient.NodeIPs[peerName];
+            return UDPClient.NodeIPs[peerName];
         }
 
         public void RemovePeer(string peerName)
         {
-            _udpClient.NodeIPs.RemoveNode(peerName);
+            UDPClient.NodeIPs.RemoveNode(peerName);
         }
 
         public virtual void Dispose()
         {
-            if (_disposedValue) return;
+            if (DisposedValue) return;
 
             lock (_statusLockObject)
             {
@@ -302,9 +302,9 @@ namespace TeamDecided.RaftConsensus.Networking
                 _status = EUDPNetworkingStatus.Stopped;
             }
 
-            _udpClient?.Dispose();
+            UDPClient?.Dispose();
 
-            _disposedValue = true;
+            DisposedValue = true;
         }
     }
 }

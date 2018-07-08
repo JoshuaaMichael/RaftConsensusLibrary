@@ -2,7 +2,7 @@
 
 namespace TeamDecided.RaftConsensus.Networking.Messages.SRP
 {
-    class SRPStep2 : BaseSecureMessage
+    class SRPStep2 : SecureMessage
     {
         public byte[] s;
         public byte[] B;
