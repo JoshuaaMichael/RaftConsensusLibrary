@@ -20,6 +20,7 @@ using TeamDecided.RaftConsensus.Networking.Messages.SRP;
  *      - Instead of sending in DerivedMessageProcessing, flag the background thread. Minimise exception handling.
  *      - Handle timeouts of other party not responding
  *      - Handle issue of receiving SRPStep1's out of order
+ *      - Retry counter
  */
 
 namespace TeamDecided.RaftConsensus.Networking
@@ -68,7 +69,7 @@ namespace TeamDecided.RaftConsensus.Networking
                 return;
             }
 
-            if (!_secureClientsByName[message.To].IsReady())
+            if (!_secureClientsByName[message.To].IsSRPComplete())
             {
                 Log(ERaftLogType.Debug, "Discarding message, secure communication not setup yet: {0}", message);
                 return;
@@ -100,15 +101,18 @@ namespace TeamDecided.RaftConsensus.Networking
                 return null;
             }
 
-            if (message.GetType() == typeof(SRPStep1)) //TODO: Re-think. I think it'll break later protocol
+            if (message.GetType() == typeof(SRPStep1))
             {
-                _secureClientsByName.Remove(message.From);
+                UDPClient.NodeIPs.AddOrUpdateNode(message.From, ipEndPoint);
+                _secureClientsByName.Remove(message.From); //TODO: Re-think. I think it'll break later protocol
                 SRPSessionManager srpSessionManager =
                     new SRPSessionManager((SRPStep1)message, ClientName, _password);
                 base.SendMessage(srpSessionManager.GetNextMessage());
                 _secureClientsByName.Add(message.From, srpSessionManager);
                 return null;
             }
+
+            //TODO, lookup via session
 
             SecureMessage secureMessage = (SecureMessage) message;
             SRPSessionManager mgr = _secureClientsByName.FirstOrDefault(c => c.Value.Session.Equals(secureMessage.Session)).Value;
@@ -121,7 +125,7 @@ namespace TeamDecided.RaftConsensus.Networking
 
             if (message.GetType() == typeof(SecureMessage))
             {
-                if (!mgr.IsReady())
+                if (!mgr.IsSRPComplete())
                 {
                     HandleReceiveFailure("Currently not in a state to decrypt the message, session: " + secureMessage.Session, message);
                     return null;
@@ -132,8 +136,6 @@ namespace TeamDecided.RaftConsensus.Networking
                     mgr.SetServerToComplete();
                 }
 
-                //TODO: Try/catch all of this. It's untrusted data.
-
                 try
                 {
                     byte[] decryptedMessage =
@@ -142,27 +144,32 @@ namespace TeamDecided.RaftConsensus.Networking
                 }
                 catch
                 {
-                    HandleReceiveFailure("Currently not in a state to decrypt the message, session: " + secureMessage.Session, message);
+                    HandleReceiveFailure("Failed to decrypt/deserialize message: " + secureMessage.Session, message);
                     return null;
                 }
             }
 
-            if (message.GetType() != typeof(SRPException)) //Must be an SRP protocol message
+            if (message.GetType() == typeof(SRPException))
             {
-                //These are messages which are part of an establishing protocol
-                //Run the update latest time flag in the call
-                //Process them through the dict
-                //TODO: Check if now complete so can send buffered message, SRPStep4
-
-
-                mgr.HandleMessage(secureMessage);
-
+                HandleReceiveFailure("Received error: " + ((SRPException) message).Message + " from " +
+                                     secureMessage.Session, message);
                 return null;
             }
 
-            //Exception handling
+            try
+            {
+                mgr.HandleMessage(secureMessage);
+                if (mgr.GetNextMessage() != null)
+                {
+                    base.SendMessage(mgr.GetNextMessage());
+                }
+            }
+            catch (Exception e)
+            {
+                HandleReceiveFailure("Caught error when processing message through SRPManager: " + e.Message, message);
+            }
 
-            return null; //Message is consumed by secure channel establishment
+            return null;
         }
 
         private void HandleReceiveFailure(string errorString, BaseMessage failedMessage)

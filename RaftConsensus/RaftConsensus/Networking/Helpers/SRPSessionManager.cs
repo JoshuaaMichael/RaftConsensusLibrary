@@ -5,6 +5,11 @@ using TeamDecided.RaftConsensus.Networking.Messages;
 using TeamDecided.RaftConsensus.Networking.Messages.SRP;
 using Eneter.SecureRemotePassword;
 
+/*
+ * TODO:
+ *  - initialBufferedMessage dispose solution
+ */
+
 namespace TeamDecided.RaftConsensus.Networking.Helpers
 {
     internal class SRPSessionManager
@@ -55,29 +60,20 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
             UpdateLastTimeMessageReiceved();
             if (message.GetMessageType() == typeof(SRPStep2))
             {
-                if (_stage != ISRPStep.Step1 && _stage != ISRPStep.Step3)
-                {
-                    throw new ArgumentException("We are not in the correct state to process this message");
-                }
+                CheckAcceptableState(ISRPStep.Step1, ISRPStep.Step3);
                 _serverPublicEphemeralValue = ((SRPStep2)message).B;
                 _userSalt = ((SRPStep2)message).s;
                 _stage = ISRPStep.Step3;
             }
             else if (message.GetMessageType() == typeof(SRPStep3))
             {
-                if (_stage != ISRPStep.Step2 && _stage != ISRPStep.PendingComplete)
-                {
-                    throw new ArgumentException("We are not in the correct state to process this message");
-                }
+                CheckAcceptableState(ISRPStep.Step2, ISRPStep.PendingComplete);
                 _clientProof = ((SRPStep3)message).M1;
                 _stage = ISRPStep.Step4;
             }
             else if (message.GetMessageType() == typeof(SRPStep4))
             {
-                if (_stage != ISRPStep.Step3 && _stage != ISRPStep.Step5)
-                {
-                    throw new ArgumentException("We are not in the correct state to process this message");
-                }
+                CheckAcceptableState(ISRPStep.Step3, ISRPStep.Step5);
                 _serverProof = ((SRPStep4)message).M2;
                 _stage = ISRPStep.Step5;
             }
@@ -87,11 +83,21 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
             }
             else
             {
-                throw new ArgumentException("Unsupported message: " + message);
+                throw new ArgumentException("Unsupported message");
             }
         }
 
-        public SecureMessage GetNextMessage()
+        private void CheckAcceptableState(params ISRPStep[] acceptableState)
+        {
+            if (acceptableState.Any(step => _stage == step))
+            {
+                return;
+            }
+
+            throw new InvalidOperationException("We are not in the correct state to process this message");
+        }
+
+        public BaseMessage GetNextMessage()
         {
             UpdateLastTimeMessageSent();
             switch (_stage)
@@ -106,9 +112,14 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
                     return Step4();
                 case ISRPStep.Step5:
                     return Step5();
-                default:
-                    return null;
             }
+
+            if (_clientInitialBufferedMessage != null && IsServer() && IsSRPComplete())
+            {
+
+            }
+
+            return (IsServer() && IsSRPComplete()) ? _clientInitialBufferedMessage : null;
         }
 
         private SecureMessage Step1()
@@ -189,7 +200,7 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
             return null;
         }
 
-        public bool IsServer()
+        private bool IsServer()
         {
             return _clientSecretEphemeralValue == null;
         }
@@ -209,7 +220,7 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
             _stage = ISRPStep.Complete;
         }
 
-        public bool IsReady()
+        public bool IsSRPComplete()
         {
             return _stage == ISRPStep.PendingComplete || _stage == ISRPStep.Complete;
         }
@@ -226,7 +237,7 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
 
         public bool TimeToRetry(int timeout)
         {
-            return !IsReady() &&
+            return !IsSRPComplete() &&
                         ((DateTime.UtcNow - _lastTimeSentMessage).TotalMilliseconds > timeout
                             || (DateTime.UtcNow - _lastTimeReicevedMessage).TotalMilliseconds > timeout);
         }
