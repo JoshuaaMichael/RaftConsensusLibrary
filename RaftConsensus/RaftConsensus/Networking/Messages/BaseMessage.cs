@@ -9,31 +9,77 @@ namespace TeamDecided.RaftConsensus.Networking.Messages
 {
     public abstract class BaseMessage
     {
-        public string To { get; set; }
-        public string From { get; set; }
-        public Type MessageType { get; set; }
-        internal IPEndPoint IPEndPoint { get; set; }
+        public string To;
+        public string From;
+        public string TypeString;
+        internal IPEndPoint IPEndPoint;
 
-        protected BaseMessage() { }
+        internal bool Compressable;
 
-        [JsonConstructor]
-        public BaseMessage(string to, string from)
+        private Type _type;
+
+        protected BaseMessage()
+        {
+            TypeString = GetType().FullName;
+            Compressable = true;
+        }
+
+        protected BaseMessage(string to, string from)
+            : this()
         {
             To = to;
             From = from;
-            MessageType = GetType();
+        }
+
+        protected BaseMessage(IPEndPoint to, string from)
+            : this()
+        {
+            IPEndPoint = to;
+            From = from;
+        }
+
+        public Type GetMessageType()
+        {
+            if(_type == null)
+            {
+                _type = Type.GetType(TypeString);
+            }
+            return _type;
         }
 
         public byte[] Serialize()
         {
             JsonSerializerSettings settings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All };
             string json = JsonConvert.SerializeObject(this, settings);
-            return Compress(Encoding.UTF8.GetBytes(json));
+            byte[] message = Encoding.UTF8.GetBytes(json);
+
+            if(Compressable)
+            {
+                message = Compress(message);
+            }
+
+            byte[] flaggedResult = new byte[message.Length + 1];
+            flaggedResult[0] = (byte)(Compressable ? 1 : 0);
+
+            Buffer.BlockCopy(message, 0, flaggedResult, 1, message.Length);
+
+            return flaggedResult;
         }
 
         public static BaseMessage Deserialize(byte[] data)
         {
-            string json = Encoding.UTF8.GetString(Decompress(data));
+            byte[] message;
+            if (data[0] == 1) //if compressable
+            {
+                message = Decompress(data);
+            }
+            else
+            {
+                message = new byte[data.Length - 1];
+                Buffer.BlockCopy(data, 1, message, 0, data.Length - 1);
+            }
+
+            string json = Encoding.UTF8.GetString(message);
             JsonSerializerSettings settings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All };
             return JsonConvert.DeserializeObject<BaseMessage>(json, settings);
         }
@@ -53,20 +99,21 @@ namespace TeamDecided.RaftConsensus.Networking.Messages
 
         protected static byte[] Decompress(byte[] message)
         {
-            //https://www.dotnetperls.com/decompress
-            //Removed do while
-            using (GZipStream stream = new GZipStream(new MemoryStream(message), CompressionMode.Decompress))
+            using (MemoryStream messageStream = new MemoryStream(message, 1, message.Length - 1))
             {
-                const int size = 4096;
-                byte[] buffer = new byte[size];
-                using (MemoryStream memory = new MemoryStream())
+                using (GZipStream stream = new GZipStream(messageStream, CompressionMode.Decompress))
                 {
-                    int count = 0;
-                    while ((count = stream.Read(buffer, 0, size)) > 0)
+                    const int size = 4096;
+                    byte[] buffer = new byte[size];
+                    using (MemoryStream memory = new MemoryStream())
                     {
-                        memory.Write(buffer, 0, count);
+                        int count = 0;
+                        while ((count = stream.Read(buffer, 0, size)) > 0)
+                        {
+                            memory.Write(buffer, 0, count);
+                        }
+                        return memory.ToArray();
                     }
-                    return memory.ToArray();
                 }
             }
         }

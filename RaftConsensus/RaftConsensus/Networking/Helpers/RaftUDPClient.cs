@@ -11,7 +11,7 @@ using TeamDecided.RaftConsensus.Networking.Messages;
 
 namespace TeamDecided.RaftConsensus.Networking.Helpers
 {
-    internal class RaftUDPClient : IDisposable
+    public class RaftUDPClient : IDisposable
     {
         private UdpClient _udpClient;
         private IPEndPoint _ipEndPoint;
@@ -39,28 +39,23 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
 
         public void Start(int port)
         {
-            if (_udpClient != null)
-            {
-                throw new InvalidOperationException("Can only call start once");
-            }
-
             _port = port;
             Init();
         }
 
         public void Start(IPEndPoint ipEndPoint)
         {
-            if (_udpClient != null)
-            {
-                throw new InvalidOperationException("Can only call start once");
-            }
-
             _ipEndPoint = ipEndPoint;
             Init();
         }
 
         private void Init()
         {
+            if (_udpClient != null)
+            {
+                throw new InvalidOperationException("Can only call start once");
+            }
+
             _udpClient = _ipEndPoint == null ? new UdpClient(_port) : new UdpClient(_ipEndPoint);
             DisableIcmpUnreachable();
         }
@@ -96,6 +91,7 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
 
             try
             {
+                _isSocketReady.WaitOne();
                 Task<int> sendMessageTask = _udpClient.SendAsync(messageToSend, messageToSend.Length, message.IPEndPoint);
                 sendMessageTask.Wait();
 
@@ -159,7 +155,7 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
         public void Dispose()
         {
             if (_disposedValue) return;
-            _udpClient.Dispose();
+            _udpClient?.Dispose();
             _disposedValue = true;
         }
     }

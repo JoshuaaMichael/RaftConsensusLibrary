@@ -126,7 +126,7 @@ namespace TeamDecided.RaftConsensus.Consensus
 
                 Log(ERaftLogType.Info, "Starting networking stack");
 
-                _networking = useEncryption ? new UdpNetworkingSecure(clusterPassword) : new UDPNetworking();
+                _networking = new UDPNetworking();
 
                 FlushNetworkPeerBuffer();
                 _networking.ClientName = _nodeName;
@@ -597,19 +597,19 @@ namespace TeamDecided.RaftConsensus.Consensus
                 return;
             }
 
-            if (message.MessageType == typeof(RaftAppendEntry<TKey, TValue>))
+            if (message.GetMessageType() == typeof(RaftAppendEntry<TKey, TValue>))
             {
                 HandleAppendEntry((RaftAppendEntry<TKey, TValue>)message);
             }
-            else if (message.MessageType == typeof(RaftAppendEntryResponse))
+            else if (message.GetMessageType() == typeof(RaftAppendEntryResponse))
             {
                 HandleAppendEntryResponse((RaftAppendEntryResponse)message);
             }
-            else if (message.MessageType == typeof(RaftRequestVote))
+            else if (message.GetMessageType() == typeof(RaftRequestVote))
             {
                 HandleCallElection((RaftRequestVote)message);
             }
-            else if (message.MessageType == typeof(RaftRequestVoteResponse))
+            else if (message.GetMessageType() == typeof(RaftRequestVoteResponse))
             {
                 HandleCallElectionResponse((RaftRequestVoteResponse)message);
             }

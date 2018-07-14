@@ -38,7 +38,7 @@ namespace TeamDecided.RaftConsensus.Tests.Networking.Messages
             //Assert
             Assert.AreEqual(_to, deserialised.To);
             Assert.AreEqual(_from, deserialised.From);
-            Assert.AreEqual(typeof(ByteMessage), deserialised.MessageType);
+            Assert.AreEqual(typeof(ByteMessage), deserialised.GetMessageType());
             Assert.AreEqual(_data, deserialised.Data);
         }
 
@@ -57,7 +57,7 @@ namespace TeamDecided.RaftConsensus.Tests.Networking.Messages
         [Test]
         public void UT_GetMessageType_MemberIsEqual()
         {
-            Assert.AreEqual(typeof(ByteMessage), _sut.MessageType);
+            Assert.AreEqual(typeof(ByteMessage), _sut.GetMessageType());
         }
 
         [Test]
