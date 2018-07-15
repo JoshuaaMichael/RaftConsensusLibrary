@@ -6,13 +6,12 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
     internal class RaftPCQueue<T>
     {
         private readonly Queue<T> _queue;
-        private readonly ManualResetEvent _flag;
-        public WaitHandle Flag => _flag;
+        public ManualResetEvent Flag { get; }
 
         public RaftPCQueue()
         {
             _queue = new Queue<T>();
-            _flag = new ManualResetEvent(false);
+            Flag = new ManualResetEvent(false);
         }
 
         public void Enqueue(T item)
@@ -33,6 +32,14 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
                     _flag.Reset();
                 }
                 return _queue.Dequeue();
+            }
+        }
+
+        public void Clear()
+        {
+            lock (_queue)
+            {
+                _queue.Clear();
             }
         }
     }
