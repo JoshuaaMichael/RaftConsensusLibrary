@@ -2,21 +2,19 @@
 {
     public class RaftRequestVote : RaftBaseMessage
     {
-        public int Term { get; private set; }
-        public int LastLogIndex { get; private set; }
-        public int LastTermIndex { get; private set; }
+        public int LastLogIndex { get; set; }
+        public int LastTermIndex { get; set; }
 
         public RaftRequestVote(string to, string from, string clusterName, int term, int lastLogIndex, int lastTermIndex)
-            : base(to, from, clusterName)
+            : base(to, from, clusterName, term)
         {
-            Term = term;
             LastLogIndex = lastLogIndex;
             LastTermIndex = lastTermIndex;
         }
 
         public override string ToString()
         {
-            return string.Format(base.ToString() + ", Term:{0}, LastLogIndex: {1}, LastTermIndex: {2}", Term, LastLogIndex, LastTermIndex);
+            return $"{base.ToString()}, LastLogIndex: {LastLogIndex}, LastTermIndex: {LastTermIndex}";
         }
     }
 }
