@@ -71,24 +71,27 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Consensus\RaftConsensusTests.cs" />
-    <Compile Include="Consensus\2Nodes\RaftConsensusTests2NodesEncrypted.cs" />
-    <Compile Include="Consensus\3Nodes\RaftConsensusTests3NodesEncrypted.cs" />
+    <None Include="Consensus\2Nodes\RaftConsensusTests2NodesEncrypted.cs" />
+    <None Include="Consensus\3Nodes\RaftConsensusTests3NodesEncrypted.cs" />
+    <None Include="Consensus\17Nodes\RaftConsensusTests17NodesUnencrypted.cs" />
     <Compile Include="Consensus\3Nodes\RaftConsensusTests3NodesUnencrypted.cs" />
-    <Compile Include="Consensus\5Nodes\RaftConsensusTests5NodesEncrypted.cs" />
-    <Compile Include="Consensus\5Nodes\RaftConsensusTests5NodesUnencrypted.cs" />
-    <Compile Include="Consensus\7Nodes\RaftConsensusTests7NodesEncrypted.cs" />
-    <Compile Include="Consensus\7Nodes\RaftConsensusTests7NodesUnencrypted.cs" />
-    <Compile Include="Consensus\9Nodes\RaftConsensusTests9NodesEncrypted.cs" />
-    <Compile Include="Consensus\9Nodes\RaftConsensusTests9NodesUnencrypted.cs" />
+    <None Include="Consensus\5Nodes\RaftConsensusTests5NodesEncrypted.cs" />
+    <None Include="Consensus\5Nodes\RaftConsensusTests5NodesUnencrypted.cs" />
+    <None Include="Consensus\7Nodes\RaftConsensusTests7NodesEncrypted.cs" />
+    <None Include="Consensus\7Nodes\RaftConsensusTests7NodesUnencrypted.cs" />
+    <None Include="Consensus\9Nodes\RaftConsensusTests9NodesEncrypted.cs" />
+    <None Include="Consensus\9Nodes\RaftConsensusTests9NodesUnencrypted.cs" />
     <Compile Include="Consensus\BaseRaftConsensusTests.cs" />
     <Compile Include="Consensus\2Nodes\RaftConsensusTests2NodesUnencrypted.cs" />
     <Compile Include="Consensus\DistributedLog\RaftDistributedLogTests.cs" />
     <Compile Include="Consensus\RaftNodeInfoTests.cs" />
+    <Compile Include="Logging\LoggingTests.cs" />
     <Compile Include="Networking\BaseUDPNetworkingTests.cs" />
     <Compile Include="Networking\Helpers\SecureClientSessionInfoTests.cs" />
     <Compile Include="Networking\Messages\ByteMessageTests.cs" />
     <Compile Include="Networking\Messages\StringMessageTests.cs" />
-    <Compile Include="Networking\UDPNetworkingSecureTests.cs" />
+    <None Include="Networking\UDPNetworkingSecureTests.cs" />
+    <Compile Include="Networking\TestTest.cs" />
     <Compile Include="Networking\UDPNetworkingTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
