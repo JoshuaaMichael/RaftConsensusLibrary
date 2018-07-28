@@ -303,6 +303,9 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
                 appendTasks[j] = leader.AppendEntry("Hello" + (j + 1), "World" + (j + 1));
             }
 
+            //Handle failing to commit better, we can detect it
+            //Then find a new leader
+
             foreach (Task task in appendTasks)
             {
                 task.Wait();
