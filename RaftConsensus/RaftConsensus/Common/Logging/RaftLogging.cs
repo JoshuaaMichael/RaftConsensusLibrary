@@ -5,7 +5,7 @@ using System.Text;
 
 namespace TeamDecided.RaftConsensus.Common.Logging
 {
-    public sealed class RaftLogging : IRaftLogging
+    public sealed class RaftLogging : IRaftLogging, IDisposable
     {
         public static RaftLogging Instance { get; } = new RaftLogging();
 
@@ -129,6 +129,11 @@ namespace TeamDecided.RaftConsensus.Common.Logging
             }
 
             return stringBuilder.ToString();
+        }
+
+        public void Dispose()
+        {
+            FlushBuffer();
         }
     }
 }

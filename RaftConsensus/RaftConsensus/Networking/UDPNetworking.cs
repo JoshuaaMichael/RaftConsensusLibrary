@@ -99,6 +99,25 @@ namespace TeamDecided.RaftConsensus.Networking
             }
         }
 
+        public void Stop()
+        {
+            lock (_statusLockObject)
+            {
+                _onNetworkingStop.Set();
+
+                if (_status == EUDPNetworkingStatus.Running)
+                {
+                    _listeningThread.Join();
+                    _sendingThread.Join();
+                    _processingThread.Join();
+                }
+
+                UDPClient?.Stop();
+
+                _status = EUDPNetworkingStatus.Stopped;
+            }
+        }
+
         public virtual void SendMessage(BaseMessage message)
         {
             if (_status != EUDPNetworkingStatus.Running)

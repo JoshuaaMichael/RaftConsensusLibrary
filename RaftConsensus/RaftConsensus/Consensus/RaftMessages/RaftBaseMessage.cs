@@ -6,7 +6,7 @@ namespace TeamDecided.RaftConsensus.Consensus.RaftMessages
 {
     public class RaftBaseMessage : BaseMessage
     {
-        public int Term { get; protected set; }
+        public int Term { get; set; }
         public string ClusterName { get; set; }
         public string MessageGuid { get; set; }
 

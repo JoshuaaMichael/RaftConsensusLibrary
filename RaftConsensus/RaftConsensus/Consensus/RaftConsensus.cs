@@ -62,6 +62,8 @@ namespace TeamDecided.RaftConsensus.Consensus
         private ManualResetEvent _onShutdown;
         private ManualResetEvent _onThreadStarted;
 
+        private bool isDisposed = false;
+
         public RaftConsensus(string nodeName, int listeningPort)
         {
             NodeName = nodeName;
@@ -72,6 +74,7 @@ namespace TeamDecided.RaftConsensus.Consensus
             _currentState = ERaftState.Initializing;
             _currentTerm = 0;
             _votedFor = "";
+            _leaderName = "";
 
             _nodesInfo = new Dictionary<string, NodeInfo>();
             _distributedLog = new RaftDistributedLog<TKey, TValue>();
@@ -157,7 +160,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                 {
                     Log(ERaftLogType.Warn, "Never found cluster after {0} attempt(s), each with {1} millisecond timeout", attemptNumber - 1, _waitingToJoinClusterTimeout);
                     Log(ERaftLogType.Info, "Shuting down background thread");
-                    _onShutdown.Dispose();
+                    _onShutdown.Set();
                     _backgroundThread.Join();
 
                     Log(ERaftLogType.Trace, "Restoring initial state of class");
@@ -239,8 +242,6 @@ namespace TeamDecided.RaftConsensus.Consensus
 
             waitLoop.RegisterAction((manualResetEvent, elapsedWait) =>
             {
-                _raftMessageQueue.Flag.WaitOne();
-
                 Log(ERaftLogType.Info, "Background thread has been told to shutdown");
                 return true;
             }, _onShutdown);
@@ -257,6 +258,8 @@ namespace TeamDecided.RaftConsensus.Consensus
 
             waitLoop.RegisterAction((manualResetEvent, elapsedWait) =>
             {
+                Log(ERaftLogType.Trace, "WaitLoop processing _raftMessageQueue Flag");
+
                 ERaftState prevState = _currentState;
 
                 ProcessMessage();
@@ -273,7 +276,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                     return false;
                 }
                 
-                waitLoop.TimeoutMs = waitLoop.TimeoutMs - elapsedWait;
+                waitLoop.TimeoutMs = Math.Max(0, waitLoop.TimeoutMs - elapsedWait);
 
                 return false;
             }, _raftMessageQueue.Flag);
@@ -284,17 +287,16 @@ namespace TeamDecided.RaftConsensus.Consensus
                 {
                     case ERaftState.Follower:
                         ProcessTimeout_Follower();
-                        break;
+                        return false;
                     case ERaftState.Candidate:
                         ProcessTimeout_Candidate();
-                        break;
+                        return false;
                     case ERaftState.Leader:
                         ProcessTimeout_Leader();
-                        break;
-                    default:
                         return false;
+                    default:
+                        return true;
                 }
-                return true;
             }, _timeoutValue);
 
             waitLoop.Run();
@@ -737,6 +739,7 @@ namespace TeamDecided.RaftConsensus.Consensus
             }
 
             Log(ERaftLogType.Warn, "Message has passed checked. Queuing for processing. GUID: {0}", raftBaseMessage.MessageGuid);
+
             _raftMessageQueue.Enqueue(raftBaseMessage);
         }
         private void SendMessage(RaftBaseMessage message)
@@ -817,6 +820,9 @@ namespace TeamDecided.RaftConsensus.Consensus
 
         public void Dispose()
         {
+            if(isDisposed) return;
+            isDisposed = true;
+
             Log(ERaftLogType.Trace, "Disposing {0}, previous status: {1}", NodeName, _currentState);
 
             if (_currentState == ERaftState.Leader)
@@ -827,7 +833,11 @@ namespace TeamDecided.RaftConsensus.Consensus
 
             Log(ERaftLogType.Trace, "Shutting down background thread, if running");
             _onShutdown.Set();
-            _backgroundThread.Join();
+            if (_backgroundThread.IsAlive)
+            {
+                _backgroundThread.Join();
+            }
+
             Log(ERaftLogType.Trace, "Background thread completed shutdown, if running");
 
             Log(ERaftLogType.Trace, "Disposing network, if required");

@@ -32,7 +32,7 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
         public RaftUDPClient()
         {
             NodeIPs = new NodeIPDictionary();
-            _isSocketReady = new ManualResetEvent(true);
+            _isSocketReady = new ManualResetEvent(false);
             _isRebuildingLockObject = new object();
             _isRebuilding = false;
         }
@@ -58,6 +58,13 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
 
             _udpClient = _ipEndPoint == null ? new UdpClient(_port) : new UdpClient(_ipEndPoint);
             DisableIcmpUnreachable();
+            _isSocketReady.Set();
+        }
+
+        public void Stop()
+        {
+            _udpClient?.Dispose();
+            _isSocketReady.Reset();
         }
 
         private void DisableIcmpUnreachable()
@@ -70,28 +77,29 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
 
         public bool Send(BaseMessage message)
         {
-            byte[] messageToSend = message.Serialize();
-
-            if (messageToSend.Length > MaxPacketSize)
-            {
-                _sendMessageException = new UdpNetworkingSendFailureException("Message is too large to send", message);
-                return false;
-            }
-
-            if (message.IPEndPoint == null && message.To != null)
-            {
-                message.IPEndPoint = NodeIPs[message.To];
-            }
-
-            if (message.IPEndPoint == null)
-            {
-                _sendMessageException = new UdpNetworkingSendFailureException("Failed to convert recipient to IPAddress", message);
-                return false;
-            }
-
             try
             {
                 _isSocketReady.WaitOne();
+
+                byte[] messageToSend = message.Serialize();
+
+                if (messageToSend.Length > MaxPacketSize)
+                {
+                    _sendMessageException = new UdpNetworkingSendFailureException("Message is too large to send", message);
+                    return false;
+                }
+
+                if (message.IPEndPoint == null && message.To != null)
+                {
+                    message.IPEndPoint = NodeIPs[message.To];
+                }
+
+                if (message.IPEndPoint == null)
+                {
+                    _sendMessageException = new UdpNetworkingSendFailureException("Failed to convert recipient to IPAddress", message);
+                    return false;
+                }
+
                 Task<int> sendMessageTask = _udpClient.SendAsync(messageToSend, messageToSend.Length, message.IPEndPoint);
                 sendMessageTask.Wait();
 
