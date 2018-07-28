@@ -14,6 +14,7 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
     [TestFixture]
     internal abstract class BaseRaftConsensusTests
     {
+        private const string LOG_FILE_NAME = @"C:\Users\Tori\Downloads\debug.log";
         protected const string ClusterName = "TestCluster";
         protected const string ClusterPassword = "password";
         protected const string IPToBind = "127.0.0.1";
@@ -39,7 +40,7 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
         [SetUp]
         public void BeforeTest()
         {
-            RaftLogging.Instance.LogFilename = @"C:\Users\admin\Downloads\debug.log";
+            RaftLogging.Instance.LogFilename = LOG_FILE_NAME;
             RaftLogging.Instance.DeleteExistingLogFile();
             RaftLogging.Instance.LogLevel = ERaftLogType.Trace;
 
