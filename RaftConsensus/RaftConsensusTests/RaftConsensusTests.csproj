@@ -73,7 +73,9 @@
     <Compile Include="Consensus\RaftNodeInfoTests.cs" />
     <Compile Include="Logging\LoggingTests.cs" />
     <Compile Include="Networking\BaseUDPNetworkingTests.cs" />
+    <Compile Include="Networking\Helpers\NodeIPDictionaryTests.cs" />
     <Compile Include="Networking\Helpers\RaftPCQueueTests.cs" />
+    <Compile Include="Networking\Helpers\RaftUDPClientTests.cs" />
     <Compile Include="Networking\Helpers\SecureClientSessionInfoTests.cs" />
     <Compile Include="Networking\Messages\ByteMessageTests.cs" />
     <Compile Include="Networking\Messages\StringMessageTests.cs" />

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using TeamDecided.RaftConsensus.Networking;
+using TeamDecided.RaftConsensus.Networking.Enums;
 using TeamDecided.RaftConsensus.Networking.Messages;
 
 namespace TeamDecided.RaftConsensus.Tests.Networking
@@ -30,6 +31,14 @@ namespace TeamDecided.RaftConsensus.Tests.Networking
         {
             const int sleepDelay = 50; //milliseconds
             StartSend25DelayedReceiveDispose_SuccessfulSendAndReceive(sleepDelay);
+        }
+
+        [Test]
+        public void UT_StopNetwork()
+        {
+            Sut.Start(5555);
+            Sut.Stop();
+            Assert.AreEqual(EUDPNetworkingStatus.Stopped, Sut.GetStatus());
         }
 
         private void StartSend25DelayedReceiveDispose_SuccessfulSendAndReceive(int sleepDelay = 0)

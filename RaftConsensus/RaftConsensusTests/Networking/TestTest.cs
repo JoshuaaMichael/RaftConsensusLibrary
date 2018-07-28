@@ -105,7 +105,7 @@ namespace TeamDecided.RaftConsensus.Tests.Networking
             Assert.IsTrue(caughtMessage);
         }
 
-        //[Test]
+        [Test]
         public void test1()
         {
             RaftLogging.Instance.LogFilename = @"C:\Users\Tori\Downloads\debug.log"; // BaseUDPNetworkingTest[SetUp]

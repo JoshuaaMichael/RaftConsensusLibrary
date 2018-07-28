@@ -94,5 +94,17 @@ namespace TeamDecided.RaftConsensus.Tests.Networking.Messages
             Assert.IsNotNull(deserialized);
             Assert.IsTrue(deserialized.Data.Length > 0);
         }
+
+        [Test]
+        public void UT_DeserializeUnCompressed_ReturnsStringWithData()
+        {
+            _sut.Compressable = false;
+
+            byte[] serialized = _sut.Serialize();
+            StringMessage deserialized = (StringMessage)BaseMessage.Deserialize(serialized);
+
+            Assert.IsNotNull(deserialized);
+            Assert.IsTrue(deserialized.Data.Length > 0);
+        }
     }
 }

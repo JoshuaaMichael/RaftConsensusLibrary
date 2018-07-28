@@ -102,5 +102,23 @@ namespace TeamDecided.RaftConsensus.Tests.Networking.Helpers
 
             Assert.AreEqual(numberOfValues, dequeuedValues.Count);
         }
+
+        [Test]
+        public void UT_ClearMessageQueue_QueueEmpty()
+        {
+            int numberOfValues = 10;
+
+            for (int i = 0; i < numberOfValues; i++)
+            {
+                _queue.Enqueue(i);
+            }
+
+            Assert.AreEqual(numberOfValues, _queue.Count());
+            _queue.Clear();
+
+            Assert.Zero(_queue.Count());
+
+        }
+
     }
 }
