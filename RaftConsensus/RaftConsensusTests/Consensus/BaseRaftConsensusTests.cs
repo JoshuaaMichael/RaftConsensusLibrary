@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,7 +41,6 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
         public void Setup()
         {
             RaftLogging.Instance.LogFilename = TestContext.CurrentContext.TestDirectory + @"\debug.log";
-            RaftLogging.Instance.EnableBuffer(50);
             RaftLogging.Instance.DeleteExistingLogFile();
             RaftLogging.Instance.LogLevel = ERaftLogType.Trace;
         }
@@ -293,24 +293,41 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
                 throw new ArgumentException("Must set the number of commits");
             }
 
-            Task[] appendTasks = new Task[_numberOfCommits];
+            int simultaneousTasksCount = Math.Min(_numberOfCommits, 5);
+            List<Task<ERaftAppendEntryState>> simultanenousTasks = new List<Task<ERaftAppendEntryState>>();
 
-            IConsensus<string, string> leader;
+            List<int> taskStoredValue = new List<int>();
 
-            for (int j = 0; j < _numberOfCommits; j++)
+            for (int i = 0; i < simultaneousTasksCount; i++)
             {
-                leader = FindLeader();
-                appendTasks[j] = leader.AppendEntry("Hello" + (j + 1), "World" + (j + 1));
+                simultanenousTasks.Add(FindLeader().AppendEntry("Hello" + i, "World" + i));
+                taskStoredValue.Add(i);
             }
 
-            foreach (Task task in appendTasks)
+            while (simultanenousTasks.Count > 0)
             {
-                task.Wait();
+                int index = Task.WaitAny(simultanenousTasks.ToArray());
+
+                if (simultanenousTasks[index].Result == ERaftAppendEntryState.Commited)
+                {
+                    int max = taskStoredValue.Max();
+
+                    if (max == _numberOfCommits - 1)
+                    {
+                        simultanenousTasks.RemoveAt(index);
+                        taskStoredValue.RemoveAt(index);
+                    }
+                    else
+                    {
+                        simultanenousTasks[index] = FindLeader().AppendEntry("Hello" + (max + 1), "World" + (max + 1));
+                        taskStoredValue[index] = max + 1;
+                    }
+                }
+                else
+                {
+                    simultanenousTasks[index] = FindLeader().AppendEntry("Hello" + taskStoredValue[index], "World" + taskStoredValue[index]);
+                }
             }
-
-            leader = FindLeader();
-
-            Assert.AreEqual(_numberOfCommits, leader.NumberOfCommits());
         }
 
         private IConsensus<string, string> FindLeader()

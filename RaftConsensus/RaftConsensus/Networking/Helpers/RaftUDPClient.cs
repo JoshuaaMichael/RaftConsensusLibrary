@@ -64,6 +64,7 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
         public void Stop()
         {
             _udpClient?.Dispose();
+            _udpClient = null;
             _isSocketReady.Reset();
         }
 

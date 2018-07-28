@@ -37,13 +37,10 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
                 Truncate(prevIndex);
             }
 
-            if (ConfirmPreviousIndex(prevIndex, prevTerm)) //Expected next index
-            {
-                AppendEntry(entry);
-                return true;
-            }
+            if (!ConfirmPreviousIndex(prevIndex, prevTerm)) return false;
 
-            return false;
+            AppendEntry(entry);
+            return true;
         }
 
         /// <summary>
