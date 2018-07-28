@@ -67,6 +67,11 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
             _isSocketReady.Reset();
         }
 
+        public bool IsRunning()
+        {
+            return _udpClient != null;
+        }
+
         private void DisableIcmpUnreachable()
         {
             const uint iocIn = 0x80000000;
