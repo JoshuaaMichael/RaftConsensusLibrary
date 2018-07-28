@@ -67,6 +67,16 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
             _isSocketReady.Reset();
         }
 
+        public bool IsRunning()
+        {
+            return _udpClient != null;
+        }
+
+        internal void DisposeSocket()
+        {
+            _udpClient?.Dispose();
+        }
+
         private void DisableIcmpUnreachable()
         {
             const uint iocIn = 0x80000000;
@@ -150,6 +160,7 @@ namespace TeamDecided.RaftConsensus.Networking.Helpers
             }
 
             _udpClient.Dispose();
+            _udpClient = null;
 
             Init();
 
