@@ -14,7 +14,6 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
     [TestFixture]
     internal abstract class BaseRaftConsensusTests
     {
-        private const string LOG_FILE_NAME = @"C:\Users\Tori\Downloads\debug.log";
         protected const string ClusterName = "TestCluster";
         protected const string ClusterPassword = "password";
         protected const string IPToBind = "127.0.0.1";
@@ -37,13 +36,18 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
         private const int NumberOfManyCommits = 20;
         private const int DefaultMillisecondsToKeepAlive = 2000;
 
+        [OneTimeSetUp]
+        public void Setup()
+        {
+            RaftLogging.Instance.LogFilename = TestContext.CurrentContext.TestDirectory + @"\debug.log";
+            RaftLogging.Instance.EnableBuffer(50);
+            RaftLogging.Instance.DeleteExistingLogFile();
+            RaftLogging.Instance.LogLevel = ERaftLogType.Trace;
+        }
+
         [SetUp]
         public void BeforeTest()
         {
-            RaftLogging.Instance.LogFilename = LOG_FILE_NAME;
-            RaftLogging.Instance.DeleteExistingLogFile();
-            RaftLogging.Instance.LogLevel = ERaftLogType.Trace;
-
             _commitEntries = new List<Tuple<string, string>>();
             _onStartUAS = new ManualResetEvent(false);
             _onStopUAS = new ManualResetEvent(false);
@@ -51,6 +55,12 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
             _numberOfCommits = -1;
 
             disposedNodes = new List<int>();
+        }
+
+        [OneTimeTearDown]
+        public void OneTimeTearDown()
+        {
+            RaftLogging.Instance.Dispose();
         }
 
         [Test]
@@ -259,10 +269,6 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
 
             for (int i = 0; i < joinClusterResponses.Length; i++)
             {
-                if (NumberOfNodesInTest > 3 && i < 3)
-                {
-                    Thread.Sleep(1500);
-                }
                 joinClusterResponses[i] = _nodes[i].JoinCluster(ClusterName, ClusterPassword, NumberOfNodesInTest, AttemptsToJoinCluster, UseEncryption);
             }
 
@@ -330,7 +336,7 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
         {
             foreach (IConsensus<string, string> node in _nodes)
             {
-                node.Dispose();
+                node?.Dispose();
             }
         }
 

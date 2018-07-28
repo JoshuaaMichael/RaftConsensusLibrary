@@ -6,22 +6,25 @@ namespace TeamDecided.RaftConsensus.Consensus.RaftMessages
 {
     public class RaftBaseMessage : BaseMessage
     {
+        public int Term { get; set; }
         public string ClusterName { get; set; }
         public string MessageGuid { get; set; }
 
         protected RaftBaseMessage() { } //This is needed for Json.NET reasons
 
         [JsonConstructor]
-        public RaftBaseMessage(string to, string from, string clusterName)
+        public RaftBaseMessage(string to, string from, string clusterName, int term)
             : base(to, from)
         {
             ClusterName = clusterName;
+            Term = term;
             MessageGuid = Guid.NewGuid().ToString().Substring(24); //We only want the last set
         }
 
         public override string ToString()
         {
-            return string.Format("Message Contents: Type:{0}, GUID: {1}, To: {2}, From: {3}", GetMessageType(), MessageGuid, To, From);
+            return
+                $"Message Contents: Type:{GetMessageType()}, GUID: {MessageGuid}, To: {To}, From: {From}, Term: {Term}";
         }
     }
 }

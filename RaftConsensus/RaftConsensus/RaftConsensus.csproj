@@ -3,12 +3,12 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>TeamDecided.RaftConsensus</RootNamespace>
-    <Version>0.2.5</Version>
+    <Version>0.2.7</Version>
     <Authors>Joshua, Sean</Authors>
     <Company>Team Decided</Company>
     <PackageId>TeamDecided.RaftConsensus</PackageId>
     <Description>This is a WIP consensus library based on the Raft algorithm built as a team for our BCompSc major project</Description>
-    <PackageReleaseNotes>Reenable compression. Fixed bug in new Distributed Log code.</PackageReleaseNotes>
+    <PackageReleaseNotes>More changes updating the networking class. Bug found in Secure networking, so removed it for now as we continue working on re-writing a secure solution.</PackageReleaseNotes>
     <PackageIconUrl>https://cdn.discordapp.com/attachments/428466046391812098/454957808992124928/raft.ico</PackageIconUrl>
     <RepositoryUrl>https://bitbucket.org/teamdecided/raftconsensuslibrary/src/master/</RepositoryUrl>
     <PackageTags>Raft Consensus</PackageTags>
@@ -19,6 +19,16 @@
     <Compile Remove="Exceptions\**" />
     <EmbeddedResource Remove="Exceptions\**" />
     <None Remove="Exceptions\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Consensus\RaftConsensusOld.cs" />
+    <Compile Remove="Networking\UDPNetworkingSecure.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Consensus\RaftConsensusOld.cs" />
+    <None Include="Networking\UDPNetworkingSecure.cs" />
   </ItemGroup>
 
   <ItemGroup>

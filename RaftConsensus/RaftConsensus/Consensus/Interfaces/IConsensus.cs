@@ -10,8 +10,8 @@ namespace TeamDecided.RaftConsensus.Consensus.Interfaces
         Task<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword, int maxNodes, int attempts, bool useEncryption);
         void ManualAddPeer(string name, IPEndPoint endPoint);
 
-        string GetClusterName();
-        string GetNodeName();
+        string ClusterName { get; }
+        string NodeName { get; }
 
         TValue ReadEntryValue(TKey key);
         TValue[] ReadEntryValueHistory(TKey key);
@@ -19,6 +19,7 @@ namespace TeamDecided.RaftConsensus.Consensus.Interfaces
         event EventHandler<Tuple<TKey, TValue>> OnNewCommitedEntry;
         int NumberOfCommits();
 
+        bool HasJoinedCluster();
         bool IsUASRunning();
 
         event EventHandler OnStartUAS;
