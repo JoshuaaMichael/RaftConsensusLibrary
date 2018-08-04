@@ -217,34 +217,36 @@ namespace TeamDecided.RaftConsensus.Consensus
                 _appendEntryTasks.Add(_distributedLog.LatestIndex, waitEvent);
             }
 
-            return Task.Run(() =>
+            int temp = _distributedLog.LatestIndex;
+
+            return Task.Run(() => AppendEntryTask(temp, waitEvent, entry));
+        }
+
+        private ERaftAppendEntryState AppendEntryTask(int latestIndex, WaitHandle waitEvent, RaftLogEntry<TKey, TValue> entry)
+        {
+            int waitHandleIndex = WaitHandle.WaitAny(new[] { _onShutdown, _onLeadershipLost, waitEvent });
+
+            lock (_appendEntryTasks)
             {
-                int appendEntryTaskIndex = _distributedLog.LatestIndex;
+                _appendEntryTasks.Remove(latestIndex);
+            }
 
-                int waitHandleIndex = WaitHandle.WaitAny(new WaitHandle[] { _onShutdown, _onLeadershipLost, waitEvent });
+            _countdownAppendEntryFailures?.Signal();
 
-                lock (_appendEntryTasks)
-                {
-                    _appendEntryTasks.Remove(appendEntryTaskIndex);
-                }
-
-                _countdownAppendEntryFailures?.Signal();
-
-                switch (waitHandleIndex)
-                {
-                    case 0:
-                        Log(ERaftLogType.Info, "Failed to appended entry to log, shutting down");
-                        return ERaftAppendEntryState.Failed;
-                    case 1:
-                        Log(ERaftLogType.Info, "Failed to appended entry to log, lost leadership");
-                        return ERaftAppendEntryState.Failed;
-                    case 2:
-                        Log(ERaftLogType.Info, "Succesfully appended entry to log - {0}", entry.ToString());
-                        return ERaftAppendEntryState.Commited;
-                    default:
-                        return ERaftAppendEntryState.Failed;
-                }
-            });
+            switch (waitHandleIndex)
+            {
+                case 0:
+                    Log(ERaftLogType.Info, "Failed to appended entry to log, shutting down");
+                    return ERaftAppendEntryState.Failed;
+                case 1:
+                    Log(ERaftLogType.Info, "Failed to appended entry to log, lost leadership");
+                    return ERaftAppendEntryState.Failed;
+                case 2:
+                    Log(ERaftLogType.Info, "Succesfully appended entry to log - {0}", entry.ToString());
+                    return ERaftAppendEntryState.Commited;
+                default:
+                    return ERaftAppendEntryState.Failed;
+            }
         }
 
         private void StartBackgroundThread()

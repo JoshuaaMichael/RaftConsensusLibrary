@@ -129,7 +129,7 @@ namespace TeamDecided.RaftConsensus.Networking
                 throw new InvalidOperationException("Library is currently not in a state it may send in");
             }
 
-            Log(ERaftLogType.Trace, "Enqueuing message to be send, contents: {0}", message);
+            Log(ERaftLogType.Trace, "Enqueuing message to be sent, contents: {0}", message);
             _newMessagesToSend.Enqueue(message);
         }
 

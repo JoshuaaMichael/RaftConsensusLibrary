@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Pipes;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -9,6 +11,7 @@ using TeamDecided.RaftConsensus.Common.Logging;
 using TeamDecided.RaftConsensus.Consensus;
 using TeamDecided.RaftConsensus.Consensus.Enums;
 using TeamDecided.RaftConsensus.Consensus.Interfaces;
+using System.Windows.Forms;
 
 namespace TeamDecided.RaftConsensus.Tests.Consensus
 {
@@ -40,14 +43,26 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
         [OneTimeSetUp]
         public void Setup()
         {
-            RaftLogging.Instance.LogFilename = TestContext.CurrentContext.TestDirectory + @"\debug.log";
-            RaftLogging.Instance.DeleteExistingLogFile();
             RaftLogging.Instance.LogLevel = ERaftLogType.Trace;
+            RaftLogging.Instance.WriteToNamedPipe = true;
+            RaftLogging.Instance.NamedPipeRequestNewFile();
+
+            string className = TestContext.CurrentContext.Test.FullName;
+            className = className.Substring(0, className.LastIndexOf(".", StringComparison.Ordinal));
+
+            string classNameMessage = $"Testing current classname: {className}";
+
+            RaftLogging.Instance.Log(ERaftLogType.Info, classNameMessage);
+            RaftLogging.Instance.NamedPipeWriteToConsole(classNameMessage);
         }
 
         [SetUp]
         public void BeforeTest()
         {
+            string testNameMessage = $"Running test: {TestContext.CurrentContext.Test.MethodName}";
+            RaftLogging.Instance.Log(ERaftLogType.Info, testNameMessage);
+            RaftLogging.Instance.NamedPipeWriteToConsole(testNameMessage);
+
             _commitEntries = new List<Tuple<string, string>>();
             _onStartUAS = new ManualResetEvent(false);
             _onStopUAS = new ManualResetEvent(false);
