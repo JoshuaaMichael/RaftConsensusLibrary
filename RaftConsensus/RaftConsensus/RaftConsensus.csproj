@@ -22,12 +22,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Consensus\RaftConsensusOld.cs" />
     <Compile Remove="Networking\UDPNetworkingSecure.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Consensus\RaftConsensusOld.cs" />
     <None Include="Networking\UDPNetworkingSecure.cs" />
   </ItemGroup>
 

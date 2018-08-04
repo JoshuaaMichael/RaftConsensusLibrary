@@ -2,7 +2,7 @@
 {
     public enum ERaftAppendEntryState
     {
-        //Failed = 0,
+        Failed = 0,
         Commited = 1
     }
 }

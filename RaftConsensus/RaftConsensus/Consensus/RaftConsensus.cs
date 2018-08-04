@@ -61,8 +61,10 @@ namespace TeamDecided.RaftConsensus.Consensus
         private ManualResetEvent _onNotifyBackgroundThread;
         private ManualResetEvent _onShutdown;
         private ManualResetEvent _onThreadStarted;
+        private ManualResetEvent _onLeadershipLost;
+        private CountdownEvent _countdownAppendEntryFailures;
 
-        private bool isDisposed = false;
+        private bool isDisposed;
 
         public RaftConsensus(string nodeName, int listeningPort)
         {
@@ -104,6 +106,7 @@ namespace TeamDecided.RaftConsensus.Consensus
             _onNotifyBackgroundThread = new ManualResetEvent(false);
             _onShutdown = new ManualResetEvent(false);
             _onThreadStarted = new ManualResetEvent(false);
+            _onLeadershipLost = new ManualResetEvent(false);
             _joiningClusterAttemptNumber = 0;
         }
 
@@ -209,16 +212,41 @@ namespace TeamDecided.RaftConsensus.Consensus
             ManualResetEvent waitEvent = new ManualResetEvent(false);
 
             Log(ERaftLogType.Trace, "Adding event for notifying of commit");
-            _appendEntryTasks.Add(_distributedLog.LatestIndex, waitEvent);
-
-            return Task.Run(() =>
+            lock (_appendEntryTasks)
             {
-                //TODO: Handle the case where you stop being leader, and it can tech fail
-                waitEvent.WaitOne();
-                Log(ERaftLogType.Info, "Succesfully appended entry to log");
-                Log(ERaftLogType.Debug, "Heard back from commit attempt, success. {0}", entry.ToString());
-                return ERaftAppendEntryState.Commited;
-            });
+                _appendEntryTasks.Add(_distributedLog.LatestIndex, waitEvent);
+            }
+
+            int temp = _distributedLog.LatestIndex;
+
+            return Task.Run(() => AppendEntryTask(temp, waitEvent, entry));
+        }
+
+        private ERaftAppendEntryState AppendEntryTask(int latestIndex, WaitHandle waitEvent, RaftLogEntry<TKey, TValue> entry)
+        {
+            int waitHandleIndex = WaitHandle.WaitAny(new[] { _onShutdown, _onLeadershipLost, waitEvent });
+
+            lock (_appendEntryTasks)
+            {
+                _appendEntryTasks.Remove(latestIndex);
+            }
+
+            _countdownAppendEntryFailures?.Signal();
+
+            switch (waitHandleIndex)
+            {
+                case 0:
+                    Log(ERaftLogType.Info, "Failed to appended entry to log, shutting down");
+                    return ERaftAppendEntryState.Failed;
+                case 1:
+                    Log(ERaftLogType.Info, "Failed to appended entry to log, lost leadership");
+                    return ERaftAppendEntryState.Failed;
+                case 2:
+                    Log(ERaftLogType.Info, "Succesfully appended entry to log - {0}", entry.ToString());
+                    return ERaftAppendEntryState.Commited;
+                default:
+                    return ERaftAppendEntryState.Failed;
+            }
         }
 
         private void StartBackgroundThread()
@@ -365,6 +393,8 @@ namespace TeamDecided.RaftConsensus.Consensus
             {
                 Log(ERaftLogType.Info, "Notifying the UAS to stop");
                 OnStopUAS?.Invoke(this, EStopUasReason.ClusterLeadershipLost);
+                Log(ERaftLogType.Info, "Setting all the outstanding append entry tasks to failed");
+                FailAppendEntryTasks(true, false);
             }
 
             _currentState = ERaftState.Follower;
@@ -524,8 +554,11 @@ namespace TeamDecided.RaftConsensus.Consensus
 
             int oldCommitIndex = _distributedLog.CommitIndex;
             _distributedLog.CommitUpToIndex(appendEntryResponse.MatchIndex);
-            _appendEntryTasks[appendEntryResponse.MatchIndex].Set();
-            _appendEntryTasks.Remove(appendEntryResponse.MatchIndex);
+
+            lock (_appendEntryTasks)
+            {
+                _appendEntryTasks[appendEntryResponse.MatchIndex].Set(); //TODO: 
+            }
 
             foreach (KeyValuePair<string, NodeInfo> node in _nodesInfo)
             {
@@ -643,6 +676,31 @@ namespace TeamDecided.RaftConsensus.Consensus
             }
         }
 
+        private void FailAppendEntryTasks(bool leadershipLost, bool onShutdown)
+        {
+            if (leadershipLost && onShutdown) throw new ArgumentException("Both values cannot be set");
+            if (!leadershipLost && !onShutdown) throw new ArgumentException("Both values cannot be set");
+
+            lock (_appendEntryTasks)
+            {
+                Log(ERaftLogType.Info, "There are {0} outstanding append entry tasks", _appendEntryTasks.Count);
+
+                if (_appendEntryTasks.Count == 0)
+                {
+                    return;
+                }
+
+                int countOfAppendEntryTasks = _appendEntryTasks.Count;
+                _countdownAppendEntryFailures = new CountdownEvent(countOfAppendEntryTasks);
+
+                if (leadershipLost) _onLeadershipLost.Set();
+                if (onShutdown) _onShutdown.Set();
+
+                Log(ERaftLogType.Info, "Waiting for append entry tasks to complete");
+                _countdownAppendEntryFailures.Wait();
+                _countdownAppendEntryFailures = null;
+            }
+        }
         private bool CheckForVoteMajority()
         {
             Log(ERaftLogType.Trace, "Checking to see if we have vote majority for term {0}", _currentTerm);
@@ -829,6 +887,8 @@ namespace TeamDecided.RaftConsensus.Consensus
             {
                 Log(ERaftLogType.Trace, "We were leader, sending message out to stop UAS");
                 OnStopUAS?.Invoke(this, EStopUasReason.ClusterStop);
+                Log(ERaftLogType.Info, "Setting all the outstanding append entry tasks to failed");
+                FailAppendEntryTasks(false, true);
             }
 
             Log(ERaftLogType.Trace, "Shutting down background thread, if running");
