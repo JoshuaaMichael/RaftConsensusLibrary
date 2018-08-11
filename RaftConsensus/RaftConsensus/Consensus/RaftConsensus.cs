@@ -318,9 +318,11 @@ namespace TeamDecided.RaftConsensus.Consensus
                         return false;
                     case ERaftState.Candidate:
                         ProcessTimeout_Candidate();
+                        waitLoop.TimeoutMs = _timeoutValue;
                         return false;
                     case ERaftState.Leader:
                         ProcessTimeout_Leader();
+                        waitLoop.TimeoutMs = _heartbeatInterval;
                         return false;
                     default:
                         return true;
