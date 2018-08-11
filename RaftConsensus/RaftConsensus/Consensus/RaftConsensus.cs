@@ -796,7 +796,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                 return;
             }
 
-            Log(ERaftLogType.Warn, "Message has passed checked. Queuing for processing. GUID: {0}", raftBaseMessage.MessageGuid);
+            Log(ERaftLogType.Trace, "Message has passed checked. Queuing for processing. GUID: {0}", raftBaseMessage.MessageGuid);
 
             _raftMessageQueue.Enqueue(raftBaseMessage);
         }
