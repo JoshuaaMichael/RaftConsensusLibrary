@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
 using System.Text;
@@ -9,84 +10,120 @@ namespace TeamDecided.RaftConsensus.NamedPipeLogWriter
 {
     internal class Program
     {
-        private static readonly StringBuilder Buffer = new StringBuilder();
-        private static int _bufferedLineCount;
-
         private const string InstructionFlag = "###---###$$$";
-        private const string LogFilename = "debug-{0}.log";
-        private static string _currentLogFile;
+        private const string LogFilename = "debug-{0}-{1}.log";
         private static readonly ManualResetEvent OnClose = new ManualResetEvent(false);
+
+        private const string NamedPipePrependName = "RaftConsensus";
+        private const int DefaultNumberOfLogBuffers = 3;
+        private static int _numberOfLogBuffers;
+        private static List<LoggingBuffer> _loggingBuffers;
+        private static List<string> _logFilenames;
+        private static List<Task> _tasks;
 
         private static void Main(string[] args)
         {
+            _numberOfLogBuffers = args.Length > 0 ? int.Parse(args[0]) : DefaultNumberOfLogBuffers;
+
             AppDomain.CurrentDomain.ProcessExit += (sender, eventArgs) =>
             {
                 Console.WriteLine("Closing Window");
                 OnClose.Set();
-                FlushBuffer();
             };
 
-            File.Delete(LogFilename);
+            _loggingBuffers = new List<LoggingBuffer>();
+            _logFilenames = new List<string>();
+            _tasks = new List<Task>();
 
-            Task.Run(() => BackgroundThread());
+            string dateTimeString = GetLogFileDateTimeString();
+
+            for (int i = 0; i < _numberOfLogBuffers; i++)
+            {
+                var temp = i;
+                _loggingBuffers.Add(new LoggingBuffer());
+                _logFilenames.Add(string.Format(LogFilename, temp, dateTimeString));
+                _tasks.Add(Task.Run(() => ThreadPerNamedPipe(temp)));
+            }
 
             while (WaitHandle.WaitAny(new WaitHandle[] {OnClose}, 500) == WaitHandle.WaitTimeout)
             {
-                FlushBuffer();
+                FlushAllBuffers();
             }
-        }
 
-        private static void FlushBuffer()
-        {
-            lock (Buffer)
+            foreach (Task task in _tasks)
             {
-                if (_bufferedLineCount == 0) return;
-                Console.WriteLine("Flushing buffer. {0} entries", _bufferedLineCount);
-                File.AppendAllText(_currentLogFile, Buffer.ToString());
-                Buffer.Clear();
-                _bufferedLineCount = 0;
+                task.Wait();
             }
         }
 
-        private static void AddToBuffer(string message)
+        private static void FlushAllBuffers()
         {
-            lock (Buffer)
+            for (int i = 0; i < _loggingBuffers.Count; i++)
             {
-                Buffer.Append(message);
-                _bufferedLineCount += 1;
+                FlushBuffer(i);
             }
         }
 
-        private static void StartNewFile()
+        private static void FlushBuffer(int pipeNumber)
         {
-            if (_currentLogFile != null) //Not first time running
+            LoggingBuffer temp = _loggingBuffers[pipeNumber];
+
+            lock (temp)
             {
-                AddToBuffer("##############################################" + Environment.NewLine);
-                AddToBuffer("##################ENDING LOG##################" + Environment.NewLine);
-                AddToBuffer("##############################################" + Environment.NewLine);
-                FlushBuffer();
+                if (!temp.HasEverReceivedMessages || temp.Count == 0) return;
+
+                WriteToConsole(pipeNumber, $"Flushing buffer. {temp.Count} entries");
+
+                File.AppendAllText(_logFilenames[pipeNumber], temp.ToString());
             }
-
-            _currentLogFile = string.Format(LogFilename, DateTime.Now.ToString("yyyyMMdd-HHmmss"));
-
-            AddToBuffer("##############################################" + Environment.NewLine);
-            AddToBuffer("###############STARTING NEW LOG###############" + Environment.NewLine);
-            AddToBuffer("##############################################" + Environment.NewLine);
-            FlushBuffer();
         }
 
-        private static void BackgroundThread()
+        private static void AddToBuffer(int pipeNumber, string message, bool isHeader = false)
+        {
+            lock (_loggingBuffers[pipeNumber])
+            {
+                _loggingBuffers[pipeNumber].AddToBuffer(message, isHeader);
+            }
+        }
+
+        private static string GetLogFileDateTimeString()
+        {
+            return DateTime.Now.ToString("yyyyMMdd-HHmmss");
+        }
+
+        private static void StartNewFile(int pipeNumber)
+        {
+            lock (_loggingBuffers[pipeNumber])
+            {
+                if (_loggingBuffers[pipeNumber].HasEverReceivedMessages)
+                {
+                    AddToBuffer(pipeNumber, "##############################################" + Environment.NewLine);
+                    AddToBuffer(pipeNumber, "##################ENDING LOG##################" + Environment.NewLine);
+                    AddToBuffer(pipeNumber, "##############################################" + Environment.NewLine);
+                    FlushBuffer(pipeNumber);
+                }
+
+                _logFilenames[pipeNumber] = string.Format(LogFilename, pipeNumber, GetLogFileDateTimeString());
+
+                AddToBuffer(pipeNumber, "##############################################" + Environment.NewLine, true);
+                AddToBuffer(pipeNumber, "###############STARTING NEW LOG###############" + Environment.NewLine, true);
+                AddToBuffer(pipeNumber, "##############################################" + Environment.NewLine, true);
+            }
+
+        }
+
+        private static void ThreadPerNamedPipe(int pipeNumber)
         {
             while (true)
             {
-                StartNewFile();
-                NamedPipeServerStream server = new NamedPipeServerStream("RaftConsensusLogging");
+                StartNewFile(pipeNumber);
+                NamedPipeServerStream server = new NamedPipeServerStream(NamedPipePrependName + pipeNumber);
                 try
                 {
-                    Console.WriteLine("Waiting for connection...");
+                    WriteToConsole(pipeNumber, "Waiting for connection");
                     server.WaitForConnection();
+                    WriteToConsole(pipeNumber, "Got connection!");
 
-                    Console.WriteLine("Got connection!");
                     while (true)
                     {
                         byte[] buffer = new byte[4096];
@@ -101,49 +138,56 @@ namespace TeamDecided.RaftConsensus.NamedPipeLogWriter
                         Array.Copy(buffer, chunk, length);
                         string line = Encoding.UTF8.GetString(chunk);
 
-
-                        if (line.StartsWith(InstructionFlag) && line.EndsWith(InstructionFlag)) //This is an message with an instruction
+                        if (!line.StartsWith(InstructionFlag) || !line.EndsWith(InstructionFlag))
                         {
-                            string message = line.Substring(InstructionFlag.Length);
-                            message = message.Substring(0, message.Length - InstructionFlag.Length);
-
-                            int index = message.IndexOf(":"); //Checks if message contains an instruction with a parameter
-
-                            if (index == -1)
-                            {
-                                switch (message)
-                                {
-                                    case "MakeNewFile":
-                                        throw new Exception("Breaking to start new file");
-                                }
-                            }
-                            else
-                            {
-                                string instruction = message.Substring(0, index);
-                                string parameter = message.Substring(index + 1);
-
-                                switch (instruction)
-                                {
-                                    case "Message":
-                                        Console.WriteLine(parameter);
-                                        break;
-                                }
-                            }
+                            AddToBuffer(pipeNumber, line);
+                            continue;
                         }
 
-                        AddToBuffer(line);
+                        string message = line.Substring(InstructionFlag.Length);
+                        message = message.Substring(0, message.Length - InstructionFlag.Length);
+
+                        int index = message.IndexOf(":",
+                            StringComparison.Ordinal); //Checks if message contains an instruction with a parameter
+
+                        if (index == -1)
+                        {
+                            switch (message)
+                            {
+                                case "MakeNewFile":
+                                    throw new Exception("Breaking to start new file");
+                            }
+                        }
+                        else
+                        {
+                            string instruction = message.Substring(0, index);
+                            string parameter = message.Substring(index + 1);
+
+                            switch (instruction)
+                            {
+                                case "Message":
+                                    WriteToConsole(pipeNumber, parameter);
+                                    break;
+                            }
+                        }
                     }
                 }
-                catch
+                catch(Exception e)
                 {
-                    Console.WriteLine("Caught exception on background thread");
+                    WriteToConsole(pipeNumber, "Caught exception on background thread - " + e.Message);
                 }
                 finally
                 {
-                    server.Disconnect();
-                    server.Dispose();
+                    FlushBuffer(pipeNumber);
+                    server?.Disconnect();
+                    server?.Dispose();
                 }
             }
+        }
+
+        private static void WriteToConsole(int pipeNumber, string message)
+        {
+            Console.WriteLine("{0}{1} - {2}", NamedPipePrependName, pipeNumber, message);
         }
     }
 }

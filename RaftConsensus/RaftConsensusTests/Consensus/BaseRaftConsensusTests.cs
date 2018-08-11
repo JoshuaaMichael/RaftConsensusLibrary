@@ -45,6 +45,7 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
         {
             RaftLogging.Instance.LogLevel = ERaftLogType.Trace;
             RaftLogging.Instance.WriteToNamedPipe = true;
+            RaftLogging.Instance.NamedPipeName = "RaftConsensus0";
             RaftLogging.Instance.NamedPipeRequestNewFile();
 
             string className = TestContext.CurrentContext.Test.FullName;

@@ -18,13 +18,12 @@ namespace TeamDecided.RaftConsensus.Common.Logging
         public bool WriteToFile;
         public bool WriteToNamedPipe;
         public bool WriteToEvent;
-        private DateTime _startTime;
-        private Stopwatch _stopwatch;
+        private readonly DateTime _startTime;
+        private readonly Stopwatch _stopwatch;
 
         //File handling
         private List<string> _buffer;
         private int _linesToBufferCount;
-        public const string DefaultFilename = "debug.log";
         private string _loggingFileName;
 
         //Event handling
@@ -32,6 +31,7 @@ namespace TeamDecided.RaftConsensus.Common.Logging
 
         //Named pipe handling
         private NamedPipeClientStream _namedPipe;
+        private string _namedPipeName;
 
 
         private RaftLogging()
@@ -103,22 +103,45 @@ namespace TeamDecided.RaftConsensus.Common.Logging
 
         private void SetupNamedPipe()
         {
+            if (string.IsNullOrEmpty(_namedPipeName))
+            {
+                throw new InvalidOperationException("Cannot create named pipe without a name for it, please set it first");
+            }
+
             if (_namedPipe == null)
             {
-                _namedPipe = new NamedPipeClientStream(".", "RaftConsensusLogging", PipeDirection.Out,
+                _namedPipe = new NamedPipeClientStream(".", _namedPipeName, PipeDirection.Out,
                     PipeOptions.WriteThrough);
             }
 
             if (_namedPipe.IsConnected) return;
             try
             {
-                _namedPipe.Connect(0);
+                _namedPipe.Connect(500);
             }
             catch (TimeoutException) //the server's named pipe is not running
             {
                 WriteToNamedPipe = false;
                 _namedPipe.Dispose();
                 _namedPipe = null;
+            }
+        }
+
+        public string NamedPipeName
+        {
+            get
+            {
+                lock (_methodLockObject)
+                {
+                    return _namedPipeName;
+                }
+            }
+            set
+            {
+                lock (_methodLockObject)
+                {
+                    _namedPipeName = value;
+                }
             }
         }
 
