@@ -3,12 +3,12 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>TeamDecided.RaftConsensus</RootNamespace>
-    <Version>0.3.3</Version>
+    <Version>0.3.4</Version>
     <Authors>Joshua, Sean</Authors>
     <Company>Team Decided</Company>
     <PackageId>TeamDecided.RaftConsensus</PackageId>
     <Description>This is a WIP consensus library based on the Raft algorithm built as a team for our BCompSc major project</Description>
-    <PackageReleaseNotes>Added seperate log writer using named pipes, this is used due to throughput issue on file write. Fixed incorrect log level on message.</PackageReleaseNotes>
+    <PackageReleaseNotes>Fixed waitloop timeout value hang issue</PackageReleaseNotes>
     <PackageIconUrl>https://cdn.discordapp.com/attachments/428466046391812098/454957808992124928/raft.ico</PackageIconUrl>
     <RepositoryUrl>https://bitbucket.org/teamdecided/raftconsensuslibrary/src/master/</RepositoryUrl>
     <PackageTags>Raft Consensus</PackageTags>
