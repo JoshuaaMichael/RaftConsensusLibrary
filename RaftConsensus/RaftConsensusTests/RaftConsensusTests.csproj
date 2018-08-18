@@ -85,7 +85,6 @@
     <Compile Include="Networking\Messages\ByteMessageTests.cs" />
     <Compile Include="Networking\Messages\StringMessageTests.cs" />
     <None Include="Networking\UDPNetworkingSecureTests.cs" />
-    <Compile Include="Networking\TestTest.cs" />
     <Compile Include="Networking\UDPNetworkingTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

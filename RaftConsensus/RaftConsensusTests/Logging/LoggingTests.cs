@@ -18,6 +18,8 @@ namespace TeamDecided.RaftConsensus.Tests.Logging
         public void SetUp()
         {
             _logging = RaftLogging.Instance;
+            _logging.WriteToEvent = true;
+            _logging.WriteToFile = true;
             _logging.LogFilename = LOG_FILE_NAME;
             _logging.LogLevel = DEFAULT_ERAFT_LOG_TYPE;
         }
@@ -118,6 +120,45 @@ namespace TeamDecided.RaftConsensus.Tests.Logging
             //FileAssert.Exists(LOG_FILE_NAME);
             //lines = File.ReadAllLines(LOG_FILE_NAME);
             //Assert.IsNotEmpty(lines);
+        }
+
+        [Test]
+        public void UT_WriteToPipe()
+        {
+            string message = Guid.NewGuid().ToString();
+
+            _logging.WriteToFile = false;
+            _logging.WriteToEvent = true;
+            _logging.NamedPipeRequestNewFile();
+
+            ManualResetEvent gotLogEntry = new ManualResetEvent(false);
+            //CountdownEvent countdown = new CountdownEvent(10);
+            bool caughtMessage = false;
+
+            RaftLogging.Instance.OnNewLogEntry += (sender, tuple) =>
+            {
+                if (tuple.Item2.Contains(message))
+                {
+                    //countdown.AddCount();
+                    //countdown.Signal();
+                    gotLogEntry.Set();
+                    caughtMessage = true;
+                }
+            };
+
+            _logging.WriteToNamedPipe = true;
+            _logging.NamedPipeName = "RaftConsensus0";
+
+            for (int i = 0; i < 10; i++)
+            {
+                _logging.Log(ERaftLogType.Info, "{0} log entry", message);
+            }
+
+            _logging.FlushBuffer();
+
+            gotLogEntry.WaitOne(5000);
+            //countdown.Wait(5000);
+            Assert.IsTrue(caughtMessage);
         }
     }
 }

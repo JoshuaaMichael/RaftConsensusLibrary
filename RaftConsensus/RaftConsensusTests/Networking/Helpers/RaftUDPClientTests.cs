@@ -21,8 +21,9 @@ namespace TeamDecided.RaftConsensus.Tests.Networking.Helpers
         [OneTimeSetUp]
         public void OneTimeSetup()
         {
-            RaftLogging.Instance.LogFilename = TestContext.CurrentContext.TestDirectory + "\\debug.log";
-            RaftLogging.Instance.DeleteExistingLogFile();
+            //RaftLogging.Instance.LogFilename = TestContext.CurrentContext.TestDirectory + "\\debug.log";
+            //RaftLogging.Instance.DeleteExistingLogFile();
+            RaftLogging.Instance.WriteToEvent = true;
             RaftLogging.Instance.LogLevel = ERaftLogType.Debug;
         }
 

@@ -39,8 +39,9 @@ namespace TeamDecided.RaftConsensus.Tests.Networking
 
         public virtual void BeforeEachTest()
         {
-            RaftLogging.Instance.LogFilename = LOG_FILE_NAME;
-            RaftLogging.Instance.DeleteExistingLogFile();
+            //RaftLogging.Instance.LogFilename = LOG_FILE_NAME;
+            //RaftLogging.Instance.DeleteExistingLogFile();
+            RaftLogging.Instance.WriteToEvent = true;
             RaftLogging.Instance.LogLevel = ERaftLogType.Debug;
 
             _sutReceivedMessage = null;
