@@ -7,11 +7,11 @@ using TeamDecided.RaftConsensus.Consensus.DistributedLog;
 
 namespace TeamDecided.RaftConsensus.Tests.Consensus.DistributedLog
 {
-    internal class RaftDistributedLogTests : BaseRaftDistributedLogTests
+    internal class RaftDistributedLogPersistentTests : BaseRaftDistributedLogTests
     {
         public override void BeforeEachTest()
         {
-            Log = new RaftDistributedLog<string, string>();
+            Log = new RaftDistributedLogPersistent<string, string>();
         }
     }
 }

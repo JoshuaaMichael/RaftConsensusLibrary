@@ -254,7 +254,7 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
             }
         }
 
-        [Test]
+
         public void IT_()
         {
             const int targetCommitPerSecond = 60;

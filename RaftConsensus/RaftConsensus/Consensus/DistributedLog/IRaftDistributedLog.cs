@@ -14,6 +14,9 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
         RaftLogEntry<TKey, TValue> GetEntry(TKey key);
         RaftLogEntry<TKey, TValue>[] GetEntryHistory(TKey key);
 
+        void Truncate(int index);
+        bool ConfirmPreviousIndex(int prevIndex, int prevTerm);
+
         void AppendEntry(RaftLogEntry<TKey, TValue> entry);
         bool AppendEntry(RaftLogEntry<TKey, TValue> entry, int prevIndex, int prevTerm);
 

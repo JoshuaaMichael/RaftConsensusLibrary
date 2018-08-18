@@ -35,12 +35,16 @@ namespace TeamDecided.RaftConsensus.Consensus
 
         public int MsUntilTimeout(int timeout)
         {
-            return (int) (LastReceived + timeout - _sw.ElapsedMilliseconds);
+            //Last time sent heartbeat
+            //  
+            //
+
+            return Math.Max(0, (int) (LastReceived + timeout - _sw.ElapsedMilliseconds));
         }
 
         //TODO: Figure out why this is giving us negative values and breaking the waiting loop
 
-        public void UpdateLastSentHeartbeat()
+        public void UpdateLastSentHeartbeat() //make MsTimeout 150
         {
             LastSentHeartbeat = _sw.ElapsedMilliseconds;
         }

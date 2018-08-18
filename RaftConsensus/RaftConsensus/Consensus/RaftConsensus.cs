@@ -38,7 +38,7 @@ namespace TeamDecided.RaftConsensus.Consensus
         private readonly int _listeningPort;
 
         private readonly Dictionary<string, NodeInfo> _nodesInfo;
-        private readonly RaftDistributedLog<TKey, TValue> _distributedLog;
+        private readonly RaftDistributedLogPersistent<TKey, TValue> _distributedLog;
         private readonly Dictionary<int, ManualResetEvent> _appendEntryTasks;
 
         private readonly RaftPCQueue<RaftBaseMessage> _raftMessageQueue;
@@ -79,7 +79,7 @@ namespace TeamDecided.RaftConsensus.Consensus
             _leaderName = "";
 
             _nodesInfo = new Dictionary<string, NodeInfo>();
-            _distributedLog = new RaftDistributedLog<TKey, TValue>();
+            _distributedLog = new RaftDistributedLogPersistent<TKey, TValue>();
             _appendEntryTasks = new Dictionary<int, ManualResetEvent>();
 
             _raftMessageQueue = new RaftPCQueue<RaftBaseMessage>();
@@ -376,7 +376,13 @@ namespace TeamDecided.RaftConsensus.Consensus
                     continue;
                 }
 
+                //node1 - 110   20
+                //node2 - 90    0   150
+                //node3 - 150   60
+
                 int temp = node.Value.MsUntilTimeout(_heartbeatInterval);
+                //Last time we sent them a heartbeat
+                //
                 if (temp < lowestNextTimeout)
                 {
                     lowestNextTimeout = temp;

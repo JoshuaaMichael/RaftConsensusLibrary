@@ -47,7 +47,7 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
         /// Truncates everything from the log forward, and exclusive, of the given index
         /// </summary>
         /// <param name="index">Exclusive index to truncate forwards from</param>
-        private void Truncate(int index)
+        public void Truncate(int index)
         {
             int lastLogEntry = LatestIndex;
 
@@ -64,7 +64,7 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
             }
         }
 
-        private bool ConfirmPreviousIndex(int prevIndex, int prevTerm)
+        public bool ConfirmPreviousIndex(int prevIndex, int prevTerm)
         {
             if (prevIndex == -1 && LatestIndex == -1) { return true; } //No preexisting entries yet
 
