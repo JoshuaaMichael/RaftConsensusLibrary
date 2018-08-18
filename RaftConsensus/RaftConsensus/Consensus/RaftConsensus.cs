@@ -218,6 +218,15 @@ namespace TeamDecided.RaftConsensus.Consensus
             }
 
             int temp = _distributedLog.LatestIndex;
+            //If node is not up to date, Send this message
+
+            foreach (KeyValuePair<string, NodeInfo> node in _nodesInfo)
+            {
+                if (_distributedLog.LatestIndex >= node.Value.NextIndex)
+                {
+                    SendMessage(MakeNextEntryForNode(node.Key, node.Value.NextIndex));
+                }
+            }
 
             return Task.Run(() => AppendEntryTask(temp, waitEvent, entry));
         }
@@ -321,8 +330,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                         waitLoop.TimeoutMs = _timeoutValue;
                         return false;
                     case ERaftState.Leader:
-                        ProcessTimeout_Leader();
-                        waitLoop.TimeoutMs = _heartbeatInterval;
+                        waitLoop.TimeoutMs = ProcessTimeout_Leader();
                         return false;
                     default:
                         return true;
@@ -354,28 +362,28 @@ namespace TeamDecided.RaftConsensus.Consensus
                 _messageProcesser.Process(message);
             }
         }
-        private void ProcessTimeout_Leader()
+        private int ProcessTimeout_Leader()
         {
+            int lowestNextTimeout = _heartbeatInterval;
             Log(ERaftLogType.Debug, "It's time to send out heartbeats");
             foreach (KeyValuePair<string, NodeInfo> node in _nodesInfo)
             {
-                if (_distributedLog.LatestIndex >= node.Value.NextIndex)
+                if (node.Value.ReadyForHeartbeat(_heartbeatInterval))
                 {
-                    SendMessage(new RaftAppendEntry<TKey, TValue>(node.Key,
-                        NodeName,
-                        ClusterName,
-                        _currentTerm,
-                        node.Value.NextIndex - 1,
-                        _distributedLog.GetTerm(node.Value.NextIndex - 1),
-                        _distributedLog.CommitIndex,
-                        _distributedLog.GetEntry(node.Value.NextIndex)));
+                    Log(ERaftLogType.Trace, "Actually sending heartbeat");
+                    node.Value.UpdateLastSentHeartbeat();
+                    SendMessage(MakeNextEntryForNode(node.Key, node.Value.NextIndex));
+                    continue;
                 }
-                else
+
+                int temp = node.Value.MsUntilTimeout(_heartbeatInterval);
+                if (temp < lowestNextTimeout)
                 {
-                    SendMessage(new RaftAppendEntry<TKey, TValue>(node.Key, NodeName, ClusterName,
-                        _currentTerm, _distributedLog.CommitIndex));
+                    lowestNextTimeout = temp;
                 }
             }
+
+            return lowestNextTimeout;
         }
         private void ProcessTimeout_Follower()
         {
@@ -386,6 +394,29 @@ namespace TeamDecided.RaftConsensus.Consensus
         {
             Log(ERaftLogType.Info, "We didn't get voted in to be leader, time to try again");
             ChangeStateToCandiate();
+        }
+
+        private RaftAppendEntry<TKey, TValue> MakeNextEntryForNode(string nodeName)
+        {
+            int nodeNextIndex = _nodesInfo[nodeName].NextIndex;
+            return MakeNextEntryForNode(nodeName, nodeNextIndex);
+        }
+        private RaftAppendEntry<TKey, TValue> MakeNextEntryForNode(string nodeName, int nodeNextIndex)
+        {
+            if (_distributedLog.LatestIndex < nodeNextIndex)
+            {
+                return new RaftAppendEntry<TKey, TValue>(nodeName, NodeName, ClusterName,
+                    _currentTerm, _distributedLog.CommitIndex);
+            }
+
+            return new RaftAppendEntry<TKey, TValue>(nodeName,
+                NodeName,
+                ClusterName,
+                _currentTerm,
+                nodeNextIndex - 1,
+                _distributedLog.GetTerm(nodeNextIndex - 1),
+                _distributedLog.CommitIndex,
+                _distributedLog.GetEntry(nodeNextIndex));
         }
 
         private void ChangeStateToFollower()
@@ -541,7 +572,12 @@ namespace TeamDecided.RaftConsensus.Consensus
 
             Log(ERaftLogType.Info, "The append entry was a success");
 
-            if (appendEntryResponse.MatchIndex <= _distributedLog.CommitIndex) return;
+            RaftAppendEntry<TKey, TValue> returnMessage = null;
+            if (appendEntryResponse.MatchIndex <= _distributedLog.CommitIndex)
+            {
+                Log(ERaftLogType.Trace, "This node is not up to date, preparing message with next entry");
+                returnMessage = MakeNextEntryForNode(message.From); //Send this message on any returns below
+            }
 
             Log(ERaftLogType.Debug, "Since we've got another commit, we should check if we're at majority now");
 
@@ -549,6 +585,10 @@ namespace TeamDecided.RaftConsensus.Consensus
                 _distributedLog.GetTerm(appendEntryResponse.MatchIndex) != _currentTerm)
             {
                 Log(ERaftLogType.Info, "We've haven't reached majority yet");
+                if (returnMessage == null) return;
+
+                Log(ERaftLogType.Trace, "Responding with just the next entry, we did not advance commit index");
+                SendMessage(returnMessage);
                 return;
             }
 
@@ -559,11 +599,21 @@ namespace TeamDecided.RaftConsensus.Consensus
 
             lock (_appendEntryTasks)
             {
-                _appendEntryTasks[appendEntryResponse.MatchIndex].Set(); //TODO: 
+                if (_appendEntryTasks.ContainsKey(appendEntryResponse.MatchIndex))
+                {
+                    _appendEntryTasks[appendEntryResponse.MatchIndex].Set();
+                }
             }
 
             foreach (KeyValuePair<string, NodeInfo> node in _nodesInfo)
             {
+                if (returnMessage != null && node.Key == message.From)
+                {
+                    returnMessage.LeaderCommitIndex = _distributedLog.CommitIndex;
+                    SendMessage(returnMessage);
+                    continue;
+                }
+
                 SendMessage(new RaftAppendEntry<TKey, TValue>(node.Key,
                     NodeName,
                     ClusterName,
@@ -779,7 +829,7 @@ namespace TeamDecided.RaftConsensus.Consensus
             Log(ERaftLogType.Trace, "New timeout value {0}", _timeoutValue);
         }
 
-        private void OnMessageReceived(object sender, BaseMessage message)
+        protected virtual void OnMessageReceived(object sender, BaseMessage message)
         {
             Log(ERaftLogType.Debug, "Received message. From: {0}, Type: {1}", message.From, message.GetType());
             Log(ERaftLogType.Trace, "Received message contents: {0}", message.ToString());

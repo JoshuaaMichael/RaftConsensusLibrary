@@ -68,13 +68,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Consensus\RaftConsensusTests.cs" />
     <Compile Include="Consensus\17Nodes\RaftConsensusTests5NodesUnencrypted.cs" />
     <Compile Include="Consensus\3Nodes\RaftConsensusTests3NodesUnencrypted.cs" />
     <Compile Include="Consensus\5Nodes\RaftConsensusTests5NodesUnencrypted.cs" />
     <Compile Include="Consensus\BaseRaftConsensusTests.cs" />
     <Compile Include="Consensus\2Nodes\RaftConsensusTests2NodesUnencrypted.cs" />
     <Compile Include="Consensus\DistributedLog\RaftDistributedLogTests.cs" />
+    <Compile Include="Consensus\RaftConsensusDelayed.cs" />
     <Compile Include="Consensus\RaftNodeInfoTests.cs" />
     <Compile Include="Logging\LoggingTests.cs" />
     <Compile Include="Networking\BaseUDPNetworkingTests.cs" />

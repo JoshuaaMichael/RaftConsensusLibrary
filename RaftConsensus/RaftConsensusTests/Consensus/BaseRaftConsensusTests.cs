@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
@@ -39,6 +40,7 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
         private const int NumberOfDefaultCommits = 3;
         private const int NumberOfManyCommits = 20;
         private const int DefaultMillisecondsToKeepAlive = 2000;
+        private const int NetworkDelay = 15;
 
         [OneTimeSetUp]
         public void Setup()
@@ -252,19 +254,54 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
             }
         }
 
-        private void MakeNodes()
+        [Test]
+        public void IT_()
+        {
+            const int targetCommitPerSecond = 60;
+            const int numberOfSecondsToTestOver = 30;
+
+            _numberOfCommits = targetCommitPerSecond * numberOfSecondsToTestOver;
+
+            Stopwatch sw = new Stopwatch();
+            
+            try
+            {
+                MakeNodes(true);
+                NodesJoinCluster();
+
+                sw.Start();
+                CommitEntries();
+                sw.Stop();
+
+                Assert.Less(sw.Elapsed.TotalSeconds, numberOfSecondsToTestOver);
+            }
+            finally
+            {
+                DisposeNodes();
+            }
+        }
+
+        private void MakeNodes(bool useSlowNodes = false)
         {
             _nodes = new IConsensus<string, string>[NumberOfNodesInTest];
 
             for (int i = 0; i < NumberOfNodesInTest; i++)
             {
-                MakeSingleNode(i);
+                MakeSingleNode(i, useSlowNodes);
             }
         }
 
-        private void MakeSingleNode(int index)
+        private void MakeSingleNode(int index, bool useSlowNode = false)
         {
-            _nodes[index] = new RaftConsensus<string, string>(DefaultNodeName + (index + 1), StartPort + index);
+            if (useSlowNode)
+            {
+                _nodes[index] = new RaftConsensusDelayed<string, string>(DefaultNodeName + (index + 1), StartPort + index, NetworkDelay);
+            }
+            else
+            {
+                _nodes[index] = new RaftConsensus<string, string>(DefaultNodeName + (index + 1), StartPort + index);
+            }
+
             _nodes[index].OnStartUAS += OnStartUAS;
             _nodes[index].OnStopUAS += OnStopUAS;
             _nodes[index].OnNewCommitedEntry += OnNewCommitedEntry;

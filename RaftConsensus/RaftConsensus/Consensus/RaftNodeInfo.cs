@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace TeamDecided.RaftConsensus.Consensus
 {
@@ -8,19 +9,40 @@ namespace TeamDecided.RaftConsensus.Consensus
         public int NextIndex { get; set; }
         public int MatchIndex { get; set; }
         public bool VoteGranted { get; set; }
-        public DateTime LastReceived { get; private set; }
+        public long LastReceived { get; private set; }
+        public long LastSentHeartbeat { get; private set; }
+        private readonly Stopwatch _sw = Stopwatch.StartNew();
 
         public NodeInfo(string nodeName)
         {
             NodeName = nodeName;
-            LastReceived = DateTime.Now;
+            LastReceived = _sw.ElapsedMilliseconds;
+            LastSentHeartbeat = _sw.ElapsedMilliseconds;
             NextIndex = 0;
             MatchIndex = -1;
         }
 
         public void UpdateLastReceived()
         {
-            LastReceived = DateTime.Now;
+            LastReceived = _sw.ElapsedMilliseconds;
+        }
+
+        public bool ReadyForHeartbeat(int timeout)
+        {
+            return _sw.ElapsedMilliseconds > LastSentHeartbeat + timeout
+                    && _sw.ElapsedMilliseconds - LastReceived > timeout;
+        }
+
+        public int MsUntilTimeout(int timeout)
+        {
+            return (int) (LastReceived + timeout - _sw.ElapsedMilliseconds);
+        }
+
+        //TODO: Figure out why this is giving us negative values and breaking the waiting loop
+
+        public void UpdateLastSentHeartbeat()
+        {
+            LastSentHeartbeat = _sw.ElapsedMilliseconds;
         }
     }
 }
