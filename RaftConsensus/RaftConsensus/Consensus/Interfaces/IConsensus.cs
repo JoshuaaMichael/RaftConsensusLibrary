@@ -9,6 +9,7 @@ namespace TeamDecided.RaftConsensus.Consensus.Interfaces
     {
         Task<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword, int maxNodes, int attempts, bool useEncryption);
         void ManualAddPeer(string name, IPEndPoint endPoint);
+        void EnablePersistentStorage();
 
         string ClusterName { get; }
         string NodeName { get; }

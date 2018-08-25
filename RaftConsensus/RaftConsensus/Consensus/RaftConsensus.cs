@@ -38,7 +38,7 @@ namespace TeamDecided.RaftConsensus.Consensus
         private readonly int _listeningPort;
 
         private readonly Dictionary<string, NodeInfo> _nodesInfo;
-        private readonly RaftDistributedLogPersistent<TKey, TValue> _distributedLog;
+        private IRaftDistributedLog<TKey, TValue> _distributedLog;
         private readonly Dictionary<int, ManualResetEvent> _appendEntryTasks;
 
         private readonly RaftPCQueue<RaftBaseMessage> _raftMessageQueue;
@@ -79,9 +79,8 @@ namespace TeamDecided.RaftConsensus.Consensus
             _leaderName = "";
 
             _nodesInfo = new Dictionary<string, NodeInfo>();
-            _distributedLog = new RaftDistributedLogPersistent<TKey, TValue>();
             _appendEntryTasks = new Dictionary<int, ManualResetEvent>();
-
+            _distributedLog = new RaftDistributedLog<TKey, TValue>();
             _raftMessageQueue = new RaftPCQueue<RaftBaseMessage>();
             _messageProcesser = new MessageProcesser<RaftBaseMessage>();
             _messageProcesser.Register(typeof(RaftAppendEntry<TKey, TValue>), HandleRaftAppendEntry);
@@ -732,6 +731,16 @@ namespace TeamDecided.RaftConsensus.Consensus
             {
                 Log(ERaftLogType.Info, "This vote didn't get us to majority. Continuing waiting...");
             }
+        }
+
+        public void EnablePersistentStorage()
+        {
+            if (_currentState != ERaftState.Initializing)
+            {
+                ThrowInvalidOperationException("Can not enable persistent storage in this state. Enable before JoinCluster.");
+            }
+
+            _distributedLog = new RaftDistributedLogPersistent<TKey, TValue>();
         }
 
         private void FailAppendEntryTasks(bool leadershipLost, bool onShutdown)
