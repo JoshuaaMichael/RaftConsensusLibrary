@@ -375,13 +375,7 @@ namespace TeamDecided.RaftConsensus.Consensus
                     continue;
                 }
 
-                //node1 - 110   20
-                //node2 - 90    0   150
-                //node3 - 150   60
-
                 int temp = node.Value.MsUntilTimeout(_heartbeatInterval);
-                //Last time we sent them a heartbeat
-                //
                 if (temp < lowestNextTimeout)
                 {
                     lowestNextTimeout = temp;

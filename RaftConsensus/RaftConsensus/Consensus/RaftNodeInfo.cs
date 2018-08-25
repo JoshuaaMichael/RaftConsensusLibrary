@@ -29,22 +29,21 @@ namespace TeamDecided.RaftConsensus.Consensus
 
         public bool ReadyForHeartbeat(int timeout)
         {
-            return _sw.ElapsedMilliseconds > LastSentHeartbeat + timeout
-                    && _sw.ElapsedMilliseconds - LastReceived > timeout;
+            return MsUntilTimeout(timeout) == 0;
+            //return _sw.ElapsedMilliseconds > LastSentHeartbeat + timeout //Next time we would naturally send them a heartbeat
+            //        && _sw.ElapsedMilliseconds - LastReceived > timeout; //But in case we've heard from them since, is it 150 after that?
         }
 
         public int MsUntilTimeout(int timeout)
         {
-            //Last time sent heartbeat
-            //  
-            //
+            long lastEvent = Math.Max(LastSentHeartbeat, LastReceived);
+            long timeSinceLastEvent = _sw.ElapsedMilliseconds - lastEvent;
+            long timeToNextEvent = timeout - timeSinceLastEvent;
 
-            return Math.Max(0, (int) (LastReceived + timeout - _sw.ElapsedMilliseconds));
+            return timeToNextEvent > 0 ? (int) timeToNextEvent : 0;
         }
 
-        //TODO: Figure out why this is giving us negative values and breaking the waiting loop
-
-        public void UpdateLastSentHeartbeat() //make MsTimeout 150
+        public void UpdateLastSentHeartbeat()
         {
             LastSentHeartbeat = _sw.ElapsedMilliseconds;
         }
