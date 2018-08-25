@@ -83,8 +83,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Consensus\17Nodes\RaftConsensusTests5NodesUnencrypted.cs" />
+    <Compile Include="Consensus\2Nodes\RaftConsensusTests2NodesEncrypted.cs" />
+    <Compile Include="Consensus\3Nodes\RaftConsensusTests3NodesEncrypted.cs" />
     <Compile Include="Consensus\3Nodes\RaftConsensusTests3NodesUnencrypted.cs" />
+    <Compile Include="Consensus\5Nodes\RaftConsensusTests5NodesEncrypted.cs" />
     <Compile Include="Consensus\5Nodes\RaftConsensusTests5NodesUnencrypted.cs" />
     <Compile Include="Consensus\BaseRaftConsensusTests.cs" />
     <Compile Include="Consensus\2Nodes\RaftConsensusTests2NodesUnencrypted.cs" />

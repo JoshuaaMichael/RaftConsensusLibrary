@@ -1,12 +1,12 @@
 ﻿namespace TeamDecided.RaftConsensus.Tests.Consensus._5Nodes
 {
-    internal class RaftConsensusTests5NodesUnencrypted : BaseRaftConsensusTests
+    internal class RaftConsensusTests5NodesEncrypted : BaseRaftConsensusTests
     {
-        public RaftConsensusTests5NodesUnencrypted()
+        public RaftConsensusTests5NodesEncrypted()
         {
             NumberOfNodesInTest = 5;
             NumberOfActiveNodesInTest = 5;
-            UseEncryption = false;
+            UseEncryption = true;
         }
     }
 }
