@@ -571,11 +571,18 @@ namespace TeamDecided.RaftConsensus.Consensus
 
             Log(ERaftLogType.Info, "The append entry was a success");
 
-            RaftAppendEntry<TKey, TValue> returnMessage = null;
-            if (appendEntryResponse.MatchIndex <= _distributedLog.CommitIndex)
+            if (appendEntryResponse.MatchIndex == _distributedLog.CommitIndex)
+            {
+                Log(ERaftLogType.Trace, "Node up to date now, no need to check for majority or send new message");
+                return;
+            }
+
+            if (appendEntryResponse.MatchIndex < _distributedLog.CommitIndex)
             {
                 Log(ERaftLogType.Trace, "This node is not up to date, preparing message with next entry");
-                returnMessage = MakeNextEntryForNode(message.From); //Send this message on any returns below
+                RaftAppendEntry<TKey, TValue> returnMessage = MakeNextEntryForNode(message.From);
+                SendMessage(returnMessage);
+                return;
             }
 
             Log(ERaftLogType.Debug, "Since we've got another commit, we should check if we're at majority now");
@@ -584,10 +591,6 @@ namespace TeamDecided.RaftConsensus.Consensus
                 _distributedLog.GetTerm(appendEntryResponse.MatchIndex) != _currentTerm)
             {
                 Log(ERaftLogType.Info, "We've haven't reached majority yet");
-                if (returnMessage == null) return;
-
-                Log(ERaftLogType.Trace, "Responding with just the next entry, we did not advance commit index");
-                SendMessage(returnMessage);
                 return;
             }
 
@@ -606,13 +609,6 @@ namespace TeamDecided.RaftConsensus.Consensus
 
             foreach (KeyValuePair<string, NodeInfo> node in _nodesInfo)
             {
-                if (returnMessage != null && node.Key == message.From)
-                {
-                    returnMessage.LeaderCommitIndex = _distributedLog.CommitIndex;
-                    SendMessage(returnMessage);
-                    continue;
-                }
-
                 SendMessage(new RaftAppendEntry<TKey, TValue>(node.Key,
                     NodeName,
                     ClusterName,
