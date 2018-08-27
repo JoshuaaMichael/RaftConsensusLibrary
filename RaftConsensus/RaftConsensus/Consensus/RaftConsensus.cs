@@ -14,8 +14,6 @@ using TeamDecided.RaftConsensus.Networking.Helpers;
 using TeamDecided.RaftConsensus.Networking.Interfaces;
 using TeamDecided.RaftConsensus.Networking.Messages;
 
-//TODO: Make joining threadsafe
-
 namespace TeamDecided.RaftConsensus.Consensus
 {
     public class RaftConsensus<TKey, TValue> : IConsensus<TKey, TValue>
@@ -34,10 +32,11 @@ namespace TeamDecided.RaftConsensus.Consensus
         public string NodeName { get; }
         private string _leaderName;
 
-        private readonly IUDPNetworking _networking;
+        private IUDPNetworking _networking;
         private readonly int _listeningPort;
 
         private readonly Dictionary<string, NodeInfo> _nodesInfo;
+        private readonly Dictionary<string, IPEndPoint> _nodeIPEndPoints;
         private IRaftDistributedLog<TKey, TValue> _distributedLog;
         private readonly Dictionary<int, ManualResetEvent> _appendEntryTasks;
 
@@ -55,13 +54,12 @@ namespace TeamDecided.RaftConsensus.Consensus
 
         private ManualResetEvent _onWaitingToJoinCluster;
         private int _waitingToJoinClusterTimeout = 10000;
-        private int _joiningClusterAttemptNumber;
 
         private readonly Thread _backgroundThread;
-        private ManualResetEvent _onNotifyBackgroundThread;
-        private ManualResetEvent _onShutdown;
-        private ManualResetEvent _onThreadStarted;
-        private ManualResetEvent _onLeadershipLost;
+        private readonly ManualResetEvent _onNotifyBackgroundThread;
+        private readonly ManualResetEvent _onShutdown;
+        private readonly ManualResetEvent _onThreadStarted;
+        private readonly ManualResetEvent _onLeadershipLost;
         private CountdownEvent _countdownAppendEntryFailures;
 
         private bool isDisposed;
@@ -69,8 +67,6 @@ namespace TeamDecided.RaftConsensus.Consensus
         public RaftConsensus(string nodeName, int listeningPort)
         {
             NodeName = nodeName;
-            _networking = new UDPNetworking();
-            _networking.OnMessageReceived += OnMessageReceived;
             _listeningPort = listeningPort;
 
             _currentState = ERaftState.Initializing;
@@ -79,6 +75,7 @@ namespace TeamDecided.RaftConsensus.Consensus
             _leaderName = "";
 
             _nodesInfo = new Dictionary<string, NodeInfo>();
+            _nodeIPEndPoints = new Dictionary<string, IPEndPoint>();
             _appendEntryTasks = new Dictionary<int, ManualResetEvent>();
             _distributedLog = new RaftDistributedLog<TKey, TValue>();
             _raftMessageQueue = new RaftPCQueue<RaftBaseMessage>();
@@ -106,10 +103,9 @@ namespace TeamDecided.RaftConsensus.Consensus
             _onShutdown = new ManualResetEvent(false);
             _onThreadStarted = new ManualResetEvent(false);
             _onLeadershipLost = new ManualResetEvent(false);
-            _joiningClusterAttemptNumber = 0;
         }
 
-        public Task<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword, int maxNodes, int attempts, bool useEncryption)
+        public Task<EJoinClusterResponse> JoinCluster(string clusterName, int maxNodes, int attempts)
         {
             if (_currentState != ERaftState.Initializing)
             {
@@ -119,13 +115,19 @@ namespace TeamDecided.RaftConsensus.Consensus
             {
                 ThrowArgumentException("clusterName must not be blank");
             }
-            if (string.IsNullOrWhiteSpace(clusterPassword))
+
+            if (_networking == null)
             {
-                ThrowArgumentException("clusterPassword must not be blank");
+                _networking = new UDPNetworking();
             }
 
+            _networking.OnMessageReceived += OnMessageReceived;
             Log(ERaftLogType.Info, "Starting networking stack");
             _networking.ClientName = NodeName;
+            foreach (KeyValuePair<string, IPEndPoint> node in _nodeIPEndPoints)
+            {
+                _networking.ManualAddPeer(node.Key, node.Value);
+            }
             _networking.Start(_listeningPort);
 
             _maxNodes = maxNodes;
@@ -153,6 +155,18 @@ namespace TeamDecided.RaftConsensus.Consensus
 
             return Task.Run(() => JoinClusterTask(attempts));
         }
+
+        public Task<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword, int maxNodes,
+            int attempts)
+        {
+            if (string.IsNullOrWhiteSpace(clusterPassword))
+            {
+                ThrowArgumentException("clusterPassword must not be blank");
+            }
+            _networking = new UDPNetworkingBasicSecurity(clusterPassword);
+            return JoinCluster(clusterName, maxNodes, attempts);
+        }
+
         private EJoinClusterResponse JoinClusterTask(int attempts)
         {
             int attemptNumber = 1;
@@ -170,8 +184,8 @@ namespace TeamDecided.RaftConsensus.Consensus
                     _maxNodes = 0;
                     ClusterName = "";
                     _leaderName = "";
-                    _networking.ClientName = "";
-                    _networking.Stop();
+                    _networking.Dispose();
+                    _networking = null;
 
                     Log(ERaftLogType.Info, "Returning no response message from join attempt");
                     return EJoinClusterResponse.NoResponse;
@@ -873,7 +887,7 @@ namespace TeamDecided.RaftConsensus.Consensus
             Log(ERaftLogType.Debug, "Manually adding peer {0}'s IP details. Address {1}, port {2}", name,
                 endPoint.Address.ToString(), endPoint.Port);
             _nodesInfo.Add(name, new NodeInfo(name));
-            _networking.ManualAddPeer(name, endPoint);
+            _nodeIPEndPoints.Add(name, endPoint);
         }
 
         private void Log(ERaftLogType logType, string format, params object[] args)

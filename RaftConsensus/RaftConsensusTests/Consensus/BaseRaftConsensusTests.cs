@@ -322,7 +322,14 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
 
             for (int i = 0; i < joinClusterResponses.Length; i++)
             {
-                joinClusterResponses[i] = _nodes[i].JoinCluster(ClusterName, ClusterPassword, NumberOfNodesInTest, AttemptsToJoinCluster, UseEncryption);
+                if (UseEncryption)
+                {
+                    joinClusterResponses[i] = _nodes[i].JoinCluster(ClusterName, ClusterPassword, NumberOfNodesInTest, AttemptsToJoinCluster);
+                }
+                else
+                {
+                    joinClusterResponses[i] = _nodes[i].JoinCluster(ClusterName, NumberOfNodesInTest, AttemptsToJoinCluster);
+                }
             }
 
             foreach (Task<EJoinClusterResponse> node in joinClusterResponses)
@@ -334,8 +341,7 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
 
         private void JoinSingleNodeIntoCluster(int index)
         {
-            Task<EJoinClusterResponse> joinClusterResponses = _nodes[index].JoinCluster(ClusterName, ClusterPassword,
-                NumberOfNodesInTest, AttemptsToJoinCluster, UseEncryption);
+            Task<EJoinClusterResponse> joinClusterResponses = UseEncryption ? _nodes[index].JoinCluster(ClusterName, ClusterPassword, NumberOfNodesInTest, AttemptsToJoinCluster) : _nodes[index].JoinCluster(ClusterName, NumberOfNodesInTest, AttemptsToJoinCluster);
             joinClusterResponses.Wait();
         }
 

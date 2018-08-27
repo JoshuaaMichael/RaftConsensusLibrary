@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using NUnit.Framework;
 using TeamDecided.RaftConsensus.Networking.Helpers;
 using TeamDecided.RaftConsensus.Networking.Messages;
-using TeamDecided.RaftConsensus.Networking.Messages.SRP;
 using TeamDecided.RaftConsensus.Consensus;
 
 namespace TeamDecided.RaftConsensus.Tests.Networking.Helpers

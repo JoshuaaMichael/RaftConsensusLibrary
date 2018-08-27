@@ -22,14 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Networking\UDPNetworkingSecure.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Networking\UDPNetworkingSecure.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="2.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
   </ItemGroup>
