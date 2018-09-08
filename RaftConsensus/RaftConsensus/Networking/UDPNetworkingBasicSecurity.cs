@@ -63,11 +63,5 @@ namespace TeamDecided.RaftConsensus.Networking
                 return null;
             }
         }
-
-        public override void Dispose()
-        {
-            if (DisposedValue) return;
-            base.Dispose();
-        }
     }
 }
