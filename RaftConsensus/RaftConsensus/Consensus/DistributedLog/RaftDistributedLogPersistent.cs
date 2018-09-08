@@ -5,15 +5,22 @@ using Newtonsoft.Json;
 
 namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
 {
-    public class RaftDistributedLogPersistent<TKey, TValue> : IDisposable, IRaftDistributedLog<TKey, TValue> where TKey : ICloneable where TValue : ICloneable
+    public class RaftDistributedLogPersistent<TKey, TValue> : IRaftDistributedLog<TKey, TValue> where TKey : ICloneable where TValue : ICloneable
     {
         private readonly SQLiteWrapper _db;
+        private readonly string _clusterName;
 
-        public RaftDistributedLogPersistent()
+        public RaftDistributedLogPersistent(string clusterName, string filename)
         {
-            _db = new SQLiteWrapper();
+            _clusterName = clusterName;
+            _db = new SQLiteWrapper(filename);
             SQLCreateTablesIfNotExist();
             SQLCreateSettingsIfNotExist();
+
+            if (GetClusterName() != clusterName)
+            {
+                throw new ArgumentException("Cannot load from select file, file for a different cluster name");
+            }
         }
 
         public void Dispose()
@@ -105,6 +112,11 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
             return GetEntry(key).Value;
         }
 
+        public bool ValueExists(TKey key)
+        {
+            return SQLGetEntry(key) == null;
+        }
+
         public TValue[] GetValueHistory(TKey key)
         {
             RaftLogEntry<TKey, TValue>[] entries = GetEntryHistory(key);
@@ -125,17 +137,22 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
 
         private void SQLCreateTablesIfNotExist()
         {
-            _db.ExecuteNonQuery("CREATE TABLE Entry (`index` INTERGER NOT NULL, `key` INTERGER NOT NULL, value TEXT NOT NULL, term INTERGER NOT NULL, PRIMARY KEY (`index`))");
+            _db.ExecuteNonQuery("CREATE TABLE IF NOT EXISTS Entry (`index` INTERGER NOT NULL, `key` INTERGER NOT NULL, value TEXT NOT NULL, term INTERGER NOT NULL, PRIMARY KEY (`index`))");
             _db.ExecuteNonQuery("CREATE INDEX IF NOT EXISTS Entry_key ON Entry (key)");
-            _db.ExecuteNonQuery("CREATE TABLE IF NOT EXISTS Settings (commitIndex INTERGER NOT NULL)");
+            _db.ExecuteNonQuery("CREATE TABLE IF NOT EXISTS Settings (commitIndex INTERGER NOT NULL, clusterName TEXT NOT NULL)");
         }
 
         private void SQLCreateSettingsIfNotExist()
         {
             if (_db.ExecuteScalarInt("SELECT COUNT(*) FROM Settings") == 0)
             {
-                _db.ExecuteNonQuery("INSERT INTO Settings (commitIndex) VALUES (-1)");
+                _db.ExecuteNonQuery($"INSERT INTO Settings (commitIndex, clusterName) VALUES (-1, \"{_clusterName}\")");
             }
+        }
+
+        private string GetClusterName()
+        {
+            return _db.ExecuteScalar("SELECT clusterName FROM Settings").ToString();
         }
 
         public void SQLUpdateCommitIndex(int index)

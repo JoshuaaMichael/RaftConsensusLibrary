@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.IO.Pipes;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -12,7 +10,6 @@ using TeamDecided.RaftConsensus.Common.Logging;
 using TeamDecided.RaftConsensus.Consensus;
 using TeamDecided.RaftConsensus.Consensus.Enums;
 using TeamDecided.RaftConsensus.Consensus.Interfaces;
-using System.Windows.Forms;
 
 namespace TeamDecided.RaftConsensus.Tests.Consensus
 {
@@ -25,22 +22,24 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
         protected const int StartPort = 5555;
         protected const string DefaultNodeName = "Node";
         protected bool UseEncryption = false;
+        protected bool UsePersistentStorage = false;
         protected int AttemptsToJoinCluster = 3;
+        protected string StorageFilename = TestContext.CurrentContext.TestDirectory + @"\persistentStorage{0}.db";
 
-        private IConsensus<string, string>[] _nodes;
-        private List<Tuple<string, string>> _commitEntries;
-        private List<int> disposedNodes;
+        protected IConsensus<string, string>[] _nodes;
+        protected List<Tuple<string, string>> _commitEntries;
+        protected List<int> disposedNodes;
 
-        private ManualResetEvent _onStartUAS;
-        private ManualResetEvent _onStopUAS;
+        protected ManualResetEvent _onStartUAS;
+        protected ManualResetEvent _onStopUAS;
 
         protected int NumberOfNodesInTest;
         protected int NumberOfActiveNodesInTest;
-        private int _numberOfCommits;
-        private const int NumberOfDefaultCommits = 3;
-        private const int NumberOfManyCommits = 20;
-        private const int DefaultMillisecondsToKeepAlive = 2000;
-        private const int NetworkDelay = 15;
+        protected int _numberOfCommits;
+        protected const int NumberOfDefaultCommits = 3;
+        protected const int NumberOfManyCommits = 20;
+        protected const int DefaultMillisecondsToKeepAlive = 2000;
+        protected const int NetworkDelay = 15;
 
         [OneTimeSetUp]
         public void Setup()
@@ -280,7 +279,7 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
             }
         }
 
-        private void MakeNodes(bool useSlowNodes = false)
+        protected void MakeNodes(bool useSlowNodes = false)
         {
             _nodes = new IConsensus<string, string>[NumberOfNodesInTest];
 
@@ -290,7 +289,7 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
             }
         }
 
-        private void MakeSingleNode(int index, bool useSlowNode = false)
+        protected void MakeSingleNode(int index, bool useSlowNode = false)
         {
             if (useSlowNode)
             {
@@ -304,6 +303,7 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
             _nodes[index].OnStartUAS += OnStartUAS;
             _nodes[index].OnStopUAS += OnStopUAS;
             _nodes[index].OnNewCommitedEntry += OnNewCommitedEntry;
+            _nodes[index].EnablePersistentStorage(string.Format(StorageFilename, index + 1));
 
             for (int j = 0; j < _nodes.Length; j++)
             {
@@ -315,7 +315,7 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
             }
         }
 
-        private void NodesJoinCluster()
+        protected void NodesJoinCluster()
         {
             Task<EJoinClusterResponse>[] joinClusterResponses = new Task<EJoinClusterResponse>[NumberOfActiveNodesInTest];
 
@@ -338,13 +338,13 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
             }
         }
 
-        private void JoinSingleNodeIntoCluster(int index)
+        protected void JoinSingleNodeIntoCluster(int index)
         {
             Task<EJoinClusterResponse> joinClusterResponses = UseEncryption ? _nodes[index].JoinCluster(ClusterName, ClusterPassword, NumberOfNodesInTest, AttemptsToJoinCluster) : _nodes[index].JoinCluster(ClusterName, NumberOfNodesInTest, AttemptsToJoinCluster);
             joinClusterResponses.Wait();
         }
 
-        private void CommitEntries()
+        protected void CommitEntries()
         {
             if (_numberOfCommits == -1)
             {
@@ -388,12 +388,12 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
             }
         }
 
-        private IConsensus<string, string> FindLeader()
+        protected IConsensus<string, string> FindLeader()
         {
             return _nodes[GetLeaderIndex()];
         }
 
-        private int GetLeaderIndex()
+        protected int GetLeaderIndex()
         {
             while (true)
             {
@@ -407,7 +407,7 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
             }
         }
 
-        private void DisposeNodes()
+        protected void DisposeNodes()
         {
             foreach (IConsensus<string, string> node in _nodes)
             {
@@ -415,24 +415,24 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
             }
         }
 
-        private int CalculateMaxPossibleNodesCanLose()
+        protected int CalculateMaxPossibleNodesCanLose()
         {
             return (NumberOfNodesInTest > 2) ? (NumberOfNodesInTest / 2) : 0;
         }
 
-        private int CalculateMinimumMajority()
+        protected int CalculateMinimumMajority()
         {
             return CalculateMaxPossibleNodesCanLose() + 1;
         }
 
-        private void DisposeLeader()
+        protected void DisposeLeader()
         {
             int leaderIndex = GetLeaderIndex();
             _nodes[leaderIndex].Dispose();
             disposedNodes.Add(leaderIndex);
         }
 
-        private void DisposeCountOfNonleaders(int count)
+        protected void DisposeCountOfNonleaders(int count)
         {
             int disposedCount = 0;
             for (int i = 0; i < count || disposedCount > count; i++)
@@ -444,7 +444,7 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
             }
         }
 
-        private void RebuildAndRejoinDisposedNodes()
+        protected void RebuildAndRejoinDisposedNodes()
         {
             for (int i = 0; i < _nodes.Length; i++)
             {
@@ -456,17 +456,17 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus
             }
         }
 
-        private void OnStartUAS(object sender, EventArgs e)
+        protected void OnStartUAS(object sender, EventArgs e)
         {
             _onStartUAS.Set();
         }
 
-        private void OnStopUAS(object sender, EStopUasReason e)
+        protected void OnStopUAS(object sender, EStopUasReason e)
         {
             _onStopUAS.Set();
         }
 
-        private void OnNewCommitedEntry(object sender, Tuple<string, string> e)
+        protected void OnNewCommitedEntry(object sender, Tuple<string, string> e)
         {
             _commitEntries.Add(e);
         }

@@ -2,13 +2,14 @@
 
 namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
 {
-    public interface IRaftDistributedLog<TKey, TValue> where TKey : ICloneable where TValue : ICloneable
+    public interface IRaftDistributedLog<TKey, TValue> : IDisposable where TKey : ICloneable where TValue : ICloneable
     {
         bool ContainsKey(TKey key);
 
         TValue GetValue(int index);
         TValue GetValue(TKey key);
         TValue[] GetValueHistory(TKey key);
+        bool ValueExists(TKey key);
 
         RaftLogEntry<TKey, TValue> GetEntry(int index);
         RaftLogEntry<TKey, TValue> GetEntry(TKey key);

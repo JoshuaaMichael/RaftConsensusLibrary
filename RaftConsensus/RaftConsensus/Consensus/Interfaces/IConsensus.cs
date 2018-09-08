@@ -10,11 +10,13 @@ namespace TeamDecided.RaftConsensus.Consensus.Interfaces
         Task<EJoinClusterResponse> JoinCluster(string clusterName, int maxNodes, int attempts);
         Task<EJoinClusterResponse> JoinCluster(string clusterName, string clusterPassword, int maxNodes, int attempts);
         void ManualAddPeer(string name, IPEndPoint endPoint);
-        void EnablePersistentStorage();
+        void EnablePersistentStorage(string filename);
 
         string ClusterName { get; }
+        int JoiningClusterTimeout { get; }
         string NodeName { get; }
 
+        bool DoesEntryValueExist(TKey key);
         TValue ReadEntryValue(TKey key);
         TValue[] ReadEntryValueHistory(TKey key);
         Task<ERaftAppendEntryState> AppendEntry(TKey key, TValue value);

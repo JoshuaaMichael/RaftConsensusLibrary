@@ -53,7 +53,8 @@ namespace TeamDecided.RaftConsensus.Consensus
         #endregion
 
         private ManualResetEvent _onWaitingToJoinCluster;
-        private int _waitingToJoinClusterTimeout = 10000;
+        private const int WaitingToJoinClusterTimeout = 10000;
+        public int JoiningClusterTimeout => WaitingToJoinClusterTimeout;
 
         private readonly Thread _backgroundThread;
         private readonly ManualResetEvent _onNotifyBackgroundThread;
@@ -61,6 +62,7 @@ namespace TeamDecided.RaftConsensus.Consensus
         private readonly ManualResetEvent _onThreadStarted;
         private readonly ManualResetEvent _onLeadershipLost;
         private CountdownEvent _countdownAppendEntryFailures;
+        private string PersistentStorageFilename = null;
 
         private bool isDisposed;
 
@@ -116,6 +118,13 @@ namespace TeamDecided.RaftConsensus.Consensus
                 ThrowArgumentException("clusterName must not be blank");
             }
 
+            ClusterName = clusterName;
+
+            if (!string.IsNullOrWhiteSpace(PersistentStorageFilename))
+            {
+                _distributedLog = new RaftDistributedLogPersistent<TKey, TValue>(ClusterName, PersistentStorageFilename);
+            }
+
             if (_networking == null)
             {
                 _networking = new UDPNetworking();
@@ -138,8 +147,6 @@ namespace TeamDecided.RaftConsensus.Consensus
                 IPEndPoint ipEndPoint = _networking.GetIPFromName(node.Key);
                 Log(ERaftLogType.Debug, "I know: nodeName={0}, ipAddress={1}, port={2}", node.Key, ipEndPoint.Address.ToString(), ipEndPoint.Port);
             }
-
-            ClusterName = clusterName;
 
             if (_nodesInfo.Count + 1 != maxNodes) //"+ 1" since you aren't in the nodesInfo list
             {
@@ -174,7 +181,7 @@ namespace TeamDecided.RaftConsensus.Consensus
             {
                 if (attemptNumber > attempts)
                 {
-                    Log(ERaftLogType.Warn, "Never found cluster after {0} attempt(s), each with {1} millisecond timeout", attemptNumber - 1, _waitingToJoinClusterTimeout);
+                    Log(ERaftLogType.Warn, "Never found cluster after {0} attempt(s), each with {1} millisecond timeout", attemptNumber - 1, WaitingToJoinClusterTimeout);
                     Log(ERaftLogType.Info, "Shuting down background thread");
                     _onShutdown.Set();
                     _backgroundThread.Join();
@@ -193,7 +200,7 @@ namespace TeamDecided.RaftConsensus.Consensus
 
                 Log(ERaftLogType.Debug, "Waiting to join cluster...");
 
-                if (_onWaitingToJoinCluster.WaitOne(_waitingToJoinClusterTimeout) == false)
+                if (_onWaitingToJoinCluster.WaitOne(WaitingToJoinClusterTimeout) == false)
                 {
                     Log(ERaftLogType.Info, "Didn't find cluster. This was attempt {0} of {1}", attemptNumber, attempts);
                     attemptNumber += 1;
@@ -737,14 +744,14 @@ namespace TeamDecided.RaftConsensus.Consensus
             }
         }
 
-        public void EnablePersistentStorage()
+        public void EnablePersistentStorage(string filename)
         {
             if (_currentState != ERaftState.Initializing)
             {
                 ThrowInvalidOperationException("Can not enable persistent storage in this state. Enable before JoinCluster.");
             }
 
-            _distributedLog = new RaftDistributedLogPersistent<TKey, TValue>();
+            PersistentStorageFilename = filename;
         }
 
         private void FailAppendEntryTasks(bool leadershipLost, bool onShutdown)
@@ -922,6 +929,12 @@ namespace TeamDecided.RaftConsensus.Consensus
         {
             return _distributedLog.CommitIndex + 1;
         }
+
+        public bool DoesEntryValueExist(TKey key)
+        {
+            return _distributedLog.ValueExists(key);
+        }
+
         public TValue ReadEntryValue(TKey key)
         {
             try

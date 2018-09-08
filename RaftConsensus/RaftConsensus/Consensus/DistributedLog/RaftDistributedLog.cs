@@ -114,6 +114,11 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
             return (TValue)_log[key].Last().Value.Clone();
         }
 
+        public bool ValueExists(TKey key)
+        {
+            return _log.ContainsKey(key);
+        }
+
         public TValue[] GetValueHistory(TKey key)
         {
             List<RaftLogEntry<TKey, TValue>> entries = _log[key];
@@ -141,6 +146,12 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
                 throw new ArgumentException("Cannot commit at an index larger than stored in log");
             }
             CommitIndex = index;
+        }
+
+        public void Dispose()
+        {
+            _log.Clear();
+            _logIndexLookup.Clear();
         }
     }
 }

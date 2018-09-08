@@ -19,6 +19,11 @@ namespace TeamDecided.RaftConsensus.Tests.Consensus.DistributedLog
         {
         }
 
+        [TearDown]
+        public virtual void AfterEachTest()
+        {
+        }
+
         [Test]
         public void IT_AppendToEmptyLog()
         {

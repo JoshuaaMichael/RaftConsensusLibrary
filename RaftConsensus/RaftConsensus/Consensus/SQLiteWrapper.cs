@@ -1,28 +1,39 @@
 ﻿using System;
 using System.Data.SQLite;
+using System.IO;
 using TeamDecided.RaftConsensus.Common.Logging;
 
 namespace TeamDecided.RaftConsensus.Consensus
 {
     internal class SQLiteWrapper : IDisposable
     {
-        private readonly SQLiteConnection _db;
-
-        public SQLiteWrapper()
-        {
-            _db = new SQLiteConnection("Data Source=:memory:;");
-            _db.Open();
-        }
+        private SQLiteConnection _db;
 
         public SQLiteWrapper(string filename)
         {
-            _db = new SQLiteConnection($"Filename={filename}");
+            if (filename.Length == 0)
+            {
+                _db = new SQLiteConnection("Data Source=:memory:;");
+            }
+            else
+            {
+                if (!File.Exists(filename))
+                {
+                    SQLiteConnection.CreateFile(filename);
+                }
+
+                _db = new SQLiteConnection($"Data Source={filename}");
+            }
+
             _db.Open();
         }
 
         public void Dispose()
         {
             _db.Close();
+            _db.Dispose();
+            _db = null;
+            GC.Collect();
         }
 
         public int ExecuteNonQuery(string commandStr, params object[] param)
@@ -38,7 +49,7 @@ namespace TeamDecided.RaftConsensus.Consensus
             }
         }
 
-        private object ExecuteScalar(string commandStr, params object[] param)
+        public object ExecuteScalar(string commandStr, params object[] param)
         {
             try
             {

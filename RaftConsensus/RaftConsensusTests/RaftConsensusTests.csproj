@@ -89,7 +89,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Consensus\3Nodes\RaftConsensusTests3PersistentStorage.cs" />
+    <Compile Include="Consensus\5Nodes\RaftConsensusTests5PersistentStorage.cs" />
+    <Compile Include="Consensus\BaseRaftConsensusPersistantStorageTests.cs" />
     <Compile Include="Consensus\2Nodes\RaftConsensusTests2NodesEncrypted.cs" />
+    <Compile Include="Consensus\2Nodes\RaftConsensusTests2PersistentStorage.cs" />
     <Compile Include="Consensus\3Nodes\RaftConsensusTests3NodesEncrypted.cs" />
     <Compile Include="Consensus\3Nodes\RaftConsensusTests3NodesUnencrypted.cs" />
     <Compile Include="Consensus\5Nodes\RaftConsensusTests5NodesEncrypted.cs" />
