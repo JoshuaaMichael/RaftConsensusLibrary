@@ -1,22 +1,22 @@
 ﻿using System;
-using Microsoft.Data.Sqlite;
+using System.Data.SQLite;
 using TeamDecided.RaftConsensus.Common.Logging;
 
 namespace TeamDecided.RaftConsensus.Consensus
 {
     internal class SQLiteWrapper : IDisposable
     {
-        private readonly SqliteConnection _db;
+        private readonly SQLiteConnection _db;
 
         public SQLiteWrapper()
         {
-            _db = new SqliteConnection("Data Source=:memory:;");
+            _db = new SQLiteConnection("Data Source=:memory:;");
             _db.Open();
         }
 
         public SQLiteWrapper(string filename)
         {
-            _db = new SqliteConnection($"Filename={filename}");
+            _db = new SQLiteConnection($"Filename={filename}");
             _db.Open();
         }
 
@@ -31,7 +31,7 @@ namespace TeamDecided.RaftConsensus.Consensus
             {
                 return PrepareCommand(_db, commandStr, param).ExecuteNonQuery();
             }
-            catch (SqliteException e)
+            catch (SQLiteException e)
             {
                 RaftLogging.Instance.Log(ERaftLogType.Fatal, "Exception caught: {0}", RaftLogging.FlattenException(e));
                 throw;
@@ -44,7 +44,7 @@ namespace TeamDecided.RaftConsensus.Consensus
             {
                 return PrepareCommand(_db, commandStr, param).ExecuteScalar();
             }
-            catch (SqliteException e)
+            catch (SQLiteException e)
             {
                 RaftLogging.Instance.Log(ERaftLogType.Fatal, "Exception caught: {0}", RaftLogging.FlattenException(e));
                 throw;
@@ -56,22 +56,22 @@ namespace TeamDecided.RaftConsensus.Consensus
             return Convert.ToInt32(ExecuteScalar(commandStr, param));
         }
 
-        public SqliteDataReader ExecuteReader(string commandStr, params object[] param)
+        public SQLiteDataReader ExecuteReader(string commandStr, params object[] param)
         {
             try
             {
                 return PrepareCommand(_db, commandStr, param).ExecuteReader();
             }
-            catch (SqliteException e)
+            catch (SQLiteException e)
             {
                 RaftLogging.Instance.Log(ERaftLogType.Fatal, "Exception caught: {0}", RaftLogging.FlattenException(e));
                 throw;
             }
         }
 
-        private static SqliteCommand PrepareCommand(SqliteConnection db, string commandStr, params object[] param)
+        private static SQLiteCommand PrepareCommand(SQLiteConnection db, string commandStr, params object[] param)
         {
-            SqliteCommand command = new SqliteCommand(commandStr)
+            SQLiteCommand command = new SQLiteCommand(commandStr)
             {
                 Connection = db
             };
@@ -84,11 +84,11 @@ namespace TeamDecided.RaftConsensus.Consensus
             return command;
         }
 
-        private static void AddParameters(SqliteCommand command, object[] param)
+        private static void AddParameters(SQLiteCommand command, object[] param)
         {
             for (int i = 0; i < param.Length; i++)
             {
-                SqliteParameter sqliteParameter = new SqliteParameter()
+                SQLiteParameter sqliteParameter = new SQLiteParameter()
                 {
                     ParameterName = "$param" + i,
                     Value = param[i]

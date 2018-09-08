@@ -3,12 +3,12 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>TeamDecided.RaftConsensus</RootNamespace>
-    <Version>0.3.6</Version>
+    <Version>0.3.8</Version>
     <Authors>Joshua, Sean</Authors>
     <Company>Team Decided</Company>
     <PackageId>TeamDecided.RaftConsensus</PackageId>
     <Description>This is a WIP consensus library based on the Raft algorithm built as a team for our BCompSc major project</Description>
-    <PackageReleaseNotes>Fix OnNewCommit event being called when rebuilding log</PackageReleaseNotes>
+    <PackageReleaseNotes>Using the SQLite package from the SQLite team</PackageReleaseNotes>
     <PackageIconUrl>https://cdn.discordapp.com/attachments/428466046391812098/454957808992124928/raft.ico</PackageIconUrl>
     <RepositoryUrl>https://bitbucket.org/teamdecided/raftconsensuslibrary/src/master/</RepositoryUrl>
     <PackageTags>Raft Consensus</PackageTags>
@@ -22,8 +22,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="2.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="System.Data.SQLite" Version="1.0.109.1" />
   </ItemGroup>
 
 </Project>

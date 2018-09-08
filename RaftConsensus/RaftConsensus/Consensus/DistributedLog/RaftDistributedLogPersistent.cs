@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using Microsoft.Data.Sqlite;
+using System.Data.SQLite;
 using Newtonsoft.Json;
 
 namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
@@ -187,7 +186,7 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
         {
             const string command = "SELECT value FROM Entry WHERE `index`=$param0";
 
-            SqliteDataReader sqliteDataReader = _db.ExecuteReader(command, index);
+            SQLiteDataReader sqliteDataReader = _db.ExecuteReader(command, index);
 
             return !sqliteDataReader.Read() ? throw new Exception("Failed to find entry"): JsonConvert.DeserializeObject<RaftLogEntry<TKey, TValue>>((string) sqliteDataReader[0]);
         }
@@ -201,7 +200,7 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
         {
             const string command = "SELECT value FROM Entry WHERE key=$param0 ORDER BY `index` ASC";
 
-            SqliteDataReader sqliteDataReader = _db.ExecuteReader(command, key.GetHashCode());
+            SQLiteDataReader sqliteDataReader = _db.ExecuteReader(command, key.GetHashCode());
 
             List<RaftLogEntry<TKey, TValue>> entries = new List<RaftLogEntry<TKey, TValue>>();
 
@@ -228,7 +227,7 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
             {
                 string query = string.Format(queryBase, i == 0 ? "" : " AND `index` < " + index);
 
-                SqliteDataReader sqliteDataReader = _db.ExecuteReader(query, key.GetHashCode());
+                SQLiteDataReader sqliteDataReader = _db.ExecuteReader(query, key.GetHashCode());
 
                 if (!sqliteDataReader.Read())
                 {
