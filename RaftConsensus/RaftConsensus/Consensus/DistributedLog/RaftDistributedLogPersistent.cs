@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data.SQLite;
 using Newtonsoft.Json;
+using TeamDecided.RaftConsensus.Common.Logging;
 
 namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
 {
@@ -17,10 +18,12 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
             SQLCreateTablesIfNotExist();
             SQLCreateSettingsIfNotExist();
 
-            if (GetClusterName() != clusterName)
+            if (SQLGetClusterName() != clusterName)
             {
                 throw new ArgumentException("Cannot load from select file, file for a different cluster name");
             }
+
+            RaftLogging.Instance.Log(ERaftLogType.Info, "Loaded {0} entries, commit index {1}", SQLCountEntries(), SQLGetCommitIndex());
         }
 
         public void Dispose()
@@ -142,6 +145,11 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
             _db.ExecuteNonQuery("CREATE TABLE IF NOT EXISTS Settings (commitIndex INTERGER NOT NULL, clusterName TEXT NOT NULL)");
         }
 
+        private int SQLCountEntries()
+        {
+            return _db.ExecuteScalarInt("SELECT COUNT(*) FROM Entry");
+        }
+
         private void SQLCreateSettingsIfNotExist()
         {
             if (_db.ExecuteScalarInt("SELECT COUNT(*) FROM Settings") == 0)
@@ -150,7 +158,7 @@ namespace TeamDecided.RaftConsensus.Consensus.DistributedLog
             }
         }
 
-        private string GetClusterName()
+        private string SQLGetClusterName()
         {
             return _db.ExecuteScalar("SELECT clusterName FROM Settings").ToString();
         }
