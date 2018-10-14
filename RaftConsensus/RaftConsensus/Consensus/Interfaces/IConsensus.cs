@@ -22,6 +22,7 @@ namespace TeamDecided.RaftConsensus.Consensus.Interfaces
         Task<ERaftAppendEntryState> AppendEntry(TKey key, TValue value);
         event EventHandler<Tuple<TKey, TValue>> OnNewCommitedEntry;
         int NumberOfCommits();
+        Tuple<TKey, TValue> GetEntryByCommitIndex(int commitIndex);
 
         bool HasJoinedCluster();
         bool IsUASRunning();
