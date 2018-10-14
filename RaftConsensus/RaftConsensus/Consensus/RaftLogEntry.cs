@@ -41,7 +41,7 @@ namespace TeamDecided.RaftConsensus.Consensus
 
         public Tuple<TKey, TValue> ToTuple()
         {
-            return new Tuple<TKey, TValue>(Key, Value);
+            return new Tuple<TKey, TValue>((TKey)Key.Clone(), (TValue)Value.Clone());
         }
     }
 }

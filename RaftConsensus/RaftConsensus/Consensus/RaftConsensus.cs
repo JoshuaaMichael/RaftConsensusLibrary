@@ -117,7 +117,7 @@ namespace TeamDecided.RaftConsensus.Consensus
             {
                 ThrowArgumentException("clusterName must not be blank");
             }
-
+            
             ClusterName = clusterName;
 
             if (!string.IsNullOrWhiteSpace(PersistentStorageFilename))
@@ -928,6 +928,16 @@ namespace TeamDecided.RaftConsensus.Consensus
         public int NumberOfCommits()
         {
             return _distributedLog.CommitIndex + 1;
+        }
+
+        public Tuple<TKey, TValue> GetEntryByCommitIndex(int commitIndex)
+        {
+            if (commitIndex < 0 || commitIndex > NumberOfCommits() - 1)
+            {
+                ThrowArgumentException("Invalid commitIndex");
+            }
+
+            return _distributedLog.GetEntry(commitIndex).ToTuple();
         }
 
         public bool DoesEntryValueExist(TKey key)
