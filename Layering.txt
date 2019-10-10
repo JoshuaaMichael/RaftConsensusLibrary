@@ -1,0 +1,15 @@
+Project:
+	- Networking library
+		- Compression
+		- int port
+		- Versioning
+	- Encryption
+	- Serialisation
+	- Network send/recieve
+	- Business logic
+	- Application (Thread handler)
+	- Logging
+	
+Each with own testing
+
+Use Nuget
