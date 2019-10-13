@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27428.2043
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UDPNetworking", "UDPNetworking\UDPNetworking.csproj", "{A3358D2C-62A9-42FD-8827-4F77A95252B7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UDPNetworking", "UDPNetworking\UDPNetworking.csproj", "{A3358D2C-62A9-42FD-8827-4F77A95252B7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UDPNetworkingTest", "UDPNetworkingTest\UDPNetworkingTest.csproj", "{0202CD8E-B7B1-46A8-A0E1-BCB36139B500}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UDPNetworking.Messages.ISerializable", "UDPNetworking.ISerializable\UDPNetworking.Messages.ISerializable.csproj", "{64C99BD8-8728-4493-9711-CB44BD321B6B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{0202CD8E-B7B1-46A8-A0E1-BCB36139B500}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0202CD8E-B7B1-46A8-A0E1-BCB36139B500}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0202CD8E-B7B1-46A8-A0E1-BCB36139B500}.Release|Any CPU.Build.0 = Release|Any CPU
+		{64C99BD8-8728-4493-9711-CB44BD321B6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{64C99BD8-8728-4493-9711-CB44BD321B6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{64C99BD8-8728-4493-9711-CB44BD321B6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{64C99BD8-8728-4493-9711-CB44BD321B6B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

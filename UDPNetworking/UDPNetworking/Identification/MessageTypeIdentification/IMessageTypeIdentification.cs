@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace UDPNetworking.Identification.MessageTypeIdentification
+﻿namespace UDPNetworking.Identification.MessageTypeIdentification
 {
     public interface IMessageTypeIdentification : IIdentification
     {

@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace UDPNetworking.Exceptions
 {
-    public class UDPNetworkingException : Exception
+    public abstract class UDPNetworkingException : Exception
     {
-        public UDPNetworkingException(string errorMessage)
+        protected UDPNetworkingException(string errorMessage)
             : base(errorMessage) { }
 
-        public UDPNetworkingException(string errorMessage, Exception innerException)
+        protected UDPNetworkingException(string errorMessage, Exception innerException)
             : base(errorMessage, innerException) { }
     }
 }

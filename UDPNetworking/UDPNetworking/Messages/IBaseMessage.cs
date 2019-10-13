@@ -13,7 +13,7 @@ namespace UDPNetworking.Messages
     {
         IPeerIdentification To { get; set; }
         IPeerIdentification From { get; set; }
-        IMessageTypeIdentification Type { get; set; }
+        IMessageTypeIdentification Type { get; }
         IMessageVersionIdentification Version { get; set; }
     }
 }

@@ -1,16 +1,23 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Runtime.Serialization;
+using UDPNetworking.Extensions;
 
 namespace UDPNetworking.Identification.PeerIdentification
 {
+    [Serializable()]
     public class StringPeerIdentification : IPeerIdentification
     {
-        private readonly string _identifier;
+        private readonly string _identification;
+        private const string IdentificationSerialisationStr = "_identification";
 
         public StringPeerIdentification(string identifier)
         {
-            _identifier = identifier;
+            _identification = identifier;
+        }
+
+        protected StringPeerIdentification(SerializationInfo info, StreamingContext ctxt)
+        {
+            _identification = info.GetValue<string>(IdentificationSerialisationStr);
         }
 
         public static StringPeerIdentification Generate()
@@ -23,9 +30,9 @@ namespace UDPNetworking.Identification.PeerIdentification
             switch (obj)
             {
                 case string s:
-                    return s == _identifier;
+                    return s == _identification;
                 case StringPeerIdentification spi:
-                    return spi._identifier == _identifier;
+                    return spi._identification == _identification;
             }
 
             return false;
@@ -38,12 +45,17 @@ namespace UDPNetworking.Identification.PeerIdentification
 
         public override int GetHashCode()
         {
-            return _identifier.GetHashCode();
+            return _identification.GetHashCode();
+        }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue<string>(IdentificationSerialisationStr, _identification);
         }
 
         public object GetIdentification()
         {
-            return _identifier;
+            return _identification;
         }
     }
 }

@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Runtime.Serialization;
 
 namespace UDPNetworking.Identification
 {
-    public interface IIdentification
+    public interface IIdentification : ISerializable
     {
         object GetIdentification();
     }

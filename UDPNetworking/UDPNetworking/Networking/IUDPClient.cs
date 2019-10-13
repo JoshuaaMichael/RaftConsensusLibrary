@@ -1,10 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Net;
+using System.Threading.Tasks;
+using UDPNetworking.Exceptions;
 
 namespace UDPNetworking.Networking
 {
-    internal interface IUDPClient
+    public interface IUDPClient : IDisposable
     {
+        event EventHandler<ReceiveFailureException> OnMessageReceivedFailure;
+        Task<bool> SendAsync(byte[] messageBytes, IPEndPoint ipEndPoint);
+        event EventHandler<Tuple<byte[], IPEndPoint>> OnMessageReceived;
     }
 }

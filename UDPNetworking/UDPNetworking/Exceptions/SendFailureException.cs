@@ -1,21 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using UDPNetworking.Messages;
 
 namespace UDPNetworking.Exceptions
 {
     public class SendFailureException : UDPNetworkingException
     {
-        private readonly BaseMessage _message;
+        private readonly IBaseMessage _message;
 
-        public SendFailureException(string errorMessage, BaseMessage message)
+        public SendFailureException(string errorMessage, IBaseMessage message)
             : base(errorMessage) { _message = message; }
 
-        public SendFailureException(string errorMessage, Exception innerException, BaseMessage message)
+        public SendFailureException(string errorMessage, Exception innerException, IBaseMessage message)
             : base(errorMessage, innerException) { _message = message; }
 
-        public BaseMessage GetMessage()
+        public IBaseMessage GetMessage()
         {
             return _message;
         }

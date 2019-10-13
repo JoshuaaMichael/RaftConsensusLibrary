@@ -1,11 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
-using System.Text;
+using System.Threading.Tasks;
 using UDPNetworking.Exceptions;
 using UDPNetworking.Identification.PeerIdentification;
 using UDPNetworking.Messages;
-using UDPNetworking.Utilities;
+using UDPNetworking.PeerManagement;
+using UDPNetworking.Serialisation;
 
 namespace UDPNetworking.Networking
 {
@@ -16,64 +16,82 @@ namespace UDPNetworking.Networking
         public event EventHandler<SendFailureException> OnMessageSendFailure;
         public event EventHandler<IPeerIdentification> OnNewConnectedPeer;
 
+        public IPeerIdentification PeerName { get; }
+        public IPeerManager PeerManager { get; }
+        protected ISerializer Serializer;
+
+        protected const int MaxPacketSize = 65507;
+
+        protected UDPClient UDPClient;
+
         protected bool DisposedValue; // To detect redundant calls
 
-        private EUDPNetworkingStatus _status;
-        private readonly object _statusLockObject;
-
-        protected BaseUDPNetworking(IPeerIdentification peerName)
+        protected BaseUDPNetworking(IPeerIdentification peerName, IPeerManager peerManager, ISerializer serializer, IPEndPoint ipEndPoint)
         {
             PeerName = peerName;
+            PeerManager = peerManager;
+            Serializer = serializer;
 
-            _status = EUDPNetworkingStatus.Initialized;
-            _statusLockObject = new object();
+            UDPClient = new UDPClient(ipEndPoint);
+            UDPClient.OnMessageReceived += 
+                (sender, tuple) => RecieveMessageAsync(tuple.Item1, tuple.Item2);
+            UDPClient.OnMessageReceivedFailure +=
+                (sender, exception) => OnMessageReceivedFailure?.Invoke(sender, exception);
+            UDPClient.OnMessageSendFailure += 
+                (sender, exception) => OnMessageSendFailure?.Invoke(sender, exception);
         }
 
-        public IPeerIdentification PeerName { get; }
-
-        public void Start(IPEndPoint endPoint)
+        public async void SendMessageAsync(IBaseMessage message)
         {
-            lock (_statusLockObject)
+            byte[] messageToSend = Serializer.Serialize(message);
+
+            if (messageToSend.Length > MaxPacketSize)
             {
-                if (_status != EUDPNetworkingStatus.Initialized)
+                OnMessageSendFailure?.Invoke(this, new SendFailureException("Message is too large to send", message));
+                return;
+            }
+
+            IPEndPoint ipEndPoint = PeerManager.GetPeerIPEndPoint(message.To);
+
+            if (ipEndPoint == null)
+            {
+                OnMessageSendFailure?.Invoke(this, new SendFailureException("Failed to convert recipient to IPEndPoint", message));
+                return;
+            }
+
+            if (await UDPClient.SendAsync(messageToSend, ipEndPoint)) return;
+
+            OnMessageSendFailure?.Invoke(this, new SendFailureException("Failed when sending message", message));
+        }
+
+        protected async void RecieveMessageAsync(byte[] messageBytes, IPEndPoint ipEndPoint)
+        {
+            await Task.Run(() =>
+            {
+                try
                 {
-                    throw new InvalidOperationException("Library is currently not in a state it may start in");
+                    IBaseMessage message = Serializer.Deserialize(messageBytes);
+
+                    if (PeerManager.AddOrUpdatePeer(message.From, ipEndPoint))
+                    {
+                        OnNewConnectedPeer?.Invoke(this, message.From);
+                    }
+
+                    OnMessageReceived?.Invoke(this, message);
                 }
-                _status = EUDPNetworkingStatus.Starting;
-            }
-
-            ProcessingThread<>
-        }
-
-        public void Stop()
-        {
-            lock (_statusLockObject)
-            {
-                if (_status == EUDPNetworkingStatus.Running)
+                catch (Exception e)
                 {
-                    //TODO: Stop
+                    OnMessageReceivedFailure?.Invoke(this, new ReceiveFailureException("Failed deserialising new message", e));
                 }
-                _status = EUDPNetworkingStatus.Stopped;
-            }
-        }
-
-        public void SendMessage(IBaseMessage message)
-        {
-            throw new NotImplementedException();
-        }
-
-        public EUDPNetworkingStatus GetStatus()
-        {
-            lock (_statusLockObject)
-            {
-                return _status;
-            }
+            });
         }
 
         public void Dispose()
         {
             if (DisposedValue) return;
-            Stop();
+
+            UDPClient?.Dispose();
+
             DisposedValue = true;
         }
     }
