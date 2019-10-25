@@ -2,7 +2,7 @@
 using System;
 using System.Linq;
 
-namespace RaftConsensusLibrary.Consensus
+namespace RaftConsensusLibrary.Consensus.States
 {
     internal abstract class RaftConsensusBaseState<T>
     {

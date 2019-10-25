@@ -1,4 +1,5 @@
-﻿using RaftConsensusLibrary.Messages;
+﻿using RaftConsensusLibrary.Consensus.States;
+using RaftConsensusLibrary.Messages;
 using System;
 using UDPMessaging.Identification.PeerIdentification;
 

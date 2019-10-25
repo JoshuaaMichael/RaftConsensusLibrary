@@ -1,7 +1,7 @@
 ﻿using RaftConsensusLibrary.Messages;
 using System;
 
-namespace RaftConsensusLibrary.Consensus
+namespace RaftConsensusLibrary.Consensus.States
 {
     internal class RaftConsensusStateCandidate<T> : RaftConsensusBaseState<T>
     {
