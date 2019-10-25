@@ -2,12 +2,12 @@
 
 namespace RaftConsensusLibrary.Messages
 {
-    internal class RaftRequestVote : RaftBaseMessage
+    internal class RaftRequestVoteRequest : RaftBaseMessage
     {
         public int LastLogIndex { get; set; }
         public int LastLogTerm { get; set; }
 
-        public RaftRequestVote(int term)
+        public RaftRequestVoteRequest(int term)
             : base(ERaftMessageType.RequestVoteRequest, term) { }
     }
 }
